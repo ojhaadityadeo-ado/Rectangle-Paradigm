@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Pythagorean Theorem</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-poly { transition: all 0.5s ease-out; }
+        .geom-text { user-select: none; transition: all 0.5s ease; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-square-root-variable text-indigo-600 text-2xl"></i> Visual Proof: Pythagorean Theorem
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Bhaskara's elegant area-based proof dividing a square of side $(a+b)$ into four triangles and an inner square.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap">
+                $$ (a+b)^2 = 4\left(\frac{1}{2}ab\right) + c^2 \implies a^2 + b^2 = c^2 $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 w-full xl:w-auto flex-grow max-w-2xl">
+                <!-- A Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2 rounded border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Leg <span class="math-font text-sm normal-case text-indigo-600">a</span></span>
+                        <span id="valA" class="text-indigo-600 font-mono text-sm">3.0</span>
+                    </div>
+                    <input type="range" id="sliderA" value="3.0" min="1.0" max="6.0" step="0.5" class="w-full">
+                </div>
+                <!-- B Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2 rounded border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Leg <span class="math-font text-sm normal-case text-emerald-600">b</span></span>
+                        <span id="valB" class="text-emerald-600 font-mono text-sm">4.0</span>
+                    </div>
+                    <input type="range" id="sliderB" value="4.0" min="1.0" max="6.0" step="0.5" class="w-full">
+                </div>
+                <!-- C Live Value -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2 rounded border border-slate-200 shadow-sm md:col-span-1 col-span-2">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Hypotenuse <span class="math-font text-sm normal-case text-rose-600">c</span></span>
+                    </div>
+                    <div class="font-mono text-lg font-bold text-rose-600 text-center mt-1" id="valC">5.00</div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px] relative w-full">
+                <svg id="proofSvg" viewBox="0 0 500 500" class="w-full h-auto max-h-[600px] overflow-visible">
+                    <defs>
+                        <pattern id="dotHatch" width="8" height="8" patternUnits="userSpaceOnUse">
+                            <circle cx="2" cy="2" r="1.5" fill="#e11d48" opacity="0.3" />
+                        </pattern>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 2 L 10 5 L 0 8 z" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Base coordinate system offset by 50px -->
+                    <g transform="translate(50, 50)">
+                        
+                        <!-- Outer Bounding Square -->
+                        <rect id="outer-sq" x="0" y="0" width="400" height="400" fill="none" stroke="#1e293b" stroke-width="3" class="fade" opacity="0" />
+
+                        <!-- Dimensions for Outer Square -->
+                        <g id="outer-dims" class="fade" opacity="0">
+                            <!-- Top Edge Dimensions -->
+                            <line id="dim-top-a" stroke="#64748b" stroke-width="1.5" fill="none" />
+                            <text id="lbl-top-a" class="geom-text math-font font-bold text-indigo-600" text-anchor="middle" dominant-baseline="bottom">a</text>
+                            
+                            <line id="dim-top-b" stroke="#64748b" stroke-width="1.5" fill="none" />
+                            <text id="lbl-top-b" class="geom-text math-font font-bold text-emerald-600" text-anchor="middle" dominant-baseline="bottom">b</text>
+
+                            <!-- Left Edge Dimensions -->
+                            <line id="dim-left-b" stroke="#64748b" stroke-width="1.5" fill="none" />
+                            <text id="lbl-left-b" class="geom-text math-font font-bold text-emerald-600" text-anchor="end" dominant-baseline="middle">b</text>
+                            
+                            <line id="dim-left-a" stroke="#64748b" stroke-width="1.5" fill="none" />
+                            <text id="lbl-left-a" class="geom-text math-font font-bold text-indigo-600" text-anchor="end" dominant-baseline="middle">a</text>
+                            
+                            <text x="200" y="-35" class="geom-text font-bold text-slate-700" text-anchor="middle" font-size="14">Area = (a+b)²</text>
+                        </g>
+
+                        <!-- The 4 Triangles -->
+                        <g id="triangles-grp" class="fade" opacity="0">
+                            <!-- T1: Top Edge (a, b) -->
+                            <polygon id="t1" class="geom-poly" fill="url(#dotHatch)" stroke="#e11d48" stroke-width="2" />
+                            <!-- T2: Right Edge -->
+                            <polygon id="t2" class="geom-poly" fill="url(#dotHatch)" stroke="#e11d48" stroke-width="2" />
+                            <!-- T3: Bottom Edge -->
+                            <polygon id="t3" class="geom-poly" fill="url(#dotHatch)" stroke="#e11d48" stroke-width="2" />
+                            <!-- T4: Left Edge -->
+                            <polygon id="t4" class="geom-poly" fill="url(#dotHatch)" stroke="#e11d48" stroke-width="2" />
+                            
+                            <text id="lbl-tri-area" x="350" y="380" class="geom-text font-bold text-rose-700 text-sm" text-anchor="end">4 × ½ab</text>
+                        </g>
+
+                        <!-- Inner Tilted Square -->
+                        <g id="inner-sq-grp" class="fade" opacity="0">
+                            <polygon id="inner-sq" class="geom-poly" fill="rgba(16, 185, 129, 0.2)" stroke="#059669" stroke-width="3" />
+                            <text id="lbl-c-sq" class="geom-text math-font font-bold text-emerald-700 text-xl" text-anchor="middle" dominant-baseline="middle">c²</text>
+                            
+                            <!-- c side labels -->
+                            <text id="lbl-c1" class="geom-text math-font font-bold text-rose-600" text-anchor="middle" dominant-baseline="middle">c</text>
+                            <text id="lbl-c2" class="geom-text math-font font-bold text-rose-600" text-anchor="middle" dominant-baseline="middle">c</text>
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger & Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. Initial Setup</span>
+                            <span class="text-xs text-slate-600">Select lengths for the legs $a$ and $b$ of a right-angled triangle.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. The Outer Square</span>
+                            <span class="text-xs text-slate-600">We construct a large bounding square with side length $(a+b)$. The total area of this shape is exactly $(a+b)^2$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-rose-700 block mb-1">3. Four Right Triangles</span>
+                            <span class="text-xs text-slate-600">We place four identical copies of our right triangle into the corners of the square. Each has area $\frac{1}{2}ab$. Combined area is $2ab$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-700 block mb-1">4. The Inner Square</span>
+                            <span class="text-xs text-slate-600">The remaining empty space forms a tilted square. Its side length is precisely the hypotenuse $c$. The area of this central void is $c^2$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. Equating the Areas</span>
+                            <span class="text-xs text-slate-600">The area of the large outer square is exactly equal to the sum of its internal pieces: the 4 triangles plus the inner square.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-slate-800 block mb-1">6. Algebraic Conclusion</span>
+                            <span class="text-xs text-slate-600">$(a+b)^2 = 4(\frac{1}{2}ab) + c^2 \implies a^2+2ab+b^2 = 2ab+c^2 \implies a^2+b^2=c^2$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Box -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust parameters $a$ and $b$. Press <strong>Play</strong> to visualize the area decomposition.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Algebraic Derivation -->
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Algebraic Derivation</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Expansion -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Total Area (Direct Method)</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        By constructing the large outer square with side length $(a+b)$, we can calculate its total area directly by squaring the side:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area} = (a+b)^2 = a^2 + 2ab + b^2 $$
+                    </div>
+                </div>
+
+                <!-- Right: Reconstruction -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Total Area (Component Method)</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        We can calculate the exact same total area by summing up the geometric pieces inside the square: the 4 corner triangles and the inner tilted square.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area} = 4 \left(\frac{1}{2}ab\right) + c^2 = 2ab + c^2 $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: Equating the Two</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    Since both methods calculate the area of the exact same outer square, we can set the two equations equal to each other:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ a^2 + 2ab + b^2 = 2ab + c^2 $$
+                </div>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    Subtracting $2ab$ from both sides of the equation beautifully leaves us with the Pythagorean Theorem:
+                </p>
+                <div class="text-center text-2xl font-bold text-emerald-700 my-4 overflow-x-auto min-w-0">
+                    $$ a^2 + b^2 = c^2 $$
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            a: 3.0,
+            b: 4.0,
+            step: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        const SIZE = 400; // Physical pixel size of the outer square in SVG
+
+        // DOM Elements
+        const DOM = {
+            sliders: { a: document.getElementById('sliderA'), b: document.getElementById('sliderB') },
+            vals: { a: document.getElementById('valA'), b: document.getElementById('valB'), c: document.getElementById('valC') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                outerSq: document.getElementById('outer-sq'), outerDims: document.getElementById('outer-dims'),
+                triGrp: document.getElementById('triangles-grp'), innerSqGrp: document.getElementById('inner-sq-grp'),
+                t1: document.getElementById('t1'), t2: document.getElementById('t2'), t3: document.getElementById('t3'), t4: document.getElementById('t4'),
+                innerSq: document.getElementById('inner-sq'), lblCsq: document.getElementById('lbl-c-sq'),
+                lblC1: document.getElementById('lbl-c1'), lblC2: document.getElementById('lbl-c2'),
+                
+                dimTopA: document.getElementById('dim-top-a'), lblTopA: document.getElementById('lbl-top-a'),
+                dimTopB: document.getElementById('dim-top-b'), lblTopB: document.getElementById('lbl-top-b'),
+                dimLeftB: document.getElementById('dim-left-b'), lblLeftB: document.getElementById('lbl-left-b'),
+                dimLeftA: document.getElementById('dim-left-a'), lblLeftA: document.getElementById('lbl-left-a')
+            }
+        };
+
+        const descriptions = [
+            "Select lengths for the legs $a$ and $b$ of a right-angled triangle. Press <strong>Play</strong> to begin.",
+            "We construct a large bounding square with side length $(a+b)$. The total area of this shape is exactly $(a+b)^2$.",
+            "We place four identical copies of our right triangle into the corners of the square. Each has area $\\frac{1}{2}ab$. Combined area is $2ab$.",
+            "The remaining empty space forms a tilted square. Its side length is precisely the hypotenuse $c$. The area of this central void is $c^2$.",
+            "The area of the large outer square is exactly equal to the sum of its internal pieces: the 4 triangles plus the inner square.",
+            "$(a+b)^2 = 4(\\frac{1}{2}ab) + c^2 \\implies a^2+2ab+b^2 = 2ab+c^2 \\implies a^2+b^2=c^2$."
+        ];
+
+        function init() {
+            // Slider events
+            DOM.sliders.a.addEventListener('input', (e) => { pauseAnimation(); state.a = parseFloat(e.target.value); updateGeometry(); });
+            DOM.sliders.b.addEventListener('input', (e) => { pauseAnimation(); state.b = parseFloat(e.target.value); updateGeometry(); });
+            
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.a = 3.0; state.b = 4.0;
+                DOM.sliders.a.value = 3.0; DOM.sliders.b.value = 4.0;
+                updateGeometry(); setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        const pts = (coords) => coords.map(c => `${c[0]},${c[1]}`).join(' ');
+
+        function updateGeometry() {
+            const { a, b, step } = state;
+            const c = Math.hypot(a, b);
+            
+            // UI Text
+            DOM.vals.a.textContent = a.toFixed(1);
+            DOM.vals.b.textContent = b.toFixed(1);
+            DOM.vals.c.textContent = c.toFixed(2);
+
+            // Scaling
+            const scale = SIZE / (a + b);
+            const pA = a * scale;
+            const pB = b * scale;
+
+            // Dimensions Setup
+            const offset = 15;
+            
+            // Top Dimensions (a then b)
+            DOM.svg.dimTopA.setAttribute('d', `M 0 -${offset} L 0 -${offset+5} L ${pA} -${offset+5} L ${pA} -${offset}`);
+            DOM.svg.lblTopA.setAttribute('x', pA/2); DOM.svg.lblTopA.setAttribute('y', -offset-10);
+            
+            DOM.svg.dimTopB.setAttribute('d', `M ${pA} -${offset} L ${pA} -${offset+5} L ${SIZE} -${offset+5} L ${SIZE} -${offset}`);
+            DOM.svg.lblTopB.setAttribute('x', pA + pB/2); DOM.svg.lblTopB.setAttribute('y', -offset-10);
+
+            // Left Dimensions (b then a)
+            DOM.svg.dimLeftB.setAttribute('d', `M -${offset} 0 L -${offset+5} 0 L -${offset+5} ${pB} L -${offset} ${pB}`);
+            DOM.svg.lblLeftB.setAttribute('x', -offset-15); DOM.svg.lblLeftB.setAttribute('y', pB/2);
+            
+            DOM.svg.dimLeftA.setAttribute('d', `M -${offset} ${pB} L -${offset+5} ${pB} L -${offset+5} ${SIZE} L -${offset} ${SIZE}`);
+            DOM.svg.lblLeftA.setAttribute('x', -offset-15); DOM.svg.lblLeftA.setAttribute('y', pB + pA/2);
+
+            // Triangles
+            // T1 (Top): (0,0) -> (pA,0) -> (0,pB)
+            DOM.svg.t1.setAttribute('points', pts([[0,0], [pA,0], [0,pB]]));
+            // T2 (Right): (pA,0) -> (SIZE,0) -> (SIZE,pA)
+            DOM.svg.t2.setAttribute('points', pts([[pA,0], [SIZE,0], [SIZE,pA]]));
+            // T3 (Bottom): (SIZE,pA) -> (SIZE,SIZE) -> (pB,SIZE)
+            DOM.svg.t3.setAttribute('points', pts([[SIZE,pA], [SIZE,SIZE], [pB,SIZE]]));
+            // T4 (Left): (pB,SIZE) -> (0,SIZE) -> (0,pB)
+            DOM.svg.t4.setAttribute('points', pts([[pB,SIZE], [0,SIZE], [0,pB]]));
+
+            // Inner Square
+            const innerPts = [[pA,0], [SIZE,pA], [pB,SIZE], [0,pB]];
+            DOM.svg.innerSq.setAttribute('points', pts(innerPts));
+
+            // Labels for Inner Square (Center & Sides)
+            DOM.svg.lblCsq.setAttribute('x', SIZE/2); DOM.svg.lblCsq.setAttribute('y', SIZE/2);
+            
+            // Label c1 (Top-Left diagonal)
+            DOM.svg.lblC1.setAttribute('x', pA/2 + 10); DOM.svg.lblC1.setAttribute('y', pB/2 + 10);
+            // Label c2 (Bottom-Left diagonal)
+            DOM.svg.lblC2.setAttribute('x', pB/2 + 15); DOM.svg.lblC2.setAttribute('y', SIZE - pA/2 - 10);
+
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            op(DOM.svg.outerSq, step >= 1 ? 1 : 0);
+            op(DOM.svg.outerDims, step >= 1 ? 1 : 0);
+            
+            op(DOM.svg.triGrp, step >= 2 ? 1 : 0);
+            op(DOM.svg.innerSqGrp, step >= 3 ? 1 : 0);
+            
+            // Highlight logic for step 4/5
+            if (step >= 4) {
+                DOM.svg.innerSq.style.fillOpacity = '0.5';
+                DOM.svg.t1.style.fillOpacity = '0.8';
+                DOM.svg.t2.style.fillOpacity = '0.8';
+                DOM.svg.t3.style.fillOpacity = '0.8';
+                DOM.svg.t4.style.fillOpacity = '0.8';
+            } else {
+                DOM.svg.innerSq.style.fillOpacity = '0.2';
+                DOM.svg.t1.style.fillOpacity = '1';
+                DOM.svg.t2.style.fillOpacity = '1';
+                DOM.svg.t3.style.fillOpacity = '1';
+                DOM.svg.t4.style.fillOpacity = '1';
+            }
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.stepInd.textContent = `${step} / ${state.maxSteps}`;
+
+            // Handle Ledger classes
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            applyStepOpacities(step);
+
+            // Text Updates
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) { setStep(0); }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if(state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); // 3 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

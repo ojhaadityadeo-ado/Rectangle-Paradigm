@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Area of a Triangle from Coordinates</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 30px 30px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-poly { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.5s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease, transform 0.5s ease; }
+        .fade { transition: opacity 0.5s ease; }
+        
+        /* Text Halo for legibility over lines */
+        .text-halo {
+            paint-order: stroke fill;
+            stroke: rgba(255, 255, 255, 0.9);
+            stroke-width: 4px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Patterns */
+        .hatch-t1 { fill: url(#hatchT1); }
+        .hatch-t2 { fill: url(#hatchT2); }
+        .hatch-t3 { fill: url(#hatchT3); }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-draw-polygon text-indigo-600 text-2xl"></i> Area of a Triangle from Coordinates
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Subtracting corner right-triangles from a bounding rectangle visually proves the beautiful $3 \times 3$ determinant formula.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ [ABC] = \frac{1}{2} \left| \begin{matrix} x_1 & y_1 & 1 \\ x_2 & y_2 & 1 \\ x_3 & y_3 & 1 \end{matrix} \right| $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-3xl">
+                <!-- V2 X/Y Sliders -->
+                <div class="flex flex-col gap-2 w-full max-w-[200px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b pb-1 mb-1">
+                        <span>Vertex 2 (Right)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-400">x₂</span>
+                        <input type="range" id="slider-x2" value="12" min="8" max="15" step="1" class="w-full">
+                        <span id="val-x2" class="text-indigo-600 font-mono text-xs font-bold w-4">12</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-400">y₂</span>
+                        <input type="range" id="slider-y2" value="4" min="2" max="8" step="1" class="w-full">
+                        <span id="val-y2" class="text-indigo-600 font-mono text-xs font-bold w-4">4</span>
+                    </div>
+                </div>
+
+                <!-- V3 X/Y Sliders -->
+                <div class="flex flex-col gap-2 w-full max-w-[200px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b pb-1 mb-1">
+                        <span>Vertex 3 (Top)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-400">x₃</span>
+                        <input type="range" id="slider-x3" value="5" min="3" max="7" step="1" class="w-full">
+                        <span id="val-x3" class="text-emerald-600 font-mono text-xs font-bold w-4">5</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-400">y₃</span>
+                        <input type="range" id="slider-y3" value="10" min="9" max="13" step="1" class="w-full">
+                        <span id="val-y3" class="text-emerald-600 font-mono text-xs font-bold w-4">10</span>
+                    </div>
+                </div>
+
+                <!-- Live Area Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center min-w-[240px] justify-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Bounding Rect</span>
+                        <span class="font-mono text-sm font-bold text-slate-700" id="stat-rect">90.0</span>
+                    </div>
+                    <div class="text-slate-300 font-bold">-</div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Outer Triangles</span>
+                        <span class="font-mono text-sm font-bold text-rose-600" id="stat-outer">45.0</span>
+                    </div>
+                    <div class="text-slate-300 font-bold">=</div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Exact Area</span>
+                        <span class="font-mono text-sm font-bold text-indigo-700" id="stat-area">45.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 600 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Hatched patterns for outer triangles -->
+                        <pattern id="hatchT1" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#f43f5e" stroke-width="2" opacity="0.4" />
+                        </pattern>
+                        <pattern id="hatchT2" width="8" height="8" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#10b981" stroke-width="2" opacity="0.4" />
+                        </pattern>
+                        <pattern id="hatchT3" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#f59e0b" stroke-width="2" opacity="0.4" />
+                        </pattern>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes -->
+                    <g id="axes">
+                        <!-- Horizontal Grid Lines -->
+                        <path d="M 50 440 L 550 440 M 50 350 L 550 350 M 50 260 L 550 260 M 50 170 L 550 170 M 50 80 L 550 80" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4,4" />
+                        <!-- Vertical Grid Lines -->
+                        <path d="M 50 440 L 50 50 M 140 440 L 140 50 M 230 440 L 230 50 M 320 440 L 320 50 M 410 440 L 410 50 M 500 440 L 500 50" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4,4" />
+
+                        <!-- x-axis -->
+                        <line x1="40" y1="450" x2="560" y2="450" stroke="#475569" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <!-- y-axis -->
+                        <line x1="40" y1="450" x2="40" y2="40" stroke="#475569" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        
+                        <text x="550" y="475" class="math-font font-bold text-lg" fill="#475569">x</text>
+                        <text x="15" y="50" class="math-font font-bold text-lg" fill="#475569">y</text>
+                        <text x="25" y="470" class="math-font font-bold text-sm" fill="#64748b">0</text>
+                    </g>
+
+                    <g id="geometry-layers">
+                        <!-- Bounding Rectangle -->
+                        <rect id="bound-rect" class="geom-poly fade" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8,6" opacity="0" />
+
+                        <!-- Outer Triangles (T1, T2, T3) -->
+                        <g id="outer-tris" class="fade" opacity="0">
+                            <!-- T1 (Top Left) -->
+                            <polygon id="poly-t1" class="geom-poly hatch-t1" stroke="#e11d48" stroke-width="2" />
+                            <text id="lbl-t1" class="geom-text math-font font-bold text-xl fill-rose-700 text-halo" text-anchor="middle" dominant-baseline="middle">T₁</text>
+                            
+                            <!-- T2 (Top Right) -->
+                            <polygon id="poly-t2" class="geom-poly hatch-t2" stroke="#059669" stroke-width="2" />
+                            <text id="lbl-t2" class="geom-text math-font font-bold text-xl fill-emerald-700 text-halo" text-anchor="middle" dominant-baseline="middle">T₂</text>
+                            
+                            <!-- T3 (Bottom) -->
+                            <polygon id="poly-t3" class="geom-poly hatch-t3" stroke="#d97706" stroke-width="2" />
+                            <text id="lbl-t3" class="geom-text math-font font-bold text-xl fill-amber-700 text-halo" text-anchor="middle" dominant-baseline="middle">T₃</text>
+                        </g>
+
+                        <!-- Main Triangle ABC -->
+                        <polygon id="main-tri" class="geom-poly" fill="rgba(79, 70, 229, 0.2)" stroke="#4f46e5" stroke-width="3.5" stroke-linejoin="round" />
+
+                        <!-- Vertices & Coordinates -->
+                        <g id="vertices">
+                            <circle id="pt-v1" r="5" fill="#312e81" />
+                            <text id="lbl-v1" class="geom-text math-font font-bold text-indigo-900 text-halo" fill="#312e81">(x₁, y₁)</text>
+                            
+                            <circle id="pt-v2" r="5" fill="#312e81" />
+                            <text id="lbl-v2" class="geom-text math-font font-bold text-indigo-900 text-halo" fill="#312e81">(x₂, y₂)</text>
+
+                            <circle id="pt-v3" r="5" fill="#312e81" />
+                            <text id="lbl-v3" class="geom-text math-font font-bold text-indigo-900 text-halo" fill="#312e81">(x₃, y₃)</text>
+                        </g>
+
+                        <!-- Dimensions / Projections -->
+                        <g id="dims-layer" class="fade" opacity="0">
+                            <!-- Widths -->
+                            <line id="dim-w1" class="geom-line" stroke="#e11d48" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text id="lbl-w1" class="geom-text math-font font-bold text-rose-700 text-halo" text-anchor="middle" dominant-baseline="bottom">x₃ - x₁</text>
+
+                            <line id="dim-w2" class="geom-line" stroke="#059669" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text id="lbl-w2" class="geom-text math-font font-bold text-emerald-700 text-halo" text-anchor="middle" dominant-baseline="bottom">x₂ - x₃</text>
+
+                            <line id="dim-w3" class="geom-line" stroke="#d97706" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text id="lbl-w3" class="geom-text math-font font-bold text-amber-700 text-halo" text-anchor="middle" dominant-baseline="top">x₂ - x₁</text>
+
+                            <!-- Heights -->
+                            <line id="dim-h1" class="geom-line" stroke="#e11d48" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text id="lbl-h1" class="geom-text math-font font-bold text-rose-700 text-halo" text-anchor="end" dominant-baseline="middle">y₃ - y₁</text>
+
+                            <line id="dim-h2" class="geom-line" stroke="#059669" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text id="lbl-h2" class="geom-text math-font font-bold text-emerald-700 text-halo" text-anchor="start" dominant-baseline="middle">y₃ - y₂</text>
+
+                            <line id="dim-h3" class="geom-line" stroke="#d97706" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text id="lbl-h3" class="geom-text math-font font-bold text-amber-700 text-halo" text-anchor="start" dominant-baseline="middle">y₂ - y₁</text>
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Target Triangle</span>
+                            <span class="text-xs text-slate-600">Consider a triangle defined by three coordinate vertices $V_1, V_2, V_3$. We want to find its exact area geometrically.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. The Bounding Rectangle</span>
+                            <span class="text-xs text-slate-600">Enclose the triangle perfectly inside a bounding rectangle. The area of the rectangle is simply $\text{width} \times \text{height} = (x_2 - x_1)(y_3 - y_1)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-indigo-700 block mb-1">3. The Corner Triangles</span>
+                            <span class="text-xs text-slate-600">The empty space inside the rectangle forms three distinct right-angled triangles ($T_1, T_2, T_3$). Their bases and heights are defined entirely by coordinate differences.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Area Subtraction</span>
+                            <span class="text-xs text-slate-600">The area of our main triangle is precisely the Area of the Rectangle minus the areas of $T_1$, $T_2$, and $T_3$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-emerald-700 block mb-1">5. Algebraic Expansion</span>
+                            <span class="text-xs text-slate-600">Substituting $\frac{1}{2}(\Delta x \cdot \Delta y)$ for each corner triangle and expanding all terms causes massive algebraic cancellation.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-slate-800 block mb-1">6. The Determinant Matrix</span>
+                            <span class="text-xs text-slate-600">The remaining terms factor perfectly into the classic $3 \times 3$ matrix determinant. Geometry perfectly matches linear algebra!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the vertices. Press <strong>Play</strong> to visualize the area decomposition.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Algebraic Derivation</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Geometric Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Area Subtraction</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Let $\text{Rect} = (x_2 - x_1)(y_3 - y_1)$. The areas of the three right triangles are:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2 mb-4">
+                        <li>$T_1 = \frac{1}{2}(x_3 - x_1)(y_3 - y_1)$</li>
+                        <li>$T_2 = \frac{1}{2}(x_2 - x_3)(y_3 - y_2)$</li>
+                        <li>$T_3 = \frac{1}{2}(x_2 - x_1)(y_2 - y_1)$</li>
+                    </ul>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        The area of our target triangle is: $[ABC] = \text{Rect} - T_1 - T_2 - T_3$.
+                    </p>
+                </div>
+
+                <!-- Right: Determinant Expansion -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. The Determinant Matrix</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        If you expand all binomials in the subtraction above, cancel the matching cross-terms, and factor out $\frac{1}{2}$, you are left with:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ [ABC] = \frac{1}{2} \Big| x_1(y_2 - y_3) + x_2(y_3 - y_1) + x_3(y_1 - y_2) \Big| $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        This expression is exactly the expansion by minors of the $3 \times 3$ determinant matrix containing the vertices' coordinates!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            x1: 2, y1: 2,   // Fixed anchor
+            x2: 12, y2: 4,  // Sliders
+            x3: 5, y3: 10,  // Sliders
+            step: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        const SCALE = 30; // Pixels per unit
+        const OX = 40;    // Origin X
+        const OY = 450;   // Origin Y (SVG Y goes down, so 450 is the bottom)
+
+        // DOM Elements Map
+        const DOM = {
+            sliders: { x2: document.getElementById('slider-x2'), y2: document.getElementById('slider-y2'), x3: document.getElementById('slider-x3'), y3: document.getElementById('slider-y3') },
+            vals: { x2: document.getElementById('val-x2'), y2: document.getElementById('val-y2'), x3: document.getElementById('val-x3'), y3: document.getElementById('val-y3') },
+            stats: { rect: document.getElementById('stat-rect'), outer: document.getElementById('stat-outer'), area: document.getElementById('stat-area') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: {
+                boundRect: document.getElementById('bound-rect'),
+                mainTri: document.getElementById('main-tri'),
+                outerTris: document.getElementById('outer-tris'),
+                t1: document.getElementById('poly-t1'), t2: document.getElementById('poly-t2'), t3: document.getElementById('poly-t3'),
+                lblT1: document.getElementById('lbl-t1'), lblT2: document.getElementById('lbl-t2'), lblT3: document.getElementById('lbl-t3'),
+                ptV1: document.getElementById('pt-v1'), ptV2: document.getElementById('pt-v2'), ptV3: document.getElementById('pt-v3'),
+                lblV1: document.getElementById('lbl-v1'), lblV2: document.getElementById('lbl-v2'), lblV3: document.getElementById('lbl-v3'),
+                dimsLayer: document.getElementById('dims-layer'),
+                dimW1: document.getElementById('dim-w1'), dimW2: document.getElementById('dim-w2'), dimW3: document.getElementById('dim-w3'),
+                dimH1: document.getElementById('dim-h1'), dimH2: document.getElementById('dim-h2'), dimH3: document.getElementById('dim-h3'),
+                lblW1: document.getElementById('lbl-w1'), lblW2: document.getElementById('lbl-w2'), lblW3: document.getElementById('lbl-w3'),
+                lblH1: document.getElementById('lbl-h1'), lblH2: document.getElementById('lbl-h2'), lblH3: document.getElementById('lbl-h3')
+            }
+        };
+
+        const descriptions = [
+            "Consider a triangle defined by three coordinate vertices $V_1, V_2, V_3$. We want to find its exact area geometrically.",
+            "Enclose the triangle perfectly inside a bounding rectangle. The area of the rectangle is simply $\\text{width} \\times \\text{height} = (x_2 - x_1)(y_3 - y_1)$.",
+            "The empty space inside the rectangle forms three distinct right-angled triangles ($T_1, T_2, T_3$). Their bases and heights are defined entirely by coordinate differences.",
+            "The area of our main triangle is precisely the Area of the Rectangle minus the areas of $T_1$, $T_2$, and $T_3$.",
+            "Substituting $\\frac{1}{2}(\\Delta x \\cdot \\Delta y)$ for each corner triangle and expanding all terms causes massive algebraic cancellation.",
+            "The remaining terms factor perfectly into the classic $3 \\times 3$ matrix determinant. Geometry perfectly matches linear algebra!"
+        ];
+
+        function init() {
+            // Slider Listeners with constraints
+            DOM.sliders.x2.addEventListener('input', (e) => {
+                let v = parseInt(e.target.value);
+                if (v <= state.x3) { v = state.x3; DOM.sliders.x2.value = v; }
+                state.x2 = v; updateGeometry();
+            });
+            DOM.sliders.y2.addEventListener('input', (e) => {
+                let v = parseInt(e.target.value);
+                if (v >= state.y3) { v = state.y3; DOM.sliders.y2.value = v; }
+                state.y2 = v; updateGeometry();
+            });
+            DOM.sliders.x3.addEventListener('input', (e) => {
+                let v = parseInt(e.target.value);
+                if (v >= state.x2) { v = state.x2; DOM.sliders.x3.value = v; }
+                if (v <= state.x1) { v = state.x1; DOM.sliders.x3.value = v; }
+                state.x3 = v; updateGeometry();
+            });
+            DOM.sliders.y3.addEventListener('input', (e) => {
+                let v = parseInt(e.target.value);
+                if (v <= state.y2) { v = state.y2; DOM.sliders.y3.value = v; }
+                state.y3 = v; updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.x2 = 12; state.y2 = 4; state.x3 = 5; state.y3 = 10;
+                DOM.sliders.x2.value = 12; DOM.sliders.y2.value = 4;
+                DOM.sliders.x3.value = 5; DOM.sliders.y3.value = 10;
+                updateGeometry(); setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        const mapX = (x) => OX + x * SCALE;
+        const mapY = (y) => OY - y * SCALE;
+        const pts = (coords) => coords.map(c => `${mapX(c[0])},${mapY(c[1])}`).join(' ');
+
+        function updateGeometry() {
+            const { x1, y1, x2, y2, x3, y3, step } = state;
+            
+            // Values Update
+            DOM.vals.x2.textContent = x2; DOM.vals.y2.textContent = y2;
+            DOM.vals.x3.textContent = x3; DOM.vals.y3.textContent = y3;
+
+            // Math Areas
+            const aRect = (x2 - x1) * (y3 - y1);
+            const aT1 = 0.5 * (x3 - x1) * (y3 - y1);
+            const aT2 = 0.5 * (x2 - x3) * (y3 - y2);
+            const aT3 = 0.5 * (x2 - x1) * (y2 - y1);
+            const aOuter = aT1 + aT2 + aT3;
+            const aMain = aRect - aOuter;
+
+            DOM.stats.rect.textContent = aRect.toFixed(1);
+            DOM.stats.outer.textContent = aOuter.toFixed(1);
+            DOM.stats.area.textContent = aMain.toFixed(1);
+
+            // Set main triangle points
+            DOM.svg.mainTri.setAttribute('points', pts([[x1,y1], [x2,y2], [x3,y3]]));
+
+            // Set Bounding Box
+            DOM.svg.boundRect.setAttribute('x', mapX(x1));
+            DOM.svg.boundRect.setAttribute('y', mapY(y3));
+            DOM.svg.boundRect.setAttribute('width', (x2 - x1) * SCALE);
+            DOM.svg.boundRect.setAttribute('height', (y3 - y1) * SCALE);
+
+            // Set Corner Triangles
+            DOM.svg.t1.setAttribute('points', pts([[x1,y1], [x1,y3], [x3,y3]]));
+            DOM.svg.t2.setAttribute('points', pts([[x3,y3], [x2,y3], [x2,y2]]));
+            DOM.svg.t3.setAttribute('points', pts([[x1,y1], [x2,y1], [x2,y2]]));
+
+            // Triangle Labels Centers
+            DOM.svg.lblT1.setAttribute('x', mapX(x1 + (x3-x1)/3)); DOM.svg.lblT1.setAttribute('y', mapY(y3 - (y3-y1)/3));
+            DOM.svg.lblT2.setAttribute('x', mapX(x2 - (x2-x3)/3)); DOM.svg.lblT2.setAttribute('y', mapY(y3 - (y3-y2)/3));
+            DOM.svg.lblT3.setAttribute('x', mapX(x2 - (x2-x1)/3)); DOM.svg.lblT3.setAttribute('y', mapY(y1 + (y2-y1)/3));
+
+            // Vertices
+            DOM.svg.ptV1.setAttribute('cx', mapX(x1)); DOM.svg.ptV1.setAttribute('cy', mapY(y1));
+            DOM.svg.lblV1.setAttribute('x', mapX(x1) - 10); DOM.svg.lblV1.setAttribute('y', mapY(y1) + 18);
+            DOM.svg.lblV1.setAttribute('text-anchor', 'end');
+            
+            DOM.svg.ptV2.setAttribute('cx', mapX(x2)); DOM.svg.ptV2.setAttribute('cy', mapY(y2));
+            DOM.svg.lblV2.setAttribute('x', mapX(x2) + 10); DOM.svg.lblV2.setAttribute('y', mapY(y2) + 18);
+            DOM.svg.lblV2.setAttribute('text-anchor', 'start');
+
+            DOM.svg.ptV3.setAttribute('cx', mapX(x3)); DOM.svg.ptV3.setAttribute('cy', mapY(y3));
+            DOM.svg.lblV3.setAttribute('x', mapX(x3)); DOM.svg.lblV3.setAttribute('y', mapY(y3) - 14);
+            DOM.svg.lblV3.setAttribute('text-anchor', 'middle');
+
+            // Dimension Lines (Shown in Step 2)
+            const off = 25;
+            
+            // W1 (T1 Base: x3 - x1) -> Top
+            DOM.svg.dimW1.setAttribute('x1', mapX(x1)); DOM.svg.dimW1.setAttribute('y1', mapY(y3) - off);
+            DOM.svg.dimW1.setAttribute('x2', mapX(x3)); DOM.svg.dimW1.setAttribute('y2', mapY(y3) - off);
+            DOM.svg.lblW1.setAttribute('x', mapX(x1 + (x3-x1)/2)); DOM.svg.lblW1.setAttribute('y', mapY(y3) - off - 8);
+
+            // W2 (T2 Base: x2 - x3) -> Top
+            DOM.svg.dimW2.setAttribute('x1', mapX(x3)); DOM.svg.dimW2.setAttribute('y1', mapY(y3) - off);
+            DOM.svg.dimW2.setAttribute('x2', mapX(x2)); DOM.svg.dimW2.setAttribute('y2', mapY(y3) - off);
+            DOM.svg.lblW2.setAttribute('x', mapX(x3 + (x2-x3)/2)); DOM.svg.lblW2.setAttribute('y', mapY(y3) - off - 8);
+
+            // W3 (T3 Base: x2 - x1) -> Bottom
+            DOM.svg.dimW3.setAttribute('x1', mapX(x1)); DOM.svg.dimW3.setAttribute('y1', mapY(y1) + off);
+            DOM.svg.dimW3.setAttribute('x2', mapX(x2)); DOM.svg.dimW3.setAttribute('y2', mapY(y1) + off);
+            DOM.svg.lblW3.setAttribute('x', mapX(x1 + (x2-x1)/2)); DOM.svg.lblW3.setAttribute('y', mapY(y1) + off + 8);
+
+            // H1 (T1 Height: y3 - y1) -> Left
+            DOM.svg.dimH1.setAttribute('x1', mapX(x1) - off); DOM.svg.dimH1.setAttribute('y1', mapY(y1));
+            DOM.svg.dimH1.setAttribute('x2', mapX(x1) - off); DOM.svg.dimH1.setAttribute('y2', mapY(y3));
+            DOM.svg.lblH1.setAttribute('x', mapX(x1) - off - 8); DOM.svg.lblH1.setAttribute('y', mapY(y1 + (y3-y1)/2));
+
+            // H2 (T2 Height: y3 - y2) -> Right
+            DOM.svg.dimH2.setAttribute('x1', mapX(x2) + off); DOM.svg.dimH2.setAttribute('y1', mapY(y2));
+            DOM.svg.dimH2.setAttribute('x2', mapX(x2) + off); DOM.svg.dimH2.setAttribute('y2', mapY(y3));
+            DOM.svg.lblH2.setAttribute('x', mapX(x2) + off + 8); DOM.svg.lblH2.setAttribute('y', mapY(y2 + (y3-y2)/2));
+
+            // H3 (T3 Height: y2 - y1) -> Right
+            DOM.svg.dimH3.setAttribute('x1', mapX(x2) + off); DOM.svg.dimH3.setAttribute('y1', mapY(y1));
+            DOM.svg.dimH3.setAttribute('x2', mapX(x2) + off); DOM.svg.dimH3.setAttribute('y2', mapY(y2));
+            DOM.svg.lblH3.setAttribute('x', mapX(x2) + off + 8); DOM.svg.lblH3.setAttribute('y', mapY(y1 + (y2-y1)/2));
+
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            op(DOM.svg.boundRect, step >= 1 ? 1 : 0);
+            op(DOM.svg.outerTris, step >= 2 ? 1 : 0);
+            op(DOM.svg.dimsLayer, step >= 2 ? 1 : 0);
+
+            // Step Equation Header Update
+            let eqHtml = "";
+            if (step === 0) {
+                eqHtml = `[ABC] = \\text{?}`;
+            } else if (step === 1) {
+                eqHtml = `\\text{Rect} = (x_2 - x_1)(y_3 - y_1)`;
+            } else if (step === 2) {
+                eqHtml = `T_1 = \\frac{1}{2}\\Delta x \\Delta y, \\quad T_2 = \\dots`;
+            } else if (step === 3) {
+                eqHtml = `[ABC] = \\text{Rect} - T_1 - T_2 - T_3`;
+            } else if (step === 4) {
+                eqHtml = `[ABC] = x_2 y_3 - x_2 y_1 - x_1 y_3 + x_1 y_1 - \\frac{1}{2}(\\dots)`;
+            } else if (step === 5) {
+                eqHtml = `[ABC] = \\frac{1}{2} \\left| \\begin{matrix} x_1 & y_1 & 1 \\\\ x_2 & y_2 & 1 \\\\ x_3 & y_3 & 1 \\end{matrix} \\right|`;
+            }
+
+            DOM.ui.eq.innerHTML = `$$${eqHtml}$$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 80);
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            updateGeometry();
+
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Arctangent Bounds</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.4s ease-out; }
+        .geom-line { transition: all 0.4s ease-out; }
+        .geom-path { transition: d 0.4s ease-out, opacity 0.4s ease; }
+        .geom-text { user-select: none; transition: all 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-chart-area text-indigo-600 text-2xl"></i> Visual Proof: Arctangent Bounds
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Bounding the area of the arctangent integral using rectangles to prove fundamental trigonometric inequalities.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 84px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ \frac{x}{1+x^2} \le \arctan x \le x \quad \text{for } x \ge 0 $$
+            </div>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-3xl">
+                <!-- X Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[240px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Bound <span class="math-font text-sm normal-case text-indigo-600">x</span></span>
+                        <span id="val-x" class="text-indigo-600 font-mono text-sm font-bold">1.50</span>
+                    </div>
+                    <input type="range" id="slider-x" value="1.5" min="0.1" max="3.0" step="0.05" class="w-full">
+                </div>
+
+                <!-- Live Area Readouts -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center min-w-[360px] justify-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Lower Rect</span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded bg-amber-500/40 border border-amber-600"></span>
+                            <span class="font-mono text-sm font-bold text-amber-600" id="stat-lower">0.462</span>
+                        </div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Exact Integral <span class="normal-case math-font text-[11px]">(arctan x)</span></span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded bg-blue-500/25 border border-blue-600"></span>
+                            <span class="font-mono text-sm font-bold text-blue-600" id="stat-exact">0.983</span>
+                        </div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Upper Rect</span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded bg-emerald-500/10 border border-emerald-500 border-dashed"></span>
+                            <span class="font-mono text-sm font-bold text-emerald-600" id="stat-upper">1.500</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex flex-col justify-between min-h-[500px]">
+                
+                <svg id="canvas" class="w-full h-full max-h-[560px]" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <clipPath id="plotClip">
+                            <rect x="70" y="40" width="700" height="380" rx="4"/>
+                        </clipPath>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes & Grid -->
+                    <g id="axes">
+                        <!-- Horizontal Grid Lines -->
+                        <line x1="70" y1="120" x2="750" y2="120" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="6,4"/>
+                        
+                        <!-- t-axis -->
+                        <line x1="70" y1="420" x2="760" y2="420" stroke="#475569" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <!-- y-axis -->
+                        <line x1="80" y1="430" x2="80" y2="30" stroke="#475569" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- Axis Labels -->
+                        <text x="765" y="445" class="math-font font-bold text-lg" fill="#475569">t</text>
+                        <text x="55" y="35" class="math-font font-bold text-lg" fill="#475569">y</text>
+                        <text x="65" y="440" class="math-font font-bold text-sm" fill="#64748b">0</text>
+
+                        <!-- y=1 tick -->
+                        <line x1="74" y1="120" x2="80" y2="120" stroke="#475569" stroke-width="2"/>
+                        <text x="68" y="125" class="font-mono text-sm font-bold" fill="#059669" text-anchor="end">1</text>
+                    </g>
+
+                    <!-- Clipped Plot Area -->
+                    <g clip-path="url(#plotClip)">
+                        
+                        <!-- Upper Rectangle (Overestimate) -->
+                        <rect id="rect-upper" class="geom-rect fade" fill="rgba(16, 185, 129, 0.08)" stroke="#10b981" stroke-width="2.5" stroke-dasharray="6,4" opacity="0"/>
+
+                        <!-- Shaded Integral Area (arctan x) -->
+                        <path id="integral-area" class="geom-path fade" fill="rgba(59, 130, 246, 0.25)" stroke="none" opacity="0"/>
+
+                        <!-- Lower Rectangle (Underestimate) -->
+                        <rect id="rect-lower" class="geom-rect fade" fill="rgba(245, 158, 11, 0.4)" stroke="#d97706" stroke-width="2.5" opacity="0"/>
+
+                        <!-- Main Curve y = 1/(1+t^2) -->
+                        <path id="curve-path" fill="none" stroke="#4f46e5" stroke-width="3.5" stroke-linecap="round"/>
+                        
+                        <!-- Dynamic Vertical Sweep Line at x -->
+                        <line id="line-x" x1="0" y1="420" x2="0" y2="120" stroke="#334155" stroke-width="2" stroke-dasharray="4,4" class="geom-line"/>
+                    </g>
+
+                    <!-- Annotations Layer -->
+                    <g id="annotations">
+                        <!-- Curve Label Badge -->
+                        <g id="badge-curve" transform="translate(450, 160)">
+                            <rect x="-8" y="-18" width="96" height="38" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+                            <!-- We will insert the fraction using pure SVG text manipulation for neatness without mathjax reflows -->
+                            <text x="40" y="-1" class="math-font font-bold text-sm" fill="#1d4ed8" text-anchor="middle">y = 1/(1+t²)</text>
+                        </g>
+
+                        <!-- Marker Label for Bound x -->
+                        <g id="badge-x" class="geom-line">
+                            <line id="tick-x" x1="0" y1="420" x2="0" y2="426" stroke="#334155" stroke-width="2"/>
+                            <text id="lbl-x-val" class="font-mono font-bold text-sm" fill="#334155" text-anchor="middle" y="445">x = 1.50</text>
+                        </g>
+                        
+                        <!-- y = 1/(1+x^2) tick -->
+                        <g id="badge-y-fx" class="geom-line fade" opacity="0">
+                            <line id="tick-y-fx" x1="74" y1="0" x2="80" y2="0" stroke="#d97706" stroke-width="2"/>
+                            <!-- SVG text for fraction representation -->
+                            <text id="lbl-y-fx" class="math-font font-bold text-sm" fill="#b45309" text-anchor="end" x="68" y="4">1/(1+x²)</text>
+                        </g>
+
+                        <!-- Area Labels -->
+                        <g id="lbl-area-lower" class="geom-text fade" opacity="0">
+                            <rect id="bg-area-lower" x="0" y="0" width="70" height="32" rx="4" fill="white" stroke="#d97706" stroke-width="1.5" />
+                            <text id="txt-area-lower" x="35" y="21" class="math-font font-bold text-amber-800 text-[13px]" text-anchor="middle">x / (1+x²)</text>
+                        </g>
+                        
+                        <g id="lbl-area-exact" class="geom-text fade" opacity="0">
+                            <rect id="bg-area-exact" x="0" y="0" width="70" height="32" rx="4" fill="white" stroke="#2563eb" stroke-width="1.5" />
+                            <text id="txt-area-exact" x="35" y="21" class="math-font font-bold text-blue-800 text-[14px]" text-anchor="middle">arctan x</text>
+                        </g>
+
+                        <g id="lbl-area-upper" class="geom-text fade" opacity="0">
+                            <rect id="bg-area-upper" x="0" y="0" width="50" height="32" rx="4" fill="white" stroke="#10b981" stroke-width="1.5" />
+                            <text id="txt-area-upper" x="25" y="21" class="math-font font-bold text-emerald-800 text-[16px]" text-anchor="middle">x</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Integrand Curve</span>
+                            <span class="text-xs text-slate-600">Consider the function $f(t) = \frac{1}{1+t^2}$ on the interval $[0, x]$. Notice that it strictly decreases from a maximum of $1$ down to a minimum of $\frac{1}{1+x^2}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-blue-700 block mb-1">2. The Exact Area</span>
+                            <span class="text-xs text-slate-600">Integrating $f(t)$ from $0$ to $x$ yields the exact area under the curve. Mathematically, the anti-derivative evaluates precisely to $\arctan x$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-amber-600 block mb-1">3. The Lower Rectangle</span>
+                            <span class="text-xs text-slate-600">Because the curve never drops below $\frac{1}{1+x^2}$, we can draw an inscribed rectangle of width $x$ and height $\frac{1}{1+x^2}$. Its area provides a strict lower bound.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-600 block mb-1">4. The Upper Rectangle</span>
+                            <span class="text-xs text-slate-600">Because the curve never exceeds $1$, we can draw a circumscribed rectangle of width $x$ and height $1$. Its area is $x \times 1 = x$, providing a strict upper bound.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-indigo-900 block mb-1">5. The Sandwich Inequality</span>
+                            <span class="text-xs text-slate-600">Geometrically nesting these areas immediately proves our fundamental inequality: $\frac{x}{1+x^2} \le \arctan x \le x$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust bound $x$. Press <strong>Play</strong> to step through the area comparison.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Mathematical Analysis
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Integral Derivation -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. The Definite Integral</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The true area of the region is defined by the definite integral of the function evaluated from $0$ to $x$:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_0^x \frac{1}{1+t^2} \, dt = \Big[\arctan t\Big]_0^x = \arctan x - \arctan 0 = \arctan x $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        This integral property translates the physical area of the blue region into the exact value of the inverse tangent function.
+                    </p>
+                </div>
+
+                <!-- Right: Preserving Inequalities -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Bounding the Integrand</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        On the interval $t \in [0, x]$ (assuming $x > 0$), the function $f(t) = \frac{1}{1+t^2}$ is strictly decreasing. Therefore, its minimum is at the right endpoint and its maximum is at the left endpoint:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \frac{1}{1+x^2} \le \frac{1}{1+t^2} \le 1 $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Because definite integration perfectly preserves inequalities, integrating all three parts from $0$ to $x$ immediately yields $\frac{x}{1+x^2} \le \arctan x \le x$.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            x: 1.5,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Coordinate Mapping Configuration
+        // Domain t in [0, 3.5], Range y in [0, 1.2]
+        const plotConfig = {
+            tMin: 0,
+            tMax: 3.5,
+            yMin: 0,
+            yMax: 1.2,
+            padX: 80,
+            padY: 80,
+            plotW: 680,
+            plotH: 350
+        };
+
+        // DOM Elements Map
+        const DOM = {
+            sliderX: document.getElementById('slider-x'),
+            valX: document.getElementById('val-x'),
+            statLower: document.getElementById('stat-lower'),
+            statExact: document.getElementById('stat-exact'),
+            statUpper: document.getElementById('stat-upper'),
+            btns: {
+                play: document.getElementById('playPauseBtn'),
+                step: document.getElementById('stepBtn'),
+                reset: document.getElementById('resetBtn')
+            },
+            ui: {
+                stepInd: document.getElementById('stepIndicator'),
+                status: document.getElementById('statusText')
+            },
+            svg: {
+                curve: document.getElementById('curve-path'),
+                integralArea: document.getElementById('integral-area'),
+                rectLower: document.getElementById('rect-lower'),
+                rectUpper: document.getElementById('rect-upper'),
+                lineX: document.getElementById('line-x'),
+                badgeX: document.getElementById('badge-x'),
+                tickX: document.getElementById('tick-x'),
+                lblXVal: document.getElementById('lbl-x-val'),
+                badgeYFx: document.getElementById('badge-y-fx'),
+                tickYFx: document.getElementById('tick-y-fx'),
+                lblYFx: document.getElementById('lbl-y-fx'),
+                
+                // Area badges
+                lblAreaLower: document.getElementById('lbl-area-lower'),
+                bgAreaLower: document.getElementById('bg-area-lower'),
+                txtAreaLower: document.getElementById('txt-area-lower'),
+                
+                lblAreaExact: document.getElementById('lbl-area-exact'),
+                bgAreaExact: document.getElementById('bg-area-exact'),
+                txtAreaExact: document.getElementById('txt-area-exact'),
+                
+                lblAreaUpper: document.getElementById('lbl-area-upper'),
+                bgAreaUpper: document.getElementById('bg-area-upper'),
+                txtAreaUpper: document.getElementById('txt-area-upper')
+            }
+        };
+
+        const descriptions = [
+            "Consider the function $f(t) = \\frac{1}{1+t^2}$ on the interval $[0, x]$. Notice that it strictly decreases from a maximum of $1$ down to a minimum of $\\frac{1}{1+x^2}$.",
+            "Integrating $\\frac{1}{1+t^2}$ from $0$ to $x$ yields the exact area under the curve, which mathematically evaluates to $\\arctan x$.",
+            "Because the curve never drops below $\\frac{1}{1+x^2}$, an inscribed rectangle of height $\\frac{1}{1+x^2}$ fits entirely under the curve. Area = $\\frac{x}{1+x^2}$.",
+            "Because the curve never exceeds $1$, a circumscribed rectangle of height $1$ completely encloses the curve. Area = $x \\times 1 = x$.",
+            "Visually comparing the nested areas immediately proves our fundamental inequality: $\\frac{x}{1+x^2} \\le \\arctan x \\le x$."
+        ];
+
+        // Projection helper functions
+        const mapT = (t) => plotConfig.padX + (t / plotConfig.tMax) * plotConfig.plotW;
+        const mapY = (y) => (500 - plotConfig.padY) - (y / plotConfig.yMax) * plotConfig.plotH;
+
+        const yZeroCoord = mapY(0);
+        const yOneCoord = mapY(1.0);
+
+        function f(t) {
+            return 1.0 / (1.0 + t * t);
+        }
+
+        function init() {
+            // Draw static curve once
+            drawStaticCurve();
+
+            // Slider input listener
+            DOM.sliderX.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.x = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.x = 1.5;
+                DOM.sliderX.value = 1.5;
+                setStep(0);
+                updateGeometry();
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function drawStaticCurve() {
+            const steps = 160;
+            const dt = plotConfig.tMax / steps;
+            let dPath = `M ${mapT(0)} ${mapY(f(0))} `;
+            
+            for (let i = 1; i <= steps; i++) {
+                const t = i * dt;
+                const y = f(t);
+                dPath += `L ${mapT(t)} ${mapY(y)} `;
+            }
+            DOM.svg.curve.setAttribute('d', dPath);
+        }
+
+        function updateGeometry() {
+            const x = state.x;
+            const fx = f(x);
+            const lowerArea = x * fx;
+            const exactArea = Math.atan(x);
+            const upperArea = x;
+
+            const xPx = mapT(x);
+            const yFxPx = mapY(fx);
+
+            // Update UI Numerical Stats
+            DOM.valX.textContent = x.toFixed(2);
+            DOM.statLower.textContent = lowerArea.toFixed(3);
+            DOM.statExact.textContent = exactArea.toFixed(3);
+            DOM.statUpper.textContent = upperArea.toFixed(3);
+
+            // 1. Construct Path for Total Integral Area
+            const steps = 100;
+            const dt = x / steps;
+            let dInt = `M ${mapT(0)} ${yZeroCoord} L ${mapT(0)} ${mapY(1)} `;
+            for (let i = 1; i <= steps; i++) {
+                const t = i * dt;
+                dInt += `L ${mapT(t)} ${mapY(f(t))} `;
+            }
+            dInt += `L ${xPx} ${yZeroCoord} Z`;
+            DOM.svg.integralArea.setAttribute('d', dInt);
+
+            // 2. Construct Lower Rectangle (x by f(x))
+            const rectWidth = xPx - plotConfig.padX;
+            const rectHLower = yZeroCoord - yFxPx;
+            DOM.svg.rectLower.setAttribute('x', plotConfig.padX);
+            DOM.svg.rectLower.setAttribute('y', yFxPx);
+            DOM.svg.rectLower.setAttribute('width', Math.max(0, rectWidth));
+            DOM.svg.rectLower.setAttribute('height', Math.max(0, rectHLower));
+
+            // 3. Construct Upper Rectangle (x by 1)
+            const rectHUpper = yZeroCoord - yOneCoord;
+            DOM.svg.rectUpper.setAttribute('x', plotConfig.padX);
+            DOM.svg.rectUpper.setAttribute('y', yOneCoord);
+            DOM.svg.rectUpper.setAttribute('width', Math.max(0, rectWidth));
+            DOM.svg.rectUpper.setAttribute('height', Math.max(0, rectHUpper));
+
+            // 4. Update Sweeper Line at x
+            DOM.svg.lineX.setAttribute('x1', xPx);
+            DOM.svg.lineX.setAttribute('x2', xPx);
+            DOM.svg.lineX.setAttribute('y1', yZeroCoord);
+            DOM.svg.lineX.setAttribute('y2', yOneCoord);
+
+            // 5. Update Annotation Positions
+            DOM.svg.badgeX.setAttribute('transform', `translate(${xPx}, 0)`);
+            DOM.svg.lblXVal.textContent = `x = ${x.toFixed(2)}`;
+
+            // Y f(x) Marker
+            DOM.svg.tickYFx.setAttribute('y1', yFxPx);
+            DOM.svg.tickYFx.setAttribute('y2', yFxPx);
+            DOM.svg.lblYFx.setAttribute('y', yFxPx + 4);
+
+            // Area Labels
+            const midX = plotConfig.padX + rectWidth / 2;
+            
+            // Lower Area Label (inside amber box)
+            DOM.svg.lblAreaLower.setAttribute('transform', `translate(${midX - 35}, ${yZeroCoord - rectHLower / 2 - 16})`);
+            
+            // Exact Area Label (inside blue area)
+            DOM.svg.lblAreaExact.setAttribute('transform', `translate(${midX - 35}, ${yFxPx - 38})`);
+            
+            // Upper Area Label (near top)
+            DOM.svg.lblAreaUpper.setAttribute('transform', `translate(${midX - 25}, ${yOneCoord + 12})`);
+
+            applyStepLogic(state.step);
+        }
+        
+        function applyStepLogic(step) {
+            const op = (el, val) => { if (el) el.style.opacity = val; };
+
+            // Step 1: Integral Area
+            op(DOM.svg.integralArea, step >= 1 ? '1' : '0');
+            op(DOM.svg.lblAreaExact, step === 1 || step === 4 ? '1' : '0');
+
+            // Step 2: Lower Rectangle
+            op(DOM.svg.rectLower, step >= 2 ? '1' : '0');
+            op(DOM.svg.badgeYFx, step >= 2 ? '1' : '0');
+            op(DOM.svg.lblAreaLower, step === 2 || step === 4 ? '1' : '0');
+
+            // Step 3: Upper Rectangle
+            op(DOM.svg.rectUpper, step >= 3 ? '1' : '0');
+            op(DOM.svg.lblAreaUpper, step >= 3 ? '1' : '0');
+
+            // Visual Hierarchy tuning for Step 4 (Sandwich state)
+            if (step === 4) {
+                // Ensure everything is distinctly visible
+                DOM.svg.rectLower.style.fillOpacity = '0.6';
+                DOM.svg.integralArea.style.fillOpacity = '0.4';
+                DOM.svg.rectUpper.style.fillOpacity = '0.1';
+            } else {
+                DOM.svg.rectLower.style.fillOpacity = '0.4';
+                DOM.svg.integralArea.style.fillOpacity = '0.25';
+                DOM.svg.rectUpper.style.fillOpacity = '0.08';
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger Active Highlight
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            applyStepLogic(stepVal);
+
+            // Update Status Explainer Card
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

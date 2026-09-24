@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: GCD and LCM Identity</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        /* Cursor feedback for all control buttons */
+        .btn-action:not(:disabled) {
+            cursor: pointer !important;
+        }
+
+        .btn-action:disabled {
+            cursor: not-allowed !important;
+            opacity: 0.55;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.4s ease-out; }
+        .geom-line { transition: opacity 0.5s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-shapes text-indigo-600 text-2xl"></i> GCD & LCM Area Identity
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            A visual proof that $\gcd(a, b) \times \operatorname{lcm}(a, b) = a \times b$ by physically rearranging square blocks of area.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                <!-- Dynamically injected via JS -->
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-3xl">
+                <!-- A Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex-1 min-w-[150px]">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Side <span class="math-font text-sm normal-case text-indigo-600">a</span></span>
+                        <span id="valA" class="text-indigo-600 font-mono text-sm font-bold">6</span>
+                    </div>
+                    <input type="range" id="sliderA" value="6" min="2" max="16" step="1" class="w-full">
+                </div>
+
+                <!-- B Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex-1 min-w-[150px]">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Side <span class="math-font text-sm normal-case text-emerald-600">b</span></span>
+                        <span id="valB" class="text-emerald-600 font-mono text-sm font-bold">8</span>
+                    </div>
+                    <input type="range" id="sliderB" value="8" min="2" max="16" step="1" class="w-full">
+                </div>
+
+                <!-- Live Area Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center min-w-[280px] justify-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">GCD <span class="math-font normal-case">g</span></span>
+                        <span class="font-mono text-sm font-bold text-rose-600" id="stat-gcd">2</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">LCM <span class="math-font normal-case">L</span></span>
+                        <span class="font-mono text-sm font-bold text-sky-600" id="stat-lcm">24</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Area</span>
+                        <span class="font-mono text-sm font-bold text-indigo-700" id="stat-area">48</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 3</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-arrows-turn-to-dots"></i> Rearrange Blocks</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+                    <!-- Dynamic SVG content injected via JS -->
+                    <g id="dynamic-svg">
+                        <!-- Lightweight fallback visible before JavaScript initializes -->
+                        <rect x="330" y="155" width="340" height="190" rx="8"
+                              fill="#eef2ff" stroke="#6366f1" stroke-width="3"></rect>
+                        <text x="500" y="225" text-anchor="middle"
+                              font-family="Inter, system-ui, sans-serif"
+                              font-size="24" font-weight="700" fill="#3730a3">
+                            a × b rectangle
+                        </text>
+                        <text x="500" y="265" text-anchor="middle"
+                              font-family="Inter, system-ui, sans-serif"
+                              font-size="16" fill="#64748b">
+                            Loading interactive blocks…
+                        </text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Original Area</span>
+                            <span class="text-xs text-slate-600">We start with a rectangle of width $a$ and height $b$. The total geometric area is exactly $a \times b$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Identifying the Blocks</span>
+                            <span class="text-xs text-slate-600">We find the greatest common divisor $g = \gcd(a,b)$. We perfectly divide the rectangle into a grid of smaller square blocks, each measuring $g \times g$. We get $x = a/g$ columns and $y = b/g$ rows.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-amber-600 block mb-1">3. Rearranging the Area</span>
+                            <span class="text-xs text-slate-600">Because these blocks represent discrete, invariant units of area, we can physically rearrange them without adding or losing any overall space. Let's line them all up.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-700 block mb-1">4. The New Dimensions</span>
+                            <span class="text-xs text-slate-600">We align all the blocks into a single continuous row. The new height is exactly $g$. The new length is made of $N = x \cdot y$ blocks of width $g$, which is exactly $\operatorname{lcm}(a,b)$. Area is conserved!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust parameters $a$ and $b$. Press <strong>Rearrange Blocks</strong> to visualize the area conservation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Mathematical Foundation</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Decomposition -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Area Decomposition</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Let $g = \gcd(a, b)$. By definition, $g$ perfectly divides both $a$ and $b$. We can express our side lengths as $a = g \cdot x$ and $b = g \cdot y$, where $x$ and $y$ are coprime integers.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Substituting these into the area formula of the rectangle:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area} = a \times b = (g \cdot x) \times (g \cdot y) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        This mathematically proves that the area can be cleanly divided into a grid of $x \times y$ smaller square blocks, each with an area of $g^2$.
+                    </p>
+                </div>
+
+                <!-- Right: LCM Formation -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. The LCM Construction</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The total number of $g \times g$ blocks is $N = x \cdot y$. If we lay them end-to-end, the total length is $N \cdot g = x \cdot y \cdot g$. 
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Notice that the Least Common Multiple (LCM) of $a$ and $b$ is the smallest multiple of both. Since $a = gx$ and $b = gy$, their LCM is precisely $g \cdot x \cdot y$.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0">
+                        $$ \text{Length} = N \cdot g = (x \cdot y) \cdot g = \operatorname{lcm}(a, b) $$
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 min-w-0">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: Conservation of Area</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    Because we simply rearranged physical blocks of area, the total area of the final $g \times \operatorname{lcm}(a,b)$ strip must equal the total area of the original $a \times b$ rectangle. This provides a rigorous, visual proof of the identity:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ \gcd(a, b) \times \operatorname{lcm}(a, b) = a \times b $$
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            a: 6,
+            b: 8,
+            step: 0,
+            maxSteps: 3,
+            t: 0,
+            isAnimating: false,
+            animReq: null
+        };
+
+        const SVG_W = 1000;
+        const SVG_H = 500;
+        const PAD_X = 260;
+        const PAD_Y = 160;
+
+        // DOM Elements
+        const DOM = {
+            sliders: { a: document.getElementById('sliderA'), b: document.getElementById('sliderB') },
+            vals: { a: document.getElementById('valA'), b: document.getElementById('valB') },
+            stats: { gcd: document.getElementById('stat-gcd'), lcm: document.getElementById('stat-lcm'), area: document.getElementById('stat-area') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: { canvas: document.getElementById('dynamic-svg') }
+        };
+
+        const descriptions = [
+            "We start with a rectangle of width $a$ and height $b$. The total geometric area is exactly $a \\times b$.",
+            "We find the greatest common divisor $g = \\gcd(a,b)$. We perfectly divide the rectangle into a grid of smaller square blocks, each measuring $g \\times g$.",
+            "Because these blocks represent discrete, invariant units of area, we can physically rearrange them without adding or losing any overall space.",
+            "We line up all the blocks into a single continuous row. The new height is exactly $g$, and the new length is $\\operatorname{lcm}(a,b)$, proving the identity!"
+        ];
+
+        function gcd(a, b) {
+            return b === 0 ? a : gcd(b, a % b);
+        }
+
+        function init() {
+            // Slider events
+            DOM.sliders.a.addEventListener('input', (e) => {
+                cancelMorph();
+                state.a = parseInt(e.target.value);
+                setStep(0);
+            });
+
+            DOM.sliders.b.addEventListener('input', (e) => {
+                cancelMorph();
+                state.b = parseInt(e.target.value);
+                setStep(0);
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', () => {
+                cancelMorph();
+                if (state.step < state.maxSteps) setStep(state.step + 1);
+            });
+            DOM.btns.reset.addEventListener('click', () => {
+                cancelMorph();
+                state.a = 6; state.b = 8;
+                DOM.sliders.a.value = 6; DOM.sliders.b.value = 8;
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { a, b, step, t } = state;
+            
+            const g = gcd(a, b);
+            const x = a / g;
+            const y = b / g;
+            const N = x * y;
+            const L = g * N;
+            
+            DOM.vals.a.textContent = a;
+            DOM.vals.b.textContent = b;
+            DOM.stats.gcd.textContent = g;
+            DOM.stats.lcm.textContent = L;
+            DOM.stats.area.textContent = a * b;
+            
+            // Update live equation
+            const eqHtml = `\\gcd(${a}, ${b}) \\times \\operatorname{lcm}(${a}, ${b}) = ${a} \\times ${b} \\implies ${g} \\times ${L} = ${a * b}`;
+            DOM.ui.eq.innerHTML = `$$ ${eqHtml} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 100);
+            }
+            
+            const maxW = Math.max(a, L);
+            const maxH = Math.max(b, g);
+            
+            const scale = Math.min((SVG_W - PAD_X) / maxW, (SVG_H - PAD_Y) / maxH);
+            
+            const w0 = a * scale;
+            const h0 = b * scale;
+            const cx0 = SVG_W / 2 - w0 / 2;
+            const cy0 = SVG_H / 2 - h0 / 2;
+            
+            const w1 = L * scale;
+            const h1 = g * scale;
+            const cx1 = SVG_W / 2 - w1 / 2;
+            const cy1 = SVG_H / 2 - h1 / 2;
+            
+            let svgHtml = `
+                <defs>
+                    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                        <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                    </marker>
+                    <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                        <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                    </marker>
+                </defs>
+            `;
+            
+            let gap = 0;
+            if (step > 0 || t > 0) gap = 1; // 1px separator
+            if (state.isAnimating) {
+                // Expansion during movement
+                gap = 1 + Math.sin(t * Math.PI) * Math.min(10, scale * g * 0.3);
+            }
+            
+            const blockSize = g * scale;
+            const renderSize = Math.max(0.5, blockSize - gap);
+            
+            let blocksHtml = '<g id="blocks-layer">';
+            
+            for (let r = 0; r < y; r++) {
+                for (let c = 0; c < x; c++) {
+                    const i = r * x + c;
+                    
+                    const sx = cx0 + c * blockSize;
+                    const sy = cy0 + r * blockSize;
+                    
+                    const tx = cx1 + i * blockSize;
+                    const ty = cy1;
+                    
+                    // Staggered interpolation for beautiful arc movement
+                    let localT = t;
+                    if (state.isAnimating) {
+                        const staggerDelay = 0.4 * (i / Math.max(1, N - 1));
+                        let rawT = (t - staggerDelay) / 0.6;
+                        rawT = Math.max(0, Math.min(1, rawT));
+                        // easeInOut
+                        localT = rawT < 0.5 ? 2 * rawT * rawT : -1 + (4 - 2 * rawT) * rawT;
+                    }
+                    
+                    const dx = tx - sx;
+                    const dy = ty - sy;
+                    const dist = Math.hypot(dx, dy);
+                    
+                    // Add arc to the path to avoid them sliding completely flat over each other
+                    const arcHeight = dist * 0.25 * Math.sin(localT * Math.PI);
+                    const nx = -dy / dist || 0;
+                    const ny = dx / dist || 0;
+                    
+                    const curX = sx + dx * localT + nx * arcHeight;
+                    const curY = sy + dy * localT + ny * arcHeight;
+                    
+                    // Rainbow hue distribution
+                    const hue = (i / N) * 320;
+                    const color = `hsl(${hue}, 80%, ${step === 0 && t === 0 ? 50 : 60}%)`;
+                    const stroke = (step === 0 && t === 0) ? 'none' : '#ffffff';
+                    const strokeW = (step === 0 && t === 0) ? 0 : 1;
+                    
+                    blocksHtml += `<rect x="${curX + gap/2}" y="${curY + gap/2}" width="${renderSize}" height="${renderSize}" fill="${color}" stroke="${stroke}" stroke-width="${strokeW}" rx="2" />`;
+                }
+            }
+            blocksHtml += '</g>';
+            
+            let dimHtml = '<g id="dims-layer" class="fade">';
+            
+            if (step <= 1 && t === 0) {
+                const off = 25;
+                dimHtml += `<line x1="${cx0}" y1="${cy0 - off}" x2="${cx0 + w0}" y2="${cy0 - off}" stroke="#64748b" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />`;
+                dimHtml += `<text x="${cx0 + w0/2}" y="${cy0 - off - 10}" class="geom-text math-font font-bold text-slate-700" text-anchor="middle" font-size="16">a = ${a}</text>`;
+                
+                dimHtml += `<line x1="${cx0 - off}" y1="${cy0}" x2="${cx0 - off}" y2="${cy0 + h0}" stroke="#64748b" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />`;
+                dimHtml += `<text x="${cx0 - off - 10}" y="${cy0 + h0/2}" class="geom-text math-font font-bold text-slate-700" text-anchor="end" dominant-baseline="middle" font-size="16">b = ${b}</text>`;
+            }
+            
+            if (step === 1 && t === 0) {
+                // Highlight the very first gxg block
+                dimHtml += `<rect x="${cx0}" y="${cy0}" width="${blockSize}" height="${blockSize}" fill="none" stroke="#e11d48" stroke-width="3" stroke-dasharray="4,2" />`;
+                dimHtml += `<text x="${cx0 + blockSize/2}" y="${cy0 + blockSize + 20}" class="geom-text math-font font-bold text-rose-600" text-anchor="middle" font-size="14">g = ${g}</text>`;
+                
+                dimHtml += `<text x="${SVG_W/2}" y="${cy0 + h0 + 40}" class="geom-text math-font font-bold text-indigo-700" text-anchor="middle" font-size="18">N = ${x} × ${y} = ${N} tiles</text>`;
+            }
+            
+            if (step === 3 && t === 1) {
+                const off = 25;
+                dimHtml += `<line x1="${cx1}" y1="${cy1 - off}" x2="${cx1 + w1}" y2="${cy1 - off}" stroke="#64748b" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />`;
+                dimHtml += `<text x="${cx1 + w1/2}" y="${cy1 - off - 10}" class="geom-text math-font font-bold text-slate-700" text-anchor="middle" font-size="16">lcm(${a},${b}) = ${L}</text>`;
+                
+                dimHtml += `<line x1="${cx1 - off}" y1="${cy1}" x2="${cx1 - off}" y2="${cy1 + h1}" stroke="#64748b" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />`;
+                dimHtml += `<text x="${cx1 - off - 10}" y="${cy1 + h1/2}" class="geom-text math-font font-bold text-slate-700" text-anchor="end" dominant-baseline="middle" font-size="16">gcd(${a},${b}) = ${g}</text>`;
+            }
+            
+            dimHtml += '</g>';
+            
+            DOM.svg.canvas.innerHTML = svgHtml + blocksHtml + dimHtml;
+        }
+
+        function setStep(newStep) {
+            if (newStep === 0) { state.t = 0; state.step = 0; updateGeometry(); } 
+            else if (newStep === 1) { state.t = 0; state.step = 1; updateGeometry(); } 
+            else if (newStep === 2) { 
+                state.step = 2; 
+                updateGeometry(); // Ensure start state
+                startMorph(1, () => { setStep(3); }); 
+            } 
+            else if (newStep === 3) { state.t = 1; state.step = 3; updateGeometry(); }
+            
+            DOM.ui.stepInd.textContent = `${state.step} / ${state.maxSteps}`;
+            
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === state.step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            DOM.ui.status.innerHTML = descriptions[state.step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+            
+            DOM.btns.step.disabled = (state.step >= state.maxSteps || state.isAnimating);
+            DOM.sliders.a.disabled = state.isAnimating;
+            DOM.sliders.b.disabled = state.isAnimating;
+        }
+
+        function startMorph(targetT, onComplete) {
+            state.isAnimating = true;
+            DOM.btns.step.disabled = true;
+            DOM.sliders.a.disabled = true;
+            DOM.sliders.b.disabled = true;
+            
+            const duration = 2000; // ms
+            const startTime = performance.now();
+            const startT = state.t;
+            
+            function animate(time) {
+                let progress = (time - startTime) / duration;
+                if (progress > 1) progress = 1;
+                
+                state.t = startT + (targetT - startT) * progress; // Linear progression, ease is inside updateGeometry
+                updateGeometry();
+                
+                if (progress < 1) {
+                    state.animReq = requestAnimationFrame(animate);
+                } else {
+                    state.isAnimating = false;
+                    DOM.btns.play.innerHTML = '<i class="fa-solid fa-arrows-turn-to-dots"></i> Rearrange Blocks';
+                    DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+                    DOM.btns.step.disabled = false;
+                    DOM.sliders.a.disabled = false;
+                    DOM.sliders.b.disabled = false;
+                    if (onComplete) onComplete();
+                }
+            }
+            state.animReq = requestAnimationFrame(animate);
+        }
+
+        function cancelMorph() {
+            if (state.animReq) {
+                cancelAnimationFrame(state.animReq);
+                state.animReq = null;
+            }
+            state.isAnimating = false;
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-arrows-turn-to-dots"></i> Rearrange Blocks';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+            DOM.sliders.a.disabled = false;
+            DOM.sliders.b.disabled = false;
+        }
+
+        function togglePlay() {
+            if (state.isAnimating) {
+                cancelMorph();
+            } else {
+                if (state.step >= 3) {
+                    setStep(0);
+                    setTimeout(() => { if (!state.isAnimating) setStep(2); }, 500);
+                } else if (state.step < 2) {
+                    setStep(2);
+                }
+                
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+            }
+        }
+
+        // Render the interactive SVG as soon as the document structure is ready.
+        // This avoids a blank visual if external fonts/MathJax/Tailwind load slowly.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init, { once: true });
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

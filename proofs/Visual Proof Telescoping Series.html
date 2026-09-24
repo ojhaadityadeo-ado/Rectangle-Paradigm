@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Telescoping Series</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.3s ease; }
+        .geom-text { transition: opacity 0.4s ease; user-select: none; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-infinity text-indigo-600 text-2xl"></i> Visual Proof: Telescoping Series
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Slicing a unit square to demonstrate how an infinite sum of fractions perfectly converges to exactly 1.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap">
+                $$ \sum_{n=1}^{\infty} \frac{1}{n(n+1)} = 1 $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-6 items-center justify-center flex-grow">
+                <!-- N Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[300px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Terms to Sum (<span class="math-font text-sm normal-case text-indigo-600">N</span>)</span>
+                        <span id="val-n" class="text-indigo-600 text-lg font-mono">1</span>
+                    </div>
+                    <input type="range" id="slider-n" value="1" min="1" max="20" step="1" class="w-full">
+                </div>
+
+                <!-- Live Area Value -->
+                <div class="bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-600 flex flex-col items-center justify-center min-w-[150px]">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Covered Area</span>
+                    <span class="font-mono text-lg font-bold text-emerald-600" id="val-area">0.500</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Hatch pattern for missing area -->
+                        <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#cbd5e1" stroke-width="2" opacity="0.8"/>
+                        </pattern>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Base coordinate system centered around OX, OY -->
+                    <!-- We use Javascript to inject the blocks dynamically -->
+                    <g id="dynamic-svg">
+                        <!-- Content injected via JS -->
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Unit Square</span>
+                            <span class="text-xs text-slate-600">We start with a square of total area $1$. The very first term $(n=1)$ is $\frac{1}{2}$, which covers exactly half the square.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. Splitting the Terms</span>
+                            <span class="text-xs text-slate-600">The next term is $\frac{1}{6}$. Notice that $\frac{1}{6} = \frac{1}{2} - \frac{1}{3}$. It perfectly slots into the empty space.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-slate-800 block mb-1">3. Telescoping Sum</span>
+                            <span class="text-xs text-slate-600">As we add more fractions, adjacent terms cancel each other out: $\left(1-\frac{1}{2}\right) + \left(\frac{1}{2}-\frac{1}{3}\right) + \dots$</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-slate-800 block mb-1">4. The Empty Gap</span>
+                            <span class="text-xs text-slate-600">After $N$ terms, the shaded area spans exactly $1 - \frac{1}{N+1}$. The remaining empty gap is precisely $\frac{1}{N+1}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. The Infinite Limit</span>
+                            <span class="text-xs text-slate-600">As $N \to \infty$, the gap $\frac{1}{N+1}$ shrinks to absolute zero. The infinite series perfectly fills the entire unit area!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[120px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the slider to add fractions to the unit square. Press <strong>Play</strong> to visualize the telescoping series.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Algebraic Identity</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Algebraic Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Partial Fraction Decomposition</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The key to this proof lies in recognizing that every single term in our infinite series can be split into the difference of two simpler fractions.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \frac{1}{n(n+1)} = \frac{1}{n} - \frac{1}{n+1} $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Geometrically, this corresponds to the width of the $n$-th rectangular strip in our diagram. It begins at the $x$-coordinate $\frac{n-1}{n}$ and ends exactly at $\frac{n}{n+1}$.
+                    </p>
+                </div>
+
+                <!-- Right: Telescoping sum -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. The Telescoping Collapse</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        When we sum the first $N$ terms together, a beautiful pattern emerges. Each negative fraction perfectly cancels out the positive fraction from the subsequent term.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ S_N = \left(1 - \frac{1}{2}\right) + \left(\frac{1}{2} - \frac{1}{3}\right) + \dots + \left(\frac{1}{N} - \frac{1}{N+1}\right) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Everything in the middle vanishes. The only terms that survive the collapse are the very first number and the very last fraction:
+                    </p>
+                    <div class="text-center font-bold text-indigo-700 mt-2">
+                        $$ S_N = 1 - \frac{1}{N+1} $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: The Infinite Limit</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    We've established that the sum of the first $N$ terms leaves exactly a $\frac{1}{N+1}$ gap of unfilled area in our unit square. To find the sum of the entire infinite series, we take the limit as $N$ approaches infinity:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ \lim_{N \to \infty} S_N = \lim_{N \to \infty} \left( 1 - \frac{1}{N+1} \right) = 1 $$
+                </div>
+                <p class="text-slate-700 leading-relaxed">
+                    Because the term $\frac{1}{N+1}$ shrinks to absolute zero, the entire area of the $1 \times 1$ square is completely filled by the infinite sequence of strips.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            N: 1,
+            isInfinity: false,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG
+        const S_SIZE = 400; // Physical pixel size of the square in SVG
+        const OX = 100;     // Origin X
+        const OY = 80;      // Origin Y
+
+        const colors = [
+            { bg: 'rgba(99, 102, 241, 0.4)', border: '#4f46e5', text: '#312e81' },
+            { bg: 'rgba(139, 92, 246, 0.4)', border: '#7c3aed', text: '#2e1065' },
+            { bg: 'rgba(236, 72, 153, 0.4)', border: '#db2777', text: '#500724' },
+            { bg: 'rgba(244, 63, 94, 0.4)', border: '#e11d48', text: '#4c0519' },
+            { bg: 'rgba(245, 158, 11, 0.4)', border: '#d97706', text: '#451a03' },
+            { bg: 'rgba(16, 185, 129, 0.4)', border: '#059669', text: '#022c22' },
+            { bg: 'rgba(14, 165, 233, 0.4)', border: '#0284c7', text: '#082f49' },
+            { bg: 'rgba(45, 212, 191, 0.4)', border: '#0d9488', text: '#115e59' },
+        ];
+
+        // DOM Elements
+        const DOM = {
+            sliderN: document.getElementById('slider-n'),
+            valN: document.getElementById('val-n'),
+            valArea: document.getElementById('val-area'),
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svgDynamic: document.getElementById('dynamic-svg')
+        };
+
+        const descriptions = [
+            "We start with a square of total area $1$. The very first term $(n=1)$ is $\\frac{1}{2}$, which covers exactly half the square.",
+            "The next term is $\\frac{1}{6}$. Notice that $\\frac{1}{6} = \\frac{1}{2} - \\frac{1}{3}$. It perfectly slots into the empty space.",
+            "As we add more fractions, adjacent terms cancel each other out: $\\left(1-\\frac{1}{2}\\right) + \\left(\\frac{1}{2}-\\frac{1}{3}\\right) + \\dots$",
+            "After $N$ terms, the shaded area spans exactly $1 - \\frac{1}{N+1}$. The remaining empty gap is precisely $\\frac{1}{N+1}$.",
+            "As $N \\to \\infty$, the gap shrinks to absolute zero. The infinite series perfectly fills the entire unit area!"
+        ];
+
+        function init() {
+            // Slider events
+            DOM.sliderN.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.N = parseInt(e.target.value);
+                state.isInfinity = false;
+                
+                // Keep narrative sync loosely if user forces slider
+                if (state.N === 1) setStepOnly(0);
+                else if (state.N === 2) setStepOnly(1);
+                else if (state.N === 4) setStepOnly(2);
+                else if (state.N >= 10) setStepOnly(3);
+                
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                setStep(0); // This resets everything to N=1
+            });
+
+            setStep(0);
+        }
+
+        // Only updates the narrative UI without forcing N values
+        function setStepOnly(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+        }
+
+        function setStep(step) {
+            state.step = step;
+            
+            // Map Steps to N values
+            if (step === 0) { state.N = 1; state.isInfinity = false; }
+            if (step === 1) { state.N = 2; state.isInfinity = false; }
+            if (step === 2) { state.N = 4; state.isInfinity = false; }
+            if (step === 3) { state.N = 10; state.isInfinity = false; }
+            if (step === 4) { state.N = 20; state.isInfinity = true; } // Fake N=20 for drawing, flag infinity
+
+            DOM.sliderN.value = state.N;
+            
+            if (state.isInfinity) {
+                DOM.sliderN.disabled = true;
+            } else {
+                DOM.sliderN.disabled = false;
+            }
+
+            setStepOnly(step);
+            updateGeometry();
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function updateGeometry() {
+            const { N, isInfinity } = state;
+            
+            // UI text
+            DOM.valN.textContent = isInfinity ? "∞" : N;
+            const areaVal = isInfinity ? 1.0 : (1 - 1/(N+1));
+            DOM.valArea.textContent = areaVal.toFixed(3);
+
+            let svgContent = '';
+
+            // Base Background Square
+            svgContent += `<rect x="${OX}" y="${OY}" width="${S_SIZE}" height="${S_SIZE}" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>`;
+
+            const renderN = isInfinity ? 100 : N; // Render lots of tiny strips for infinity
+            let currentX = 0;
+
+            // Render strips
+            for (let i = 1; i <= renderN; i++) {
+                // Width is 1/i - 1/(i+1)
+                const wFrac = (1/i) - (1/(i+1));
+                const w = wFrac * S_SIZE;
+                const color = colors[(i-1) % colors.length];
+
+                svgContent += `<rect class="geom-rect" x="${OX + currentX}" y="${OY}" width="${w}" height="${S_SIZE}" fill="${color.bg}" stroke="${color.border}" stroke-width="1.5" />`;
+
+                // Draw text fraction if block is wide enough
+                if (w > 25 && !isInfinity) {
+                    svgContent += `<text class="geom-text math-font" x="${OX + currentX + w/2}" y="${OY + S_SIZE/2}" font-size="16" fill="${color.text}" text-anchor="middle" dominant-baseline="middle">1/${i*(i+1)}</text>`;
+                }
+                currentX += w;
+            }
+
+            // Render the Remaining Gap
+            if (!isInfinity) {
+                const gapW = (1 / (N+1)) * S_SIZE;
+                
+                // Gap Hatch
+                svgContent += `<rect class="geom-rect fade" x="${OX + currentX}" y="${OY}" width="${gapW}" height="${S_SIZE}" fill="url(#diagonalHatch)" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4"/>`;
+
+                // Gap Dimension Top
+                if (gapW > 10) {
+                    svgContent += `<line class="geom-line fade" x1="${OX + currentX}" y1="${OY - 15}" x2="${OX + S_SIZE}" y2="${OY - 15}" stroke="#475569" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>`;
+                    
+                    // Prevent label overlap on very tiny gaps
+                    if (gapW > 35) {
+                        svgContent += `<text class="geom-text math-font fade" x="${OX + currentX + gapW/2}" y="${OY - 25}" font-size="16" fill="#334155" text-anchor="middle">1/${N+1}</text>`;
+                    } else {
+                         svgContent += `<text class="geom-text math-font fade" x="${OX + S_SIZE + 20}" y="${OY - 15}" font-size="16" fill="#334155" text-anchor="start" dominant-baseline="middle">1/${N+1}</text>`;
+                    }
+                }
+            } else {
+                // Infinity Overlay Text
+                svgContent += `<text class="geom-text math-font fade" x="${OX + S_SIZE/2}" y="${OY + S_SIZE/2}" font-weight="bold" font-size="50" fill="#1e293b" text-anchor="middle" dominant-baseline="middle" opacity="0.6">Sum = 1</text>`;
+            }
+
+            // Bottom Global Dimensions (Always fixed to 1x1)
+            svgContent += `<line class="geom-line" x1="${OX}" y1="${OY + S_SIZE + 25}" x2="${OX + S_SIZE}" y2="${OY + S_SIZE + 25}" stroke="#334155" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>`;
+            svgContent += `<text class="geom-text math-font" x="${OX + S_SIZE/2}" y="${OY + S_SIZE + 50}" font-weight="bold" font-size="20" fill="#1e293b" text-anchor="middle">Area = 1</text>`;
+
+            DOM.svgDynamic.innerHTML = svgContent;
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                // Allow a small delay before first step
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

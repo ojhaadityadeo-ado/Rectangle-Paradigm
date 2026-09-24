@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: e^x ≥ 1 + x</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-path { transition: opacity 0.4s ease; }
+        .geom-line { transition: all 0.2s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.3s ease; }
+        .fade { transition: opacity 0.4s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-chart-area text-indigo-600 text-2xl"></i> Visual Proof: $e^x \ge 1 + x$
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Comparing the area under the exponential curve $y = e^t$ with the area of an inscribed $x \times 1$ rectangle.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 84px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ e^x \ge 1 + x \quad (x \ge 0) $$
+            </div>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <!-- Sliders and Metric Badges -->
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-3xl">
+                <!-- X Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[240px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Bound <span class="math-font text-sm normal-case text-indigo-600">x</span></span>
+                        <span id="val-x" class="text-indigo-600 font-mono text-sm font-bold">1.40</span>
+                    </div>
+                    <input type="range" id="slider-x" value="1.4" min="0.1" max="2.4" step="0.05" class="w-full">
+                </div>
+
+                <!-- Live Area Readouts -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center min-w-[320px] justify-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Integral <span class="normal-case math-font text-[11px]">(e<sup>x</sup> - 1)</span></span>
+                        <span class="font-mono text-sm font-bold text-blue-600" id="stat-int">3.055</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Rectangle <span class="normal-case math-font text-[11px]">(x)</span></span>
+                        <span class="font-mono text-sm font-bold text-emerald-600" id="stat-rect">1.400</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Excess Area</span>
+                        <span class="font-mono text-sm font-bold text-amber-600" id="stat-excess">1.655</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex flex-col justify-between min-h-[500px]">
+                
+                <svg id="canvas" class="w-full h-full max-h-[560px]" viewBox="0 0 860 540" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <clipPath id="plotClip">
+                            <rect x="90" y="40" width="730" height="440" rx="4"/>
+                        </clipPath>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <pattern id="hatchExcess" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="10" stroke="#f59e0b" stroke-width="2" opacity="0.6"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Coordinate Axes & Grid -->
+                    <g id="axes">
+                        <!-- Horizontal Grid Lines -->
+                        <line x1="90" y1="449" x2="820" y2="449" stroke="#e2e8f0" stroke-width="1"/>
+                        <line x1="90" y1="326" x2="820" y2="326" stroke="#e2e8f0" stroke-width="1"/>
+                        <line x1="90" y1="173" x2="820" y2="173" stroke="#e2e8f0" stroke-width="1"/>
+
+                        <!-- t-axis -->
+                        <line x1="90" y1="480" x2="835" y2="480" stroke="#475569" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <!-- y-axis -->
+                        <line x1="90" y1="480" x2="90" y2="30" stroke="#475569" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- Axis Labels -->
+                        <text x="840" y="505" class="math-font font-bold text-lg" fill="#475569">t</text>
+                        <text x="65" y="35" class="math-font font-bold text-lg" fill="#475569">y</text>
+                        <text x="75" y="500" class="math-font font-bold text-sm" fill="#64748b">0</text>
+
+                        <!-- Ticks on t-axis -->
+                        <line x1="371" y1="480" x2="371" y2="486" stroke="#475569" stroke-width="2"/>
+                        <text x="371" y="504" class="font-mono text-xs font-semibold" fill="#64748b" text-anchor="middle">1.0</text>
+                        <line x1="651" y1="480" x2="651" y2="486" stroke="#475569" stroke-width="2"/>
+                        <text x="651" y="504" class="font-mono text-xs font-semibold" fill="#64748b" text-anchor="middle">2.0</text>
+
+                        <!-- Ticks on y-axis -->
+                        <line x1="84" y1="449" x2="90" y2="449" stroke="#475569" stroke-width="2"/>
+                        <text x="78" y="453" class="font-mono text-xs font-bold" fill="#059669" text-anchor="end">1.0</text>
+                        <line x1="84" y1="326" x2="90" y2="326" stroke="#475569" stroke-width="2"/>
+                        <text x="78" y="330" class="font-mono text-xs font-semibold" fill="#64748b" text-anchor="end">5.0</text>
+                        <line x1="84" y1="173" x2="90" y2="173" stroke="#475569" stroke-width="2"/>
+                        <text x="78" y="177" class="font-mono text-xs font-semibold" fill="#64748b" text-anchor="end">10.0</text>
+                    </g>
+
+                    <!-- Clipped Plot Area -->
+                    <g clip-path="url(#plotClip)">
+                        <!-- Shaded Integral Area (e^x - 1) -->
+                        <path id="integral-area" class="geom-path fade" fill="rgba(59, 130, 246, 0.22)" stroke="none" opacity="0"/>
+
+                        <!-- Inscribed x by 1 Rectangle -->
+                        <rect id="rect-inscribed" class="geom-path fade" fill="rgba(16, 185, 129, 0.35)" stroke="#059669" stroke-width="2" opacity="0"/>
+
+                        <!-- Excess Area Region (Between e^t and y=1) -->
+                        <path id="excess-area" class="geom-path fade" fill="url(#hatchExcess)" stroke="#d97706" stroke-width="2" opacity="0"/>
+
+                        <!-- Constant Line y = 1 -->
+                        <line id="line-y-one" x1="90" y1="449" x2="820" y2="449" stroke="#059669" stroke-width="2.5" stroke-dasharray="6,4" class="fade" opacity="0"/>
+
+                        <!-- Main Curve y = e^t -->
+                        <path id="curve-path" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round"/>
+                        
+                        <!-- Dynamic Vertical Sweep Line at x -->
+                        <line id="line-x" x1="0" y1="480" x2="0" y2="0" stroke="#4f46e5" stroke-width="2" stroke-dasharray="4,4" class="fade" opacity="0"/>
+                    </g>
+
+                    <!-- Annotations Layer (Always on top with clean badges) -->
+                    <g id="annotations">
+                        <!-- Curve Label Badge -->
+                        <g id="badge-curve" transform="translate(680, 110)">
+                            <rect x="-8" y="-18" width="86" height="28" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+                            <text x="35" y="1" class="math-font font-bold text-sm" fill="#1d4ed8" text-anchor="middle">y = eᵗ</text>
+                        </g>
+
+                        <!-- y=1 Line Label Badge -->
+                        <g id="badge-one" transform="translate(180, 449)" class="fade" opacity="0">
+                            <rect x="-8" y="-28" width="60" height="24" rx="4" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+                            <text x="22" y="-12" class="math-font font-bold text-xs" fill="#047857" text-anchor="middle">y = 1</text>
+                        </g>
+
+                        <!-- Marker Label for Bound x -->
+                        <g id="badge-x" transform="translate(0, 492)" class="fade" opacity="0">
+                            <text id="lbl-x-val" class="font-mono font-bold text-sm" fill="#4338ca" text-anchor="middle">x = 1.40</text>
+                        </g>
+
+                        <!-- Rectangle Area Badge -->
+                        <g id="badge-rect" class="fade" opacity="0">
+                            <rect id="bg-rect-badge" x="0" y="0" width="84" height="24" rx="4" fill="white" stroke="#059669" stroke-width="1.5"/>
+                            <text id="lbl-rect-text" x="42" y="16" class="font-mono font-bold text-xs" fill="#047857" text-anchor="middle">x × 1 = x</text>
+                        </g>
+
+                        <!-- Excess Area Label -->
+                        <g id="badge-excess" class="fade" opacity="0">
+                            <rect id="bg-excess-badge" x="0" y="0" width="100" height="24" rx="4" fill="white" stroke="#d97706" stroke-width="1.5"/>
+                            <text id="lbl-excess-text" x="50" y="16" class="font-mono font-bold text-xs" fill="#b45309" text-anchor="middle">Excess ≥ 0</text>
+                        </g>
+                    </g>
+                </svg>
+
+                <!-- Color Legend -->
+                <div class="flex flex-wrap items-center justify-center gap-6 py-2 border-t border-slate-200 text-xs font-semibold text-slate-600 bg-slate-50/70">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded bg-blue-500/25 border border-blue-600"></span>
+                        <span>$\int_0^x e^t \, dt = e^x - 1$</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded bg-emerald-500/35 border border-emerald-600"></span>
+                        <span>Rectangle: $x \times 1 = x$</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded bg-amber-400/40 border border-amber-600"></span>
+                        <span>Excess Area $\ge 0$</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Baseline: $e^t \ge 1$</span>
+                            <span class="text-xs text-slate-600">Since $e^0 = 1$ and $e^t$ is strictly increasing, for all $t \ge 0$, the exponential curve stays strictly on or above the horizontal line $y = 1$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-blue-700 block mb-1">2. Area Under the Curve</span>
+                            <span class="text-xs text-slate-600">Integrating $y = e^t$ from $t=0$ to $t=x$ yields the entire shaded blue area: $\int_0^x e^t \, dt = [e^t]_0^x = e^x - 1$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-700 block mb-1">3. The Inscribed Rectangle</span>
+                            <span class="text-xs text-slate-600">Within the exact same interval $[0, x]$, the line $y = 1$ bounds a solid green rectangle of base $x$ and height $1$. Its area is exactly $x \times 1 = x$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Comparing the Areas</span>
+                            <span class="text-xs text-slate-600">Because $e^t \ge 1$, the integral region completely contains the $x \times 1$ rectangle. The golden hatched remainder represents non-negative excess area.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-indigo-900 block mb-1">5. The Conclusion</span>
+                            <span class="text-xs text-slate-600">Therefore, $\text{Total Area} \ge \text{Rectangle Area} \implies e^x - 1 \ge x$. Adding $1$ to both sides gives $e^x \ge 1 + x$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust bound $x$. Press <strong>Play</strong> to step through the area comparison.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mathematical Foundation Section -->
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Mathematical Analysis & Extensions
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Integral Derivation -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. The Definite Integral Argument</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The fundamental property of integration preserves inequalities: if $f(t) \ge g(t)$ on $[0, x]$, then $\int_0^x f(t)\,dt \ge \int_0^x g(t)\,dt$.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_0^x e^t \, dt \ge \int_0^x 1 \, dt $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-2">
+                        Evaluating the anti-derivatives directly:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0">
+                        $$ \big[e^t\big]_0^x \ge \big[t\big]_0^x \implies e^x - 1 \ge x \implies e^x \ge 1 + x $$
+                    </div>
+                </div>
+
+                <!-- Right: Convexity and Tangent Lines -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. The Tangent Line Interpretation</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Why does $1+x$ appear? Consider the tangent line to $g(x) = e^x$ at $x = 0$:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2 mb-4">
+                        <li>The value at origin is $g(0) = e^0 = 1$.</li>
+                        <li>The slope at origin is $g'(0) = e^0 = 1$.</li>
+                        <li>The equation of the tangent line is $y = g(0) + g'(0)(x - 0) = 1 + x$.</li>
+                    </ul>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Because the second derivative $g''(x) = e^x > 0$ for all real $x$, the exponential curve is <strong>strictly convex</strong>. A convex function always lies on or above every one of its tangent lines!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Conclusion Block -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 min-w-0">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">What About Negative Values ($x < 0$)?</h3>
+                <p class="text-slate-700 leading-relaxed mb-3 text-sm">
+                    The convexity proof holds universally for all $x \in \mathbb{R}$. If proving via integrals for negative $x$, note that for $t < 0$, we have $e^t \le 1$. Integrating from $x$ to $0$:
+                </p>
+                <div class="text-center text-lg font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ \int_x^0 e^t \, dt \le \int_x^0 1 \, dt \implies 1 - e^x \le -x \implies e^x \ge 1 + x $$
+                </div>
+                <p class="text-slate-700 leading-relaxed text-sm">
+                    Thus, equality $e^x = 1 + x$ holds strictly if and only if $x = 0$. For any other real number, $e^x > 1 + x$.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            x: 1.4,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Coordinate Mapping Configuration
+        // Domain t in [0, 2.6], Range y in [0, 14.0]
+        const plotConfig = {
+            tMin: 0,
+            tMax: 2.6,
+            yMin: 0,
+            yMax: 14.0,
+            xOrigin: 90,
+            yOrigin: 480,
+            plotWidth: 730,
+            plotHeight: 430
+        };
+
+        // DOM Elements Map
+        const DOM = {
+            sliderX: document.getElementById('slider-x'),
+            valX: document.getElementById('val-x'),
+            statInt: document.getElementById('stat-int'),
+            statRect: document.getElementById('stat-rect'),
+            statExcess: document.getElementById('stat-excess'),
+            btns: {
+                play: document.getElementById('playPauseBtn'),
+                step: document.getElementById('stepBtn'),
+                reset: document.getElementById('resetBtn')
+            },
+            ui: {
+                stepInd: document.getElementById('stepIndicator'),
+                status: document.getElementById('statusText'),
+                eq: document.getElementById('live-equation')
+            },
+            svg: {
+                curve: document.getElementById('curve-path'),
+                integralArea: document.getElementById('integral-area'),
+                rectInscribed: document.getElementById('rect-inscribed'),
+                excessArea: document.getElementById('excess-area'),
+                lineYOne: document.getElementById('line-y-one'),
+                lineX: document.getElementById('line-x'),
+                badgeOne: document.getElementById('badge-one'),
+                badgeX: document.getElementById('badge-x'),
+                lblXVal: document.getElementById('lbl-x-val'),
+                badgeRect: document.getElementById('badge-rect'),
+                bgRectBadge: document.getElementById('bg-rect-badge'),
+                lblRectText: document.getElementById('lbl-rect-text'),
+                badgeExcess: document.getElementById('badge-excess'),
+                bgExcessBadge: document.getElementById('bg-excess-badge'),
+                lblExcessText: document.getElementById('lbl-excess-text')
+            }
+        };
+
+        const descriptions = [
+            "Since $e^0 = 1$ and $e^t$ is strictly increasing, for all $t \\ge 0$, the curve satisfies $e^t \\ge 1$.",
+            "Integrating $y = e^t$ from $t=0$ to $t=x$ yields the entire shaded blue area: $\\int_0^x e^t \\, dt = e^x - 1$.",
+            "Within the exact same interval $[0, x]$, the line $y = 1$ forms a solid green rectangle of area $x \\times 1 = x$.",
+            "Because $e^t \\ge 1$, the integral region completely contains the $x \\times 1$ rectangle. The golden remainder is non-negative excess area.",
+            "Therefore, $\\text{Total Area} \\ge \\text{Rectangle Area} \\implies e^x - 1 \\ge x$. Adding $1$ gives $e^x \\ge 1 + x$!"
+        ];
+
+        // Projection helper functions
+        const mapT = (t) => plotConfig.xOrigin + (t / plotConfig.tMax) * plotConfig.plotWidth;
+        const mapY = (y) => plotConfig.yOrigin - (y / plotConfig.yMax) * plotConfig.plotHeight;
+
+        const yOneCoord = mapY(1.0);
+
+        function init() {
+            // Draw static exponential curve once
+            drawStaticCurve();
+
+            // Slider input listener
+            DOM.sliderX.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.x = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.x = 1.4;
+                DOM.sliderX.value = 1.4;
+                setStep(0);
+                updateGeometry();
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function drawStaticCurve() {
+            const steps = 140;
+            const dt = plotConfig.tMax / steps;
+            let dPath = `M ${mapT(0)} ${mapY(1.0)} `;
+            
+            for (let i = 1; i <= steps; i++) {
+                const t = i * dt;
+                const y = Math.exp(t);
+                dPath += `L ${mapT(t)} ${mapY(y)} `;
+            }
+            DOM.svg.curve.setAttribute('d', dPath);
+        }
+
+        function updateGeometry() {
+            const x = state.x;
+            const expX = Math.exp(x);
+            const xPx = mapT(x);
+            const yAtXPx = mapY(expX);
+
+            // Compute exact areas
+            const areaInt = expX - 1.0;
+            const areaRect = x * 1.0;
+            const areaExcess = areaInt - areaRect;
+
+            // Update UI Numerical Stats
+            DOM.valX.textContent = x.toFixed(2);
+            DOM.statInt.textContent = areaInt.toFixed(3);
+            DOM.statRect.textContent = areaRect.toFixed(3);
+            DOM.statExcess.textContent = areaExcess.toFixed(3);
+
+            // 1. Construct Path for Total Integral Area
+            const steps = 80;
+            const dt = x / steps;
+            let dInt = `M ${mapT(0)} ${plotConfig.yOrigin} L ${mapT(0)} ${yOneCoord} `;
+            for (let i = 1; i <= steps; i++) {
+                const t = i * dt;
+                dInt += `L ${mapT(t)} ${mapY(Math.exp(t))} `;
+            }
+            dInt += `L ${xPx} ${plotConfig.yOrigin} Z`;
+            DOM.svg.integralArea.setAttribute('d', dInt);
+
+            // 2. Construct Inscribed Rectangle (x by 1)
+            const rectWidth = xPx - plotConfig.xOrigin;
+            const rectHeight = plotConfig.yOrigin - yOneCoord;
+            DOM.svg.rectInscribed.setAttribute('x', plotConfig.xOrigin);
+            DOM.svg.rectInscribed.setAttribute('y', yOneCoord);
+            DOM.svg.rectInscribed.setAttribute('width', Math.max(0, rectWidth));
+            DOM.svg.rectInscribed.setAttribute('height', Math.max(0, rectHeight));
+
+            // 3. Construct Path for Excess Area (Between e^t and y=1)
+            let dExcess = `M ${mapT(0)} ${yOneCoord} `;
+            for (let i = 1; i <= steps; i++) {
+                const t = i * dt;
+                dExcess += `L ${mapT(t)} ${mapY(Math.exp(t))} `;
+            }
+            dExcess += `L ${xPx} ${yOneCoord} Z`;
+            DOM.svg.excessArea.setAttribute('d', dExcess);
+
+            // 4. Update Sweeper Line at x
+            DOM.svg.lineX.setAttribute('x1', xPx);
+            DOM.svg.lineX.setAttribute('x2', xPx);
+            DOM.svg.lineX.setAttribute('y1', plotConfig.yOrigin);
+            DOM.svg.lineX.setAttribute('y2', yAtXPx);
+
+            // 5. Update Annotation Positions
+            DOM.svg.badgeX.setAttribute('transform', `translate(${xPx}, 494)`);
+            DOM.svg.lblXVal.textContent = `x = ${x.toFixed(2)}`;
+
+            // Rectangle Label placement
+            const midX = plotConfig.xOrigin + rectWidth / 2;
+            const midYRect = yOneCoord + rectHeight / 2;
+            DOM.svg.badgeRect.setAttribute('transform', `translate(${midX - 42}, ${midYRect - 12})`);
+            DOM.svg.lblRectText.textContent = `x = ${x.toFixed(2)}`;
+
+            // Excess Area Label placement
+            const excessYCenter = Math.min(yOneCoord - 24, (yOneCoord + yAtXPx) / 2);
+            DOM.svg.badgeExcess.setAttribute('transform', `translate(${midX - 50}, ${excessYCenter - 12})`);
+
+            applyStepLogic(state.step);
+        }
+
+        function applyStepLogic(step) {
+            const op = (el, val) => { if (el) el.style.opacity = val; };
+
+            // Step 0: Baseline Curve & y=1
+            op(DOM.svg.lineYOne, step >= 0 ? '1' : '0');
+            op(DOM.svg.badgeOne, step >= 0 ? '1' : '0');
+            op(DOM.svg.lineX, step >= 1 ? '1' : '0');
+            op(DOM.svg.badgeX, step >= 1 ? '1' : '0');
+
+            // Step 1: Integral Area
+            op(DOM.svg.integralArea, step >= 1 ? '1' : '0');
+
+            // Step 2: Rectangle Area
+            op(DOM.svg.rectInscribed, step >= 2 ? '1' : '0');
+            op(DOM.svg.badgeRect, step >= 2 ? '1' : '0');
+
+            // Step 3: Excess Area
+            op(DOM.svg.excessArea, step >= 3 ? '1' : '0');
+            op(DOM.svg.badgeExcess, step >= 3 ? '1' : '0');
+
+            // Update Equation Banner using clean LaTeX
+            let eqLatex = "";
+            const xVal = state.x.toFixed(2);
+            const expVal = Math.exp(state.x).toFixed(2);
+            const linVal = (1 + state.x).toFixed(2);
+
+            if (step === 0) {
+                eqLatex = `e^t \\ge 1 \\quad \\text{for all } t \\ge 0`;
+            } else if (step === 1) {
+                eqLatex = `\\int_0^{${xVal}} e^t \\, dt = e^{${xVal}} - 1 = ${(Math.exp(state.x) - 1).toFixed(3)}`;
+            } else if (step === 2) {
+                eqLatex = `\\text{Rectangle Area} = \\int_0^{${xVal}} 1 \\, dt = ${xVal} \\times 1 = ${xVal}`;
+            } else if (step === 3) {
+                eqLatex = `\\int_0^{${xVal}} (e^t - 1) \\, dt \\ge 0 \\implies e^{${xVal}} - 1 = ${xVal} + \\text{Excess}`;
+            } else if (step === 4) {
+                eqLatex = `e^{${xVal}} \\ge 1 + ${xVal} \\quad (${expVal} \\ge ${linVal})`;
+            }
+
+            DOM.ui.eq.innerHTML = `$$ ${eqLatex} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 80);
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger Active Highlight
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            applyStepLogic(stepVal);
+
+            // Update Status Explainer Card
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

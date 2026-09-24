@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Young's Inequality</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.3s ease-out; mix-blend-mode: multiply; }
+        .geom-line { transition: all 0.4s ease; }
+        .geom-path { transition: d 0.4s ease-out, opacity 0.4s ease; }
+        .fade { transition: opacity 0.4s ease; }
+        
+        .rect-vert { fill: rgba(245, 158, 11, 0.5); stroke: #d97706; stroke-width: 1.5px; }
+        .rect-horz { fill: rgba(16, 185, 129, 0.5); stroke: #059669; stroke-width: 1.5px; }
+        
+        .rect-vert-solid { fill: rgba(245, 158, 11, 0.4); stroke: none; }
+        .rect-horz-solid { fill: rgba(16, 185, 129, 0.4); stroke: none; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-chart-area text-indigo-600 text-2xl"></i> Visual Proof: Young's Inequality
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Bounding the area of a rectangle by summing the horizontal and vertical rectangular slices of an increasing function and its inverse.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap flex items-center gap-4">
+                <span class="text-slate-800">$a \cdot b \le$</span>
+                <span class="text-amber-600">$\int_0^a f(x)\,dx$</span>
+                <span class="text-slate-800">$+$</span>
+                <span class="text-emerald-700">$\int_0^b f^{-1}(y)\,dy$</span>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow">
+                <!-- A Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[150px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Width <span class="math-font text-sm normal-case text-indigo-600">a</span></span>
+                        <span id="val-a" class="text-indigo-600 text-lg font-mono">1.8</span>
+                    </div>
+                    <input type="range" id="slider-a" value="1.8" min="0.5" max="2.8" step="0.1" class="w-full">
+                </div>
+
+                <!-- B Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[150px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Height <span class="math-font text-sm normal-case text-indigo-600">b</span></span>
+                        <span id="val-b" class="text-indigo-600 text-lg font-mono">2.2</span>
+                    </div>
+                    <input type="range" id="slider-b" value="2.2" min="0.5" max="2.8" step="0.1" class="w-full">
+                </div>
+
+                <!-- Curve Exponent Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[150px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Curve <span class="math-font text-sm normal-case text-slate-700">k</span></span>
+                        <span id="val-k" class="text-slate-700 text-lg font-mono">2.0</span>
+                    </div>
+                    <input type="range" id="slider-k" value="2.0" min="1.1" max="3.0" step="0.1" class="w-full">
+                </div>
+                
+                <!-- N Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[150px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Rects <span class="math-font text-sm normal-case text-rose-600">N</span></span>
+                        <span id="val-n" class="text-rose-600 text-lg font-mono">10</span>
+                    </div>
+                    <input type="range" id="slider-n" value="10" min="2" max="50" step="1" class="w-full">
+                </div>
+
+                <!-- Live Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Rect ($ab$)</span>
+                        <span class="font-mono text-sm font-bold text-indigo-700" id="stat-ab">3.96</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Sum of Parts</span>
+                        <span class="font-mono text-sm font-bold text-slate-800" id="stat-sum">5.12</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[550px]" viewBox="0 0 600 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Axes & Grid -->
+                    <g id="axes">
+                        <!-- Grid Lines Faint -->
+                        <path d="M 60 440 L 560 440 M 60 320 L 560 320 M 60 200 L 560 200 M 60 80 L 560 80" stroke="#e2e8f0" stroke-width="1" />
+                        <path d="M 60 440 L 60 40 M 180 440 L 180 40 M 300 440 L 300 40 M 420 440 L 420 40 M 540 440 L 540 40" stroke="#e2e8f0" stroke-width="1" />
+
+                        <!-- X Axis -->
+                        <line x1="60" y1="440" x2="560" y2="440" stroke="#334155" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <text x="550" y="465" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="18" fill="#334155">x</text>
+                        
+                        <!-- Y Axis -->
+                        <line x1="60" y1="440" x2="60" y2="40" stroke="#334155" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <text x="40" y="50" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="18" fill="#334155">y</text>
+                        
+                        <!-- Origin -->
+                        <text x="45" y="460" font-family="Times New Roman" font-size="14" fill="#64748b">0</text>
+                    </g>
+
+                    <g id="dynamic-layers">
+                        
+                        <!-- Group for Vertical Rectangles (Integral f(x)) -->
+                        <g id="group-vertical" class="fade" opacity="0"></g>
+
+                        <!-- Group for Horizontal Rectangles (Integral f^-1(y)) -->
+                        <g id="group-horizontal" class="fade" opacity="0"></g>
+
+                        <!-- The Function Curve f(x) -->
+                        <path id="curve-path" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        
+                        <!-- Target Rectangle (a x b) -->
+                        <rect id="rect-target" class="geom-rect fade" fill="none" stroke="#4f46e5" stroke-width="3" stroke-dasharray="6,4" opacity="0" />
+
+                        <!-- Dimension Lines for a and b -->
+                        <g id="dims-group" class="fade" opacity="0">
+                            <!-- Dim a -->
+                            <line id="line-dim-a" class="geom-line" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4" />
+                            <text id="lbl-a" class="geom-text math-font font-bold text-indigo-700 text-lg" text-anchor="middle" dominant-baseline="top" y="450">a</text>
+                            
+                            <!-- Dim b -->
+                            <line id="line-dim-b" class="geom-line" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4" />
+                            <text id="lbl-b" class="geom-text math-font font-bold text-indigo-700 text-lg" text-anchor="end" dominant-baseline="middle" x="50">b</text>
+                        </g>
+
+                        <!-- Intersection / Corner Point -->
+                        <circle id="pt-corner" r="5" fill="#4f46e5" class="fade" opacity="0" />
+
+                        <!-- Curve Label -->
+                        <text id="lbl-fx" x="420" y="80" class="math-font font-bold text-lg fill-slate-800 fade" opacity="1">y = f(x)</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Target Rectangle</span>
+                            <span class="text-xs text-slate-600">Construct a rectangle defined by an arbitrary width $a$ and height $b$. The geometric area of this target box is exactly $ab$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-amber-600 block mb-1">2. Vertical Slices</span>
+                            <span class="text-xs text-slate-600">Approximate the area under the curve from $x=0$ to $x=a$ using vertical rectangles. Summing these yields an upper bound for $\int_0^a f(x) dx$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-600 block mb-1">3. Horizontal Slices</span>
+                            <span class="text-xs text-slate-600">Approximate the area left of the curve from $y=0$ to $y=b$ using horizontal rectangles. Summing these yields an upper bound for $\int_0^b f^{-1}(y) dy$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-slate-800 block mb-1">4. The Union Cover</span>
+                            <span class="text-xs text-slate-600">Overlaying both sets of rectangles reveals a crucial geometric fact: they completely cover the $a \times b$ box! Thus, their combined area must be $\ge ab$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-indigo-700 block mb-1">5. The Infinite Limit</span>
+                            <span class="text-xs text-slate-600">As the number of rectangles approaches infinity ($N \to \infty$), the discrete steps smooth into exact continuous integrals, preserving the covering property.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-rose-600 block mb-1">6. The Equality Condition</span>
+                            <span class="text-xs text-slate-600">The redundant overlap (darkest region) vanishes entirely, making the sum perfectly equal to $ab$, if and only if the corner of the rectangle lies exactly on the curve ($b = f(a)$).</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust parameters $a$, $b$, and $N$. Press <strong>Play</strong> to visualize the rectangular bounds.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving Hölder's Inequality</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Integration -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">1. Applying the Integrals</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Young's inequality is foundational for proving Hölder's inequality. Let's explicitly calculate the exact continuous areas for a specific curve $f(x) = x^{p-1}$ where $p > 1$.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_0^a x^{p-1} dx = \frac{a^p}{p} $$
+                    </div>
+                </div>
+
+                <!-- Right: Inverse Function -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. The Inverse Area</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The inverse function gives $x$ in terms of $y$: $f^{-1}(y) = y^{\frac{1}{p-1}}$.
+                        Let's define a new number $q$ such that $\frac{1}{p} + \frac{1}{q} = 1$, which implies $\frac{1}{p-1} = q-1$.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_0^b y^{q-1} dy = \frac{b^q}{q} $$
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 min-w-0">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">3. The Final Synthesis</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    By overlaying the rectangles, we visually proved that the sum of the vertical and horizontal areas must always completely cover the target rectangle $ab$. Replacing the continuous integrals with our evaluated terms gives the classic arithmetic-geometric form of Young's Inequality:
+                </p>
+                <div class="text-center text-xl font-bold text-indigo-700 my-4 overflow-x-auto min-w-0">
+                    $$ ab \le \frac{a^p}{p} + \frac{b^q}{q} $$
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            a: 1.8,
+            b: 2.2,
+            k: 2.0,
+            n: 10,
+            step: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null,
+            limitAnimInterval: null,
+            snapAnimReq: null
+        };
+
+        // Constants for SVG Mapping
+        const SVG_W = 600;
+        const SVG_H = 500;
+        const PAD_X = 60;
+        const PAD_Y = 60; // Distance from bottom (500 - 60 = 440 is the baseline)
+        const DOMAIN_MAX = 3.5; // Max x and y value to calculate math
+        
+        const GRAPH_W = 500; // 560 - 60
+        const GRAPH_H = 380; // 440 - 60
+
+        // Coordinate scaling functions
+        const mapX = (x) => PAD_X + (x / DOMAIN_MAX) * GRAPH_W;
+        const mapY = (y) => (SVG_H - PAD_Y) - (y / DOMAIN_MAX) * GRAPH_H;
+        const mapW = (w) => (w / DOMAIN_MAX) * GRAPH_W;
+        const mapH = (h) => (h / DOMAIN_MAX) * GRAPH_H;
+
+        // DOM Elements
+        const DOM = {
+            sliders: { a: document.getElementById('slider-a'), b: document.getElementById('slider-b'), k: document.getElementById('slider-k'), n: document.getElementById('slider-n') },
+            vals: { a: document.getElementById('val-a'), b: document.getElementById('val-b'), k: document.getElementById('val-k'), n: document.getElementById('val-n') },
+            stats: { ab: document.getElementById('stat-ab'), sum: document.getElementById('stat-sum') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                curve: document.getElementById('curve-path'), rectTarget: document.getElementById('rect-target'),
+                grpVert: document.getElementById('group-vertical'), grpHorz: document.getElementById('group-horizontal'),
+                dimsGroup: document.getElementById('dims-group'), ptCorner: document.getElementById('pt-corner'),
+                lineDimA: document.getElementById('line-dim-a'), lblA: document.getElementById('lbl-a'),
+                lineDimB: document.getElementById('line-dim-b'), lblB: document.getElementById('lbl-b'),
+                lblFx: document.getElementById('lbl-fx')
+            }
+        };
+
+        const descriptions = [
+            "Construct a rectangle defined by an arbitrary width $a$ and height $b$. The geometric area of this target box is exactly $ab$.",
+            "Approximate the area under the curve from $x=0$ to $x=a$ using vertical rectangles. Summing these yields an upper bound for $\\int_0^a f(x) dx$.",
+            "Approximate the area left of the curve from $y=0$ to $y=b$ using horizontal rectangles. Summing these yields an upper bound for $\\int_0^b f^{-1}(y) dy$.",
+            "Overlaying both sets of rectangles reveals they completely cover the $a \\times b$ box! Their combined area is strictly $\\ge ab$.",
+            "As the number of rectangles approaches infinity ($N \\to \\infty$), the jagged edges smooth out, perfecting the continuous integral bounds.",
+            "The redundant overlap vanishes, making the sum perfectly equal to $ab$, if and only if the corner of the rectangle snaps exactly to the curve ($b = f(a)$)."
+        ];
+
+        function init() {
+            // Slider Listeners
+            ['a', 'b', 'k', 'n'].forEach(key => {
+                DOM.sliders[key].addEventListener('input', (e) => {
+                    cancelAnimations();
+                    if(state.step === 5 && key !== 'n') setStep(4); // Drop out of equality state if a, b, or k adjusted
+                    if(state.step === 4 && key === 'n') setStep(3); // Drop out of infinity state if N adjusted
+                    state[key] = parseFloat(e.target.value);
+                    updateGeometry();
+                });
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation(); cancelAnimations();
+                state.a = 1.8; state.b = 2.2; state.k = 2.0; state.n = 10;
+                DOM.sliders.a.value = 1.8; DOM.sliders.b.value = 2.2; 
+                DOM.sliders.k.value = 2.0; DOM.sliders.n.value = 10;
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function cancelAnimations() {
+            if (state.limitAnimInterval) clearInterval(state.limitAnimInterval);
+            if (state.snapAnimReq) cancelAnimationFrame(state.snapAnimReq);
+            DOM.sliders.n.disabled = false;
+            DOM.sliders.a.disabled = false;
+            DOM.sliders.b.disabled = false;
+            DOM.stats.sum.style.color = "#1e293b";
+        }
+
+        // Draw the main background curve highly robustly
+        function drawCurvePaths() {
+            const f = (x) => Math.pow(x, state.k);
+            const finv = (y) => Math.pow(y, 1 / state.k);
+            
+            let dFull = `M ${mapX(0)} ${mapY(0)}`;
+            const step = 0.05;
+            
+            for (let x = 0; x <= DOMAIN_MAX + 0.5; x += step) {
+                let y = f(x);
+                if (y > DOMAIN_MAX + 0.5) {
+                    dFull += ` L ${mapX(x)} ${mapY(y)}`;
+                    break; 
+                }
+                dFull += ` L ${mapX(x)} ${mapY(y)}`;
+            }
+            
+            DOM.svg.curve.setAttribute('d', dFull);
+            
+            // Reposition curve label
+            const lX = Math.min(DOMAIN_MAX - 0.5, finv(DOMAIN_MAX - 0.5));
+            DOM.svg.lblFx.setAttribute('x', mapX(lX) + 15);
+            DOM.svg.lblFx.setAttribute('y', mapY(f(lX)));
+        }
+
+        function updateGeometry() {
+            const { a, b, k, n, step } = state;
+            const f = (x) => Math.pow(x, k);
+            const finv = (y) => Math.pow(y, 1 / k);
+            
+            // Math computations
+            const areaRect = a * b;
+            
+            // Render Vertical Rectangles (Integral of f(x))
+            // We use upper sums to guarantee coverage
+            let vertHTML = '';
+            let dx = a / n;
+            let sumA1 = 0;
+            const isInfinite = n > 40;
+
+            for(let i=0; i<n; i++) {
+                let x_val = (i+1)*dx;
+                let h = f(x_val);
+                sumA1 += h * dx;
+                
+                // Cap height visually to keep SVG clean
+                let cappedH = Math.min(h, DOMAIN_MAX + 1); 
+                
+                let rClass = isInfinite ? 'rect-vert-solid' : 'rect-vert';
+                // Adjust width slightly in infinite mode to prevent aliasing gaps
+                let widthAdjust = isInfinite ? 0.5 : 0;
+                
+                vertHTML += `<rect x="${mapX(i*dx)}" y="${mapY(cappedH)}" width="${mapW(dx) + widthAdjust}" height="${mapH(cappedH)}" class="${rClass}" />`;
+            }
+            
+            // Render Horizontal Rectangles (Integral of f^-1(y))
+            // We use right Riemann sum on y-axis to guarantee coverage
+            let horzHTML = '';
+            let dy = b / n;
+            let sumA2 = 0;
+            
+            for(let i=0; i<n; i++) {
+                let y_val = (i+1)*dy;
+                let w = finv(y_val);
+                sumA2 += w * dy;
+                
+                let rClass = isInfinite ? 'rect-horz-solid' : 'rect-horz';
+                let heightAdjust = isInfinite ? 0.5 : 0;
+                
+                horzHTML += `<rect x="${mapX(0)}" y="${mapY(y_val)}" width="${mapW(w)}" height="${mapH(dy) + heightAdjust}" class="${rClass}" />`;
+            }
+
+            // The True Integrals if N is "infinite"
+            if (isInfinite) {
+                sumA1 = Math.pow(a, k+1)/(k+1);
+                sumA2 = Math.pow(b, (1/k)+1)/((1/k)+1);
+            }
+
+            const areaSum = sumA1 + sumA2;
+
+            // UI Texts
+            DOM.vals.a.textContent = a.toFixed(2);
+            DOM.vals.b.textContent = b.toFixed(2);
+            DOM.vals.k.textContent = k.toFixed(1);
+            DOM.vals.n.textContent = isInfinite ? '∞' : n;
+            
+            DOM.stats.ab.textContent = areaRect.toFixed(2);
+            DOM.stats.sum.textContent = areaSum.toFixed(2);
+
+            // Map Pixels
+            const pxA = mapX(a);
+            const pyB = mapY(b);
+            const pOrgX = mapX(0);
+            const pOrgY = mapY(0);
+
+            // Apply SVG updates
+            drawCurvePaths();
+            DOM.svg.grpVert.innerHTML = vertHTML;
+            DOM.svg.grpHorz.innerHTML = horzHTML;
+
+            // Target Rectangle
+            DOM.svg.rectTarget.setAttribute('x', pOrgX);
+            DOM.svg.rectTarget.setAttribute('y', pyB);
+            DOM.svg.rectTarget.setAttribute('width', pxA - pOrgX);
+            DOM.svg.rectTarget.setAttribute('height', pOrgY - pyB);
+
+            // Corner Point
+            DOM.svg.ptCorner.setAttribute('cx', pxA);
+            DOM.svg.ptCorner.setAttribute('cy', pyB);
+
+            // Dimensions
+            DOM.svg.lineDimA.setAttribute('x1', pxA); DOM.svg.lineDimA.setAttribute('y1', pOrgY);
+            DOM.svg.lineDimA.setAttribute('x2', pxA); DOM.svg.lineDimA.setAttribute('y2', pyB);
+            DOM.svg.lblA.setAttribute('x', pxA);
+            
+            DOM.svg.lineDimB.setAttribute('x1', pOrgX); DOM.svg.lineDimB.setAttribute('y1', pyB);
+            DOM.svg.lineDimB.setAttribute('x2', pxA); DOM.svg.lineDimB.setAttribute('y2', pyB);
+            DOM.svg.lblB.setAttribute('y', pyB);
+
+            applyStepOpacities(step);
+        }
+
+        // Limit Animation (Step 4)
+        function triggerLimitAnimation() {
+            cancelAnimations();
+            DOM.sliders.n.disabled = true;
+
+            // Animate N rapidly to 50 to simulate infinity
+            state.limitAnimInterval = setInterval(() => {
+                if (state.n < 50) {
+                    state.n += Math.max(1, Math.ceil(state.n * 0.15));
+                    if (state.n > 50) state.n = 50;
+                    DOM.sliders.n.value = state.n;
+                    updateGeometry();
+                } else {
+                    clearInterval(state.limitAnimInterval);
+                }
+            }, 50);
+        }
+
+        // Equality Animation (Step 5)
+        function triggerEqualityAnimation() {
+            cancelAnimations();
+            DOM.sliders.a.disabled = true;
+            DOM.sliders.b.disabled = true;
+            
+            const f = (x) => Math.pow(x, state.k);
+            const finv = (y) => Math.pow(y, 1 / state.k);
+
+            // We want b to equal f(a). 
+            let targetB = f(state.a);
+            let targetA = state.a;
+            
+            if (targetB > DOMAIN_MAX) {
+                targetA = finv(DOMAIN_MAX - 0.2);
+                targetB = f(targetA);
+            }
+
+            let startB = state.b; 
+            let startA = state.a;
+            let frames = 0;
+            const totalFrames = 40; 
+
+            const animateSnap = () => {
+                frames++;
+                const progress = frames / totalFrames;
+                const ease = 1 - Math.pow(1 - progress, 3); // Cubic ease out
+                
+                state.b = startB + (targetB - startB) * ease;
+                state.a = startA + (targetA - startA) * ease;
+                
+                DOM.sliders.b.value = state.b;
+                DOM.sliders.a.value = state.a;
+                
+                updateGeometry();
+
+                if (frames < totalFrames) {
+                    state.snapAnimReq = requestAnimationFrame(animateSnap);
+                } else {
+                    DOM.stats.sum.style.color = "#10b981"; // Emerald highlight for equality
+                }
+            };
+            
+            animateSnap();
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            op(DOM.svg.rectTarget, step >= 0 ? 1 : 0);
+            op(DOM.svg.dimsGroup, step >= 0 ? 1 : 0);
+            op(DOM.svg.ptCorner, step >= 0 ? 1 : 0);
+
+            op(DOM.svg.grpVert, step >= 1 ? 1 : 0);
+            op(DOM.svg.grpHorz, step >= 2 ? 1 : 0);
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.step.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            // Logic Hooks
+            if (stepVal !== 4 && stepVal !== 5) {
+                cancelAnimations();
+            }
+            
+            updateGeometry();
+
+            if (stepVal === 4) {
+                triggerLimitAnimation();
+            } else if (stepVal === 5) {
+                // Ensure we are at high N first
+                if (state.n < 50) {
+                    state.n = 50; DOM.sliders.n.value = 50;
+                }
+                triggerEqualityAnimation();
+            }
+
+            // Text Update
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    cancelAnimations();
+                    state.n = 10; DOM.sliders.n.value = 10;
+                    state.a = 1.8; DOM.sliders.a.value = 1.8;
+                    state.b = 2.2; DOM.sliders.b.value = 2.2;
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 4000); // 4 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

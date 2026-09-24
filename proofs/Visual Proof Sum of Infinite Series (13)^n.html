@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Sum of Infinite Series (1/3)^n</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 980px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 640px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* SVG Shapes Styling */
+        .outer-border {
+            fill: #f1f5f9;
+            stroke: #334155;
+            stroke-width: 2.5;
+        }
+
+        .series-fill {
+            fill: #c2410c; /* Rust / Warm Accent */
+            stroke: #1e293b;
+            stroke-width: 1;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .balance-fill {
+            fill: #ffffff;
+            stroke: #1e293b;
+            stroke-width: 1;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .revealed-shape {
+            opacity: 1;
+        }
+
+        /* Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #1d4ed8; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Ledger Table Styles */
+        .ledger-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px dashed #e2e8f0;
+            opacity: 0.3;
+            transition: opacity 0.4s ease;
+            font-size: 0.95rem;
+        }
+        .ledger-row.active {
+            opacity: 1;
+            background-color: #fff7ed;
+            font-weight: 600;
+        }
+        .swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            display: inline-block;
+            background-color: #c2410c;
+            border: 1px solid #7c2d12;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: $\sum_{n=1}^{\infty} \left(\frac{1}{3}\right)^n = \frac{1}{2}$
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-orange-50 text-orange-950 rounded-lg mb-6 shadow-sm border border-orange-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$\frac{1}{3} + \left(\frac{1}{3}\right)^2 + \left(\frac{1}{3}\right)^3 + \dots = \frac{1}{2}$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-orange-700 font-bold text-lg bg-orange-100 px-3 py-1 rounded-md border border-orange-200">0 / 8</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button id="playBtn" class="btn-action btn-play">
+                        ▶ Play Auto
+                    </button>
+                    <button id="stepBtn" class="btn-action btn-secondary">
+                        Step →
+                    </button>
+                    <button id="resetBtn" class="btn-action btn-secondary">
+                        ↺ Reset
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- SVG Visualization Window (2 columns wide) -->
+            <div class="lg:col-span-2 visualization-area mb-0">
+                <div class="svg-container">
+                    <svg id="fractalSvg" viewBox="0 0 600 400" width="600" height="400"></svg>
+                </div>
+            </div>
+
+            <!-- Area Summation Ledger (1 column wide) -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-2 flex justify-between items-center">
+                        <span>Area Summation</span>
+                        <span class="text-xs font-normal text-slate-500">Term Value</span>
+                    </h3>
+                    <div id="ledgerContainer" class="space-y-1">
+                        <!-- Ledger rows populated by JS -->
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t-2 border-slate-800 flex justify-between items-center font-bold text-slate-900 text-lg">
+                    <span>Target Limit</span>
+                    <span class="text-orange-700">$$\frac{1}{2} = 0.5$$</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Explanation Box -->
+        <div class="bg-orange-50 border-l-4 border-orange-600 p-5 rounded-r-lg shadow-sm mb-6 min-h-[90px] flex items-center">
+            <p class="text-slate-800 text-lg leading-relaxed w-full transition-opacity duration-300" id="status-text">
+                Press <strong>Play Auto</strong> or <strong>Step →</strong> to begin recursively partitioning the rectangle.
+            </p>
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">How to understand this proof:</h3>
+            <ol class="list-decimal list-inside space-y-3 text-slate-700 text-lg">
+                <li>
+                    <strong>Start with a unit rectangle:</strong> The outer rectangle has a total area of $1$.
+                </li>
+                <li>
+                    <strong>Step 1 ($n=1$):</strong> Divide the rectangle vertically into $3$ equal columns. Shade the left column ($\frac{1}{3}$) in rust red for our series. Notice that we intentionally leave the right column ($\frac{1}{3}$) blank (white) as a "balance".
+                </li>
+                <li>
+                    <strong>Step 2 ($n=2$):</strong> Divide the remaining center rectangle horizontally into $3$ equal rows. Shade the top row ($\frac{1}{9}$) and leave the bottom row blank ($\frac{1}{9}$).
+                </li>
+                <li>
+                    <strong>Spiral Recursion ($n \to \infty$):</strong> We repeat this $1/3$ division continuously in a spiral order (Left $\to$ Top $\to$ Right $\to$ Bottom). At every single step $n$, for every shaded block of area $\left(\frac{1}{3}\right)^n$ added to the series, an <em>identical unshaded block</em> of area $\left(\frac{1}{3}\right)^n$ is left blank.
+                </li>
+                <li>
+                    <strong>The Final Limit:</strong> Since every shaded piece is paired with an identical unshaded piece, the total shaded area equals the unshaded area:
+                    $$\text{Shaded Area} = \text{Unshaded Area}$$
+                    Because together they completely fill the outer rectangle of area $1$, the infinite sum of shaded pieces must equal exactly half:
+                </li>
+            </ol>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto mt-6">
+                $$\frac{1}{3} + \left(\frac{1}{3}\right)^2 + \left(\frac{1}{3}\right)^3 + \dots = \frac{1}{2}$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const maxSteps = 8;
+            let currentStep = 0;
+            let isPlaying = false;
+            let playInterval = null;
+
+            // DOM Elements
+            const svg = document.getElementById('fractalSvg');
+            const stepIndicator = document.getElementById('stepIndicator');
+            const playBtn = document.getElementById('playBtn');
+            const stepBtn = document.getElementById('stepBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const statusText = document.getElementById('status-text');
+            const liveEq = document.getElementById('liveEq');
+            const ledgerContainer = document.getElementById('ledgerContainer');
+
+            // SVG dimensions
+            const W = 600;
+            const H = 400;
+            const svgNS = 'http://www.w3.org/2000/svg';
+
+            const seriesElements = [];
+            const balanceElements = [];
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            function createSvgEl(tag, attrs) {
+                const el = document.createElementNS(svgNS, tag);
+                for (const k in attrs) el.setAttribute(k, attrs[k]);
+                return el;
+            }
+
+            function initVisualization() {
+                svg.innerHTML = '';
+                ledgerContainer.innerHTML = '';
+
+                for (let i = 0; i <= maxSteps; i++) {
+                    seriesElements[i] = [];
+                    balanceElements[i] = [];
+                }
+
+                // Outer border representing Total Area = 1
+                svg.appendChild(createSvgEl('rect', { x: 0, y: 0, width: W, height: H, class: 'outer-border' }));
+
+                // Recursive function to slice space into thirds
+                function build(x, y, w, h, step, dir) {
+                    if (step > maxSteps) return;
+
+                    let sRect, bRect;
+                    let nextX = x, nextY = y, nextW = w, nextH = h;
+
+                    if (dir === 0) { // Vertical split, Left shaded, Right balance
+                        let thirdW = w / 3;
+                        sRect = createSvgEl('rect', { x: x, y: y, width: thirdW, height: h, class: 'series-fill' });
+                        bRect = createSvgEl('rect', { x: x + 2 * thirdW, y: y, width: thirdW, height: h, class: 'balance-fill' });
+                        nextX = x + thirdW; nextW = thirdW;
+                    } else if (dir === 1) { // Horizontal split, Top shaded, Bottom balance
+                        let thirdH = h / 3;
+                        sRect = createSvgEl('rect', { x: x, y: y, width: w, height: thirdH, class: 'series-fill' });
+                        bRect = createSvgEl('rect', { x: x, y: y + 2 * thirdH, width: w, height: thirdH, class: 'balance-fill' });
+                        nextY = y + thirdH; nextH = thirdH;
+                    } else if (dir === 2) { // Vertical split, Right shaded, Left balance
+                        let thirdW = w / 3;
+                        sRect = createSvgEl('rect', { x: x + 2 * thirdW, y: y, width: thirdW, height: h, class: 'series-fill' });
+                        bRect = createSvgEl('rect', { x: x, y: y, width: thirdW, height: h, class: 'balance-fill' });
+                        nextX = x + thirdW; nextW = thirdW;
+                    } else if (dir === 3) { // Horizontal split, Bottom shaded, Top balance
+                        let thirdH = h / 3;
+                        sRect = createSvgEl('rect', { x: x, y: y + 2 * thirdH, width: w, height: thirdH, class: 'series-fill' });
+                        bRect = createSvgEl('rect', { x: x, y: y, width: w, height: thirdH, class: 'balance-fill' });
+                        nextY = y + thirdH; nextH = thirdH;
+                    }
+
+                    svg.appendChild(sRect);
+                    svg.appendChild(bRect);
+
+                    seriesElements[step].push(sRect);
+                    balanceElements[step].push(bRect);
+
+                    build(nextX, nextY, nextW, nextH, step + 1, (dir + 1) % 4);
+                }
+
+                build(0, 0, W, H, 1, 0);
+
+                // Build Ledger rows
+                for (let i = 1; i <= maxSteps; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'ledger-row';
+                    row.id = `ledger-${i}`;
+
+                    const denom = Math.pow(3, i);
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="swatch"></span>
+                            <span>$n=${i}$</span>
+                        </div>
+                        <div class="font-mono text-slate-700">$\\frac{1}{${denom}}$</div>
+                    `;
+                    ledgerContainer.appendChild(row);
+                }
+            }
+
+            function calculateSum(n) {
+                let sum = 0;
+                for (let i = 1; i <= n; i++) {
+                    sum += Math.pow(1 / 3, i);
+                }
+                return sum;
+            }
+
+            function updateExplanation() {
+                let text = "";
+                if (currentStep === 0) {
+                    text = "Press <strong>Play Auto</strong> or <strong>Step →</strong> to begin recursively partitioning the rectangle of total area $1$.";
+                } else if (currentStep === 1) {
+                    text = "<strong>Step 1:</strong> The rectangle is divided vertically into thirds. Left column ($\\\frac{1}{3}$) is shaded rust red, while the right column ($\\\frac{1}{3}$) is left blank as a balance.";
+                } else if (currentStep === 2) {
+                    text = "<strong>Step 2:</strong> The center section is divided horizontally into thirds. Top row ($\\\frac{1}{9}$) is shaded, bottom row ($\\\frac{1}{9}$) is left blank.";
+                } else if (currentStep === 3 || currentStep === 4) {
+                    text = "<strong>Step " + currentStep + ":</strong> Partitioning continues in a spiral pattern. Each step adds a shaded piece of $\\left(\\frac{1}{3}\\right)^{" + currentStep + "}$ matched by an unshaded twin.";
+                } else if (currentStep < maxSteps) {
+                    text = "<strong>Step " + currentStep + ":</strong> The remaining unpartitioned center space shrinks rapidly toward $0$.";
+                } else {
+                    text = "<strong>Infinite Limit (Q.E.D.):</strong> Every shaded piece is perfectly paired with an unshaded piece. Since together they tile the entire area $1$, the infinite sum equals exactly $\\frac{1}{2}$.";
+                }
+
+                statusText.style.opacity = '0';
+                setTimeout(() => {
+                    statusText.innerHTML = text;
+                    statusText.style.opacity = '1';
+                    updateMathJax();
+                }, 150);
+            }
+
+            function renderMath() {
+                let eq = "";
+                if (currentStep === 0) {
+                    eq = "$$\\text{Total Area} = 1$$";
+                } else if (currentStep === 1) {
+                    eq = "$$\\frac{1}{3} = 0.33333$$";
+                } else if (currentStep === 2) {
+                    eq = "$$\\frac{1}{3} + \\left(\\frac{1}{3}\\right)^2 = 0.44444$$";
+                } else if (currentStep === 3) {
+                    eq = "$$\\frac{1}{3} + \\left(\\frac{1}{3}\\right)^2 + \\left(\\frac{1}{3}\\right)^3 = 0.48148$$";
+                } else if (currentStep < maxSteps) {
+                    let sum = calculateSum(currentStep);
+                    eq = "$$\\frac{1}{3} + \\left(\\frac{1}{3}\\right)^2 + \\dots + \\left(\\frac{1}{3}\\right)^{" + currentStep + "} = " + sum.toFixed(5) + "$$";
+                } else {
+                    eq = "$$\\frac{1}{3} + \\left(\\frac{1}{3}\\right)^2 + \\left(\\frac{1}{3}\\right)^3 + \\dots = \\frac{1}{2} = 0.5$$";
+                }
+
+                liveEq.innerHTML = eq;
+                updateMathJax();
+            }
+
+            function applyStep(targetStep) {
+                currentStep = targetStep;
+                stepIndicator.textContent = `${currentStep} / ${maxSteps}`;
+
+                // Update shape visibility
+                for (let i = 1; i <= maxSteps; i++) {
+                    const isVisible = i <= currentStep;
+                    
+                    seriesElements[i].forEach(el => {
+                        if (isVisible) el.classList.add('revealed-shape');
+                        else el.classList.remove('revealed-shape');
+                    });
+
+                    balanceElements[i].forEach(el => {
+                        if (isVisible) el.classList.add('revealed-shape');
+                        else el.classList.remove('revealed-shape');
+                    });
+
+                    const ledgerRow = document.getElementById(`ledger-${i}`);
+                    if (ledgerRow) {
+                        if (isVisible) ledgerRow.classList.add('active');
+                        else ledgerRow.classList.remove('active');
+                    }
+                }
+
+                stepBtn.disabled = currentStep >= maxSteps;
+                updateExplanation();
+                renderMath();
+            }
+
+            function stopAutoPlay() {
+                isPlaying = false;
+                clearInterval(playInterval);
+                playBtn.innerHTML = '▶ Play Auto';
+                playBtn.className = 'btn-action btn-play';
+            }
+
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    stopAutoPlay();
+                } else {
+                    if (currentStep >= maxSteps) {
+                        applyStep(0);
+                    }
+                    isPlaying = true;
+                    playBtn.innerHTML = '⏸ Pause';
+                    playBtn.className = 'btn-action btn-secondary';
+
+                    playInterval = setInterval(() => {
+                        if (currentStep < maxSteps) {
+                            applyStep(currentStep + 1);
+                        } else {
+                            stopAutoPlay();
+                        }
+                    }, 1200);
+                }
+            });
+
+            stepBtn.addEventListener('click', () => {
+                stopAutoPlay();
+                if (currentStep < maxSteps) {
+                    applyStep(currentStep + 1);
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                stopAutoPlay();
+                applyStep(0);
+            });
+
+            // Initial Draw
+            initVisualization();
+            applyStep(0);
+        });
+    </script>
+</body>
+</html>

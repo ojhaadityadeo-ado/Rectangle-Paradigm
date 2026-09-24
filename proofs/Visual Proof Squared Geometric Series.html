@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Squared Geometric Series</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.4s ease-out; }
+        .geom-line { transition: all 0.4s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.4s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-grid-2 text-indigo-600 text-2xl"></i> Visual Proof: Squared Geometric Series
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Summing an infinite scaled 2D grid in two different ways to extract the derivative sequence of a geometric series.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap">
+                $$ 1 + 2x + 3x^2 + 4x^3 + \dots = \sum_{k=0}^{\infty} (k+1)x^k = \frac{1}{(1-x)^2} $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-6 items-center justify-center flex-grow">
+                <!-- X Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[300px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Ratio (<span class="math-font text-sm normal-case text-indigo-600">x</span>)</span>
+                        <span id="val-x" class="text-indigo-600 text-lg font-mono font-bold">0.50</span>
+                    </div>
+                    <input type="range" id="slider-x" value="0.5" min="0.1" max="0.75" step="0.05" class="w-full">
+                </div>
+
+                <!-- Live Area Value -->
+                <div class="bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-600 flex flex-col items-center justify-center min-w-[150px]">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Grid Area</span>
+                    <span class="font-mono text-lg font-bold text-emerald-600" id="val-area">4.00</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 850 550" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Static Boundaries and Grid Guides -->
+                    <g id="grid-base">
+                        <!-- Dimension Lines (Top) -->
+                        <line id="dim-top" x1="150" y1="50" x2="550" y2="50" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                        <text id="lbl-top" class="geom-text math-font" x="350" y="40" font-size="18" font-weight="bold" fill="#334155" text-anchor="middle">1 / (1-x)</text>
+                        
+                        <!-- Dimension Lines (Left) -->
+                        <line id="dim-left" x1="100" y1="100" x2="100" y2="500" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                        <text id="lbl-left" class="geom-text math-font" x="85" y="300" font-size="18" font-weight="bold" fill="#334155" text-anchor="end" dominant-baseline="middle">1 / (1-x)</text>
+                    </g>
+
+                    <!-- Javascript injects the self-similar cells here -->
+                    <g id="dynamic-cells"></g>
+                    
+                    <!-- Highlighting Overlays (Injected via JS) -->
+                    <g id="highlight-layer"></g>
+
+                    <!-- Boundary Box -->
+                    <rect x="150" y="100" width="400" height="400" fill="none" stroke="#1e293b" stroke-width="3" />
+                </svg>
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Bounding Square</span>
+                            <span class="text-xs text-slate-600">Consider a large square whose width and height are exactly equal to the infinite geometric sum $\sum_{i=0}^{\infty} x^i = \frac{1}{1-x}$. Total Area is $\frac{1}{(1-x)^2}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. The Cartesian Grid</span>
+                            <span class="text-xs text-slate-600">We subdivide the square into an infinite grid. Cell $(i,j)$ has width $x^j$ and height $x^i$. Thus, every cell is a true rectangle with area $x^{i+j}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-indigo-700 block mb-1">3. Summing by Rows</span>
+                            <span class="text-xs text-slate-600">Let's sum horizontally. Row $i$ equals $x^i(1 + x + x^2 + \dots) = \frac{x^i}{1-x}$. Adding up all the rows confirms the total area evaluates to $\frac{1}{(1-x)^2}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Summing by Anti-Diagonals</span>
+                            <span class="text-xs text-slate-600">Now group cells diagonally where $i+j = k$. For example, $k=2$ contains exactly 3 cells $(x^2, x^2, x^2)$. Every diagonal $k$ has exactly $k+1$ cells of area $x^k$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. The Final Equation</span>
+                            <span class="text-xs text-slate-600">Summing all the diagonals gives $1 + 2x + 3x^2 + \dots$, which must equal the exact same total grid area computed in step 3!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the ratio parameter $x$. Press <strong>Play</strong> to watch the geometric sums unfold.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Algebraic Identity</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Row Summation -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Area via Rows</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The visual grid physically embodies a multiplication table. If we compute the total area by summing each row independently, row $i$ has a constant height of $x^i$, and its width stretches across the entire box:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Row } i = x^i(1 + x + x^2 + \dots) = \frac{x^i}{1-x} $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Summing all rows $\sum_{i=0}^\infty \frac{x^i}{1-x}$ yields the total area $\frac{1}{(1-x)^2}$. This mathematically confirms the "squaring" of the standard geometric series.
+                    </p>
+                </div>
+
+                <!-- Right: Diagonal Summation -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-amber-700">2. Area via Anti-Diagonals</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Instead of reading horizontally, what if we sum the cells diagonally from bottom-left to top-right? Let's track cells where the row index $i$ and column index $j$ add up to a constant $k$.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{For } i+j=k, \text{ Area} = x^i x^j = x^k $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        There are exactly $k+1$ possible pairs of non-negative integers $(i,j)$ that sum to $k$. Thus, diagonal $k$ contributes precisely $(k+1)x^k$ to the total area. Setting the total diagonal sum equal to the total area derives our identity!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            x: 0.5,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG
+        const S_SIZE = 400; // Total physical size of the grid mapped to 1/(1-x)
+        const OX = 150;      // Origin X
+        const OY = 100;      // Origin Y (Top-Left of grid)
+
+        // DOM Elements
+        const DOM = {
+            sliderX: document.getElementById('slider-x'),
+            valX: document.getElementById('val-x'),
+            valArea: document.getElementById('val-area'),
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: { cells: document.getElementById('dynamic-cells'), highlights: document.getElementById('highlight-layer') }
+        };
+
+        const descriptions = [
+            "Consider a large square whose width and height are exactly $\\frac{1}{1-x}$. Total Area is $\\frac{1}{(1-x)^2}$.",
+            "We subdivide the square into an infinite grid. Cell $(i,j)$ has area $x^i \\times x^j = x^{i+j}$.",
+            "Summing horizontally: Row $i$ has area $\\frac{x^i}{1-x}$. All rows sum to $\\frac{1}{(1-x)^2}$.",
+            "Summing diagonally: The gold outline shows $i+j=2$. There are exactly $3$ cells of area $x^2$. Total is $3x^2$.",
+            "Summing all diagonals matches the total area: $1 + 2x + 3x^2 + 4x^3 \\dots = \\frac{1}{(1-x)^2}$."
+        ];
+
+        function init() {
+            DOM.sliderX.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.x = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.x = 0.5;
+                DOM.sliderX.value = 0.5;
+                setStep(0); 
+                updateGeometry();
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const x = state.x;
+            
+            // UI text
+            DOM.valX.textContent = x.toFixed(2);
+            const totalArea = 1 / Math.pow(1 - x, 2);
+            DOM.valArea.textContent = totalArea.toFixed(2);
+
+            let cellsHtml = '';
+            let highlightsHtml = '';
+            
+            // To scale correctly:
+            // Math total width = 1/(1-x). SVG total width = S_SIZE = 400.
+            // Math 1 unit = S_SIZE * (1-x) pixels.
+            const pUnit = S_SIZE * (1 - x);
+
+            // We render rows and columns until they are too small to see (< 0.5px)
+            let currentY = OY;
+            for (let i = 0; i < 20; i++) {
+                let h = pUnit * Math.pow(x, i);
+                if (h < 0.5) break; // Terminate early to save DOM elements
+                
+                let currentX = OX;
+                for (let j = 0; j < 20; j++) {
+                    let w = pUnit * Math.pow(x, j);
+                    if (w < 0.5) break;
+
+                    // Checkerboard Colors
+                    const isEven = ((i + j) % 2 === 0);
+                    const fill = isEven ? '#D6604D' : '#4A63E7'; // Rose vs Indigo
+                    const baseOpacity = isEven ? '0.55' : '0.35';
+                    
+                    // Opacity overrides based on Step State
+                    let finalOpacity = baseOpacity;
+                    if (state.step === 2) {
+                        // Highlight Row 1 (i=1) specifically for explanation, dim rest
+                        if (i === 1) finalOpacity = baseOpacity;
+                        else finalOpacity = '0.1';
+                    } else if (state.step === 3) {
+                        // Highlight Anti-diagonal k=2 specifically
+                        if (i + j === 2) finalOpacity = baseOpacity;
+                        else finalOpacity = '0.1';
+                    }
+
+                    cellsHtml += `<rect class="geom-rect" x="${currentX}" y="${currentY}" width="${w}" height="${h}" fill="${fill}" fill-opacity="${finalOpacity}" />`;
+
+                    // Generate Text Labels if box is reasonably sized
+                    if (w > 25 && h > 20) {
+                        let txt = '';
+                        if (i + j === 0) txt = '1';
+                        else if (i + j === 1) txt = 'x';
+                        else txt = `x${toSuper(i+j)}`;
+
+                        // Special coloring for highlighted steps
+                        let tColor = (state.step >= 1) ? '#1e293b' : 'transparent';
+                        if (state.step === 2 && i !== 1) tColor = 'rgba(30,41,59, 0.2)';
+                        if (state.step === 3 && (i+j !== 2)) tColor = 'rgba(30,41,59, 0.2)';
+
+                        cellsHtml += `<text class="geom-text math-font" x="${currentX + w/2}" y="${currentY + h/2 + 2}" font-size="${Math.min(16, h-4)}" font-weight="bold" fill="${tColor}" text-anchor="middle" dominant-baseline="middle">${txt}</text>`;
+                    }
+
+                    // Step Highlights (Borders/Arrows)
+                    if (state.step === 2 && i === 1 && j === 0) {
+                        // Draw Row Brace/Highlight
+                        highlightsHtml += `<rect class="geom-rect fade" x="${OX}" y="${currentY}" width="${S_SIZE}" height="${h}" fill="none" stroke="#4f46e5" stroke-width="3" />`;
+                        highlightsHtml += `<text class="geom-text math-font fade" x="${OX + S_SIZE + 15}" y="${currentY + h/2}" font-size="16" font-weight="bold" fill="#4f46e5" dominant-baseline="middle">Row Sum = x / (1-x)</text>`;
+                    }
+
+                    if (state.step === 3 && i + j === 2) {
+                        // Draw Diagonal Cell Highlights
+                        highlightsHtml += `<rect class="geom-rect fade" x="${currentX}" y="${currentY}" width="${w}" height="${h}" fill="none" stroke="#f59e0b" stroke-width="3.5" />`;
+                        
+                        // Line connecting the diagonal
+                        if (i === 2 && j === 0) {
+                            // Calculate centers of (0,2) and (2,0)
+                            const startX = OX + pUnit/2;
+                            const startY = currentY + h/2;
+                            const endX = OX + pUnit + pUnit*x + (pUnit*Math.pow(x,2))/2; // Center of (0,2)
+                            const endY = OY + pUnit/2;
+
+                            highlightsHtml += `<path class="geom-line fade" d="M ${startX - 20} ${startY + 20} L ${endX + 20} ${endY - 20}" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4" />`;
+                            
+                            const labelX = OX + S_SIZE + 15;
+                            const labelY = endY - 15;
+                            highlightsHtml += `<path class="geom-line fade" d="M ${endX + 20} ${endY - 20} L ${labelX - 10} ${labelY}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.5" />`;
+                            highlightsHtml += `<text class="geom-text math-font fade" x="${labelX}" y="${labelY}" font-size="16" font-weight="bold" fill="#d97706" text-anchor="start" dominant-baseline="middle">k=2 (3 cells): Sum = 3x²</text>`;
+                        }
+                    }
+
+                    currentX += w;
+                }
+                currentY += h;
+            }
+
+            // Outside Axis Labels (1, x, x^2)
+            if (state.step >= 1) {
+                let axY = OY;
+                let axX = OX;
+                for(let k=0; k<5; k++) {
+                    let sz = pUnit * Math.pow(x, k);
+                    if (sz < 15) break;
+                    let txt = k === 0 ? '1' : (k === 1 ? 'x' : `x${toSuper(k)}`);
+                    
+                    // Left Axis
+                    highlightsHtml += `<text class="geom-text math-font fade" x="${OX - 15}" y="${axY + sz/2}" font-size="14" fill="#64748b" text-anchor="end" dominant-baseline="middle">${txt}</text>`;
+                    // Top Axis
+                    highlightsHtml += `<text class="geom-text math-font fade" x="${axX + sz/2}" y="${OY - 15}" font-size="14" fill="#64748b" text-anchor="middle" dominant-baseline="bottom">${txt}</text>`;
+                    
+                    axY += sz;
+                    axX += sz;
+                }
+            }
+
+            DOM.svg.cells.innerHTML = cellsHtml;
+            DOM.svg.highlights.innerHTML = highlightsHtml;
+        }
+
+        // Helper for unicode superscripts
+        function toSuper(num) {
+            const supers = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+            return num.toString().split('').map(d => supers[d]).join('');
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+            updateGeometry();
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                // Allow a small delay before first step
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5 seconds per step gives time to read MathJax
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

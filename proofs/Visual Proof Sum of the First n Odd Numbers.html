@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Sum of the First n Odd Numbers</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 550px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* SVG Element Styles */
+        .grid-bg {
+            stroke: #e2e8f0;
+            stroke-width: 1;
+        }
+
+        .anim-group {
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform-origin: center;
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .block-number {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            fill: #ffffff;
+            text-anchor: middle;
+            dominant-baseline: central;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+        .dim-line {
+            stroke: #475569;
+            stroke-width: 2;
+            fill: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .dim-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            fill: #334155;
+            text-anchor: middle;
+            dominant-baseline: central;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #0284c7;
+            color: white;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #0369a1; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        input[type=range] {
+            accent-color: #0284c7;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Sum of the First $n$ Odd Numbers
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-sky-50 text-sky-950 rounded-lg mb-6 shadow-sm border border-sky-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$S = 1 + 3 + 5 + \dots + (2n-1)$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            
+            <div class="flex items-center gap-6">
+                <!-- N Slider -->
+                <div class="flex flex-col gap-1.5 w-48">
+                    <div class="flex justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Max terms (<span class="italic text-sm">n</span>)</span>
+                        <span id="n-val" class="text-sky-700 font-bold text-sm">8</span>
+                    </div>
+                    <input type="range" id="inputN" value="8" min="3" max="10" step="1" class="w-full cursor-pointer">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-sky-700 font-bold text-lg bg-sky-100 px-3 py-1 rounded-md border border-sky-200">0 / 8</span>
+                </div>
+                <button id="playBtn" class="btn-action btn-play">▶ Play Auto</button>
+                <button id="prevBtn" class="btn-action btn-secondary" disabled>← Prev</button>
+                <button id="nextBtn" class="btn-action btn-secondary">Next →</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- SVG Visualization Window -->
+            <div class="lg:col-span-2 visualization-area mb-0">
+                <div class="svg-container">
+                    <svg id="proofSvg" viewBox="0 0 550 550">
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 2 L 10 5 L 0 8 z" fill="#475569" />
+                            </marker>
+                        </defs>
+                        <!-- Background Grid -->
+                        <g id="gridBg"></g>
+                        <!-- Dynamic content rendered via JS -->
+                        <g id="svgContent"></g>
+                        <!-- Dynamic dimension lines -->
+                        <g id="svgDims"></g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Explanation Box Sidebar -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
+                <h3 class="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3 mb-4" id="stepTitle">Empty Space</h3>
+                <p class="text-slate-600 text-[15px] leading-relaxed min-h-[140px]" id="stepDesc">
+                    Select <strong>Play Auto</strong> or <strong>Next</strong> to start adding the odd numbers one by one as geometric blocks.
+                </p>
+                <div class="mt-4 p-4 bg-sky-50 rounded-lg border border-sky-100 text-center font-bold text-sky-900 shadow-inner">
+                    <span id="numericCheck">Total Blocks = 0</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Insight: Gnomons</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        To find the sum of the first $n$ odd numbers ($1 + 3 + 5 + \dots + 2n-1$), we can represent each odd number as an L-shaped block of unit squares. In geometry, this L-shaped border is called a <strong>gnomon</strong>.
+                    </p>
+                    <p class="mb-4">
+                        Notice how the $k$-th odd number is precisely the number of blocks needed to wrap around an existing $(k-1) \times (k-1)$ square to transform it into a larger $k \times k$ square. 
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">Algebraic Connection</h3>
+                    <p class="text-sm mb-3">
+                        The difference in area between a square of side $k$ and a square of side $k-1$ is exactly the $k$-th odd number:
+                    </p>
+                    <p class="text-sm text-center font-mono font-bold text-slate-800 mb-3">
+                        $k^2 - (k-1)^2$<br>
+                        $= k^2 - (k^2 - 2k + 1)$<br>
+                        $= 2k - 1$
+                    </p>
+                    <p class="text-sm">
+                        Because stacking the first $n$ odd numbers perfectly tiles a solid $n \times n$ square, their total sum must exactly equal the area of that square ($n^2$).
+                    </p>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-sky-200 bg-sky-50 rounded-xl mt-6">
+                <p class="text-2xl font-bold text-sky-800">
+                    $$ \sum_{i=1}^{n} (2i-1) = n^2 $$
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svgContent = document.getElementById('svgContent');
+            const gridBg = document.getElementById('gridBg');
+            const svgDims = document.getElementById('svgDims');
+            const inputN = document.getElementById('inputN');
+            const nValLabel = document.getElementById('n-val');
+            
+            const playBtn = document.getElementById('playBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const stepIndicator = document.getElementById('stepIndicator');
+            
+            const liveEq = document.getElementById('liveEq');
+            const stepTitle = document.getElementById('stepTitle');
+            const stepDesc = document.getElementById('stepDesc');
+            const numericCheck = document.getElementById('numericCheck');
+
+            let maxN = parseInt(inputN.value);
+            let currentStep = 0;
+            let isPlaying = false;
+            let playInterval = null;
+
+            // Palette for distinct layers
+            const colors = [
+                '#3b82f6', // 1: Blue
+                '#ef4444', // 2: Red
+                '#10b981', // 3: Emerald
+                '#f59e0b', // 4: Orange
+                '#8b5cf6', // 5: Purple
+                '#06b6d4', // 6: Cyan
+                '#ec4899', // 7: Pink
+                '#84cc16', // 8: Lime
+                '#f43f5e', // 9: Rose
+                '#6366f1'  // 10: Indigo
+            ];
+
+            // SVG Canvas configuration
+            const SVG_SIZE = 550;
+            const PADDING = 40; 
+            const MAX_GRID = 10; // Draw a fixed 10x10 grid to prevent jitter
+            const C = (SVG_SIZE - PADDING * 2) / MAX_GRID; // Cell size ~ 47px
+
+            // Offset to draw centrally/neatly
+            const offsetX = PADDING;
+            const offsetY = PADDING;
+
+            function initGrid() {
+                let html = '';
+                for (let i = 0; i <= MAX_GRID; i++) {
+                    // Vertical
+                    html += `<line x1="${offsetX + i * C}" y1="${offsetY}" x2="${offsetX + i * C}" y2="${offsetY + MAX_GRID * C}" class="grid-bg" />`;
+                    // Horizontal
+                    html += `<line x1="${offsetX}" y1="${offsetY + i * C}" x2="${offsetX + MAX_GRID * C}" y2="${offsetY + i * C}" class="grid-bg" />`;
+                }
+                gridBg.innerHTML = html;
+            }
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            function drawGeometry() {
+                let html = '';
+
+                for (let k = 1; k <= currentStep; k++) {
+                    const oddNum = 2 * k - 1;
+                    const color = colors[(k - 1) % colors.length];
+                    
+                    // Group for this specific Gnomon
+                    html += `<g class="gnomon anim-group" style="animation-delay: 0s;">`;
+                    
+                    let blockCount = 1;
+
+                    // Draw vertical arm (top down)
+                    for (let y = 0; y < k; y++) {
+                        const bx = offsetX + (k - 1) * C;
+                        const by = offsetY + y * C;
+                        
+                        html += `<rect x="${bx}" y="${by}" width="${C}" height="${C}" fill="${color}" stroke="#ffffff" stroke-width="1.5"/>`;
+                        
+                        // Add numbers only to the most recently added gnomon
+                        if (k === currentStep) {
+                            html += `<text x="${bx + C/2}" y="${by + C/2}" class="block-number">${blockCount++}</text>`;
+                        }
+                    }
+
+                    // Draw horizontal arm (right to left, skipping the corner already drawn)
+                    for (let x = k - 2; x >= 0; x--) {
+                        const bx = offsetX + x * C;
+                        const by = offsetY + (k - 1) * C;
+                        
+                        html += `<rect x="${bx}" y="${by}" width="${C}" height="${C}" fill="${color}" stroke="#ffffff" stroke-width="1.5"/>`;
+                        
+                        if (k === currentStep) {
+                            html += `<text x="${bx + C/2}" y="${by + C/2}" class="block-number">${blockCount++}</text>`;
+                        }
+                    }
+
+                    html += `</g>`;
+                }
+                svgContent.innerHTML = html;
+
+                // Draw external dimension brackets
+                let dimHtml = '';
+                if (currentStep > 0) {
+                    const totalW = currentStep * C;
+                    
+                    // Top Bracket
+                    dimHtml += `
+                        <path d="M ${offsetX} ${offsetY - 10} L ${offsetX} ${offsetY - 20} L ${offsetX + totalW} ${offsetY - 20} L ${offsetX + totalW} ${offsetY - 10}" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="${offsetX + totalW/2}" y="${offsetY - 30}" class="dim-text">${currentStep}</text>
+                    `;
+                    // Left Bracket
+                    dimHtml += `
+                        <path d="M ${offsetX - 10} ${offsetY} L ${offsetX - 20} ${offsetY} L ${offsetX - 20} ${offsetY + totalW} L ${offsetX - 10} ${offsetY + totalW}" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="${offsetX - 30}" y="${offsetY + totalW/2}" class="dim-text">${currentStep}</text>
+                    `;
+                }
+                svgDims.innerHTML = dimHtml;
+            }
+
+            function updateUI() {
+                stepIndicator.textContent = `${currentStep} / ${maxN}`;
+
+                if (currentStep === 0) {
+                    stepTitle.innerHTML = "Empty Space";
+                    stepDesc.innerHTML = "Select <strong>Play Auto</strong> or <strong>Next</strong> to start adding the odd numbers one by one as geometric blocks.";
+                    liveEq.innerHTML = `$$S = 1 + 3 + 5 + \\dots + (2n-1)$$`;
+                    numericCheck.innerHTML = `Total Area = 0`;
+                } else {
+                    const oddNum = 2 * currentStep - 1;
+                    
+                    // Build equation sequence visually
+                    let eqTerms = [];
+                    for(let i=1; i<=currentStep; i++) eqTerms.push(2*i - 1);
+                    
+                    if (currentStep <= 4) {
+                        liveEq.innerHTML = `$$${eqTerms.join(' + ')} = ${currentStep}^2 = ${currentStep * currentStep}$$`;
+                    } else {
+                        liveEq.innerHTML = `$$1 + 3 + \\dots + ${oddNum} = ${currentStep}^2 = ${currentStep * currentStep}$$`;
+                    }
+
+                    stepTitle.innerHTML = `Step ${currentStep}: Adding ${oddNum}`;
+                    stepDesc.innerHTML = `The ${currentStep}-th odd number is <strong>${oddNum}</strong>.<br><br>We add ${oddNum} blocks as an L-shaped border. Notice how it perfectly wraps around the existing $( ${currentStep - 1} \\times ${currentStep - 1} )$ square to form a new $${currentStep} \\times ${currentStep}$ square!`;
+                    numericCheck.innerHTML = `Area = $${currentStep} \\times ${currentStep} = ${currentStep * currentStep}$`;
+                }
+
+                updateMathJax();
+
+                // Button states
+                prevBtn.disabled = currentStep === 0;
+                
+                if (currentStep < maxN) {
+                    nextBtn.innerHTML = "Next →";
+                    nextBtn.classList.replace('btn-secondary', 'btn-play');
+                } else {
+                    nextBtn.innerHTML = "Finish";
+                    nextBtn.classList.replace('btn-play', 'btn-secondary');
+                    nextBtn.disabled = true;
+                    stopPlaying();
+                }
+                
+                if (currentStep < maxN) {
+                    nextBtn.disabled = false;
+                }
+
+                drawGeometry();
+            }
+
+            function stopPlaying() {
+                isPlaying = false;
+                clearInterval(playInterval);
+                playBtn.innerHTML = '▶ Play Auto';
+                playBtn.classList.replace('btn-secondary', 'btn-play');
+            }
+
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    stopPlaying();
+                } else {
+                    if (currentStep >= maxN) {
+                        currentStep = 0; // Restart if at end
+                    }
+                    isPlaying = true;
+                    playBtn.innerHTML = '⏸ Pause';
+                    playBtn.classList.replace('btn-play', 'btn-secondary');
+                    
+                    playInterval = setInterval(() => {
+                        if (currentStep < maxN) {
+                            currentStep++;
+                            updateUI();
+                        } else {
+                            stopPlaying();
+                        }
+                    }, 1200);
+                }
+            });
+
+            inputN.addEventListener('input', (e) => {
+                maxN = parseInt(e.target.value);
+                nValLabel.textContent = maxN;
+                stopPlaying();
+                if (currentStep > maxN) currentStep = maxN;
+                updateUI();
+            });
+
+            nextBtn.addEventListener('click', () => {
+                stopPlaying();
+                if (currentStep < maxN) {
+                    currentStep++;
+                    updateUI();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                stopPlaying();
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateUI();
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                stopPlaying();
+                currentStep = 0;
+                updateUI();
+            });
+
+            // Initial load
+            initGrid();
+            updateUI();
+        });
+    </script>
+</body>
+</html>

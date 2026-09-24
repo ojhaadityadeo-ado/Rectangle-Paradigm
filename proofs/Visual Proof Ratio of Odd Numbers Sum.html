@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Ratio of Odd Numbers Sum</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* SVG Element Styles */
+        .grid-bg {
+            stroke: #e2e8f0;
+            stroke-width: 1;
+        }
+
+        .gnomon {
+            stroke: #ffffff;
+            stroke-width: 1.5;
+            transition: opacity 0.6s ease, fill 0.6s ease;
+        }
+
+        .quadrant-line {
+            stroke: #0f172a;
+            stroke-width: 4;
+            stroke-dasharray: 8 6;
+            stroke-linecap: round;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .quadrant-overlay {
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        /* Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #0284c7;
+            color: white;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #0369a1; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        input[type=range] {
+            accent-color: #0284c7;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Ratio of Odd Numbers Sum
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-sky-50 text-sky-950 rounded-lg mb-6 shadow-sm border border-sky-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$ \frac{\text{First } n \text{ odds}}{\text{Next } n \text{ odds}} = \frac{1}{3} $$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            
+            <div class="flex items-center gap-6">
+                <!-- N Slider -->
+                <div class="flex flex-col gap-1.5 w-48">
+                    <div class="flex justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Value of <span class="italic text-sm">n</span></span>
+                        <span id="n-val" class="text-sky-700 font-bold text-sm">3</span>
+                    </div>
+                    <input type="range" id="inputN" value="3" min="1" max="5" step="1" class="w-full cursor-pointer">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-sky-700 font-bold text-lg bg-sky-100 px-3 py-1 rounded-md border border-sky-200">0 / 5</span>
+                </div>
+                <button id="playBtn" class="btn-action btn-play">▶ Play Auto</button>
+                <button id="prevBtn" class="btn-action btn-secondary" disabled>← Prev</button>
+                <button id="nextBtn" class="btn-action btn-secondary">Next →</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- SVG Visualization Window -->
+            <div class="lg:col-span-2 visualization-area mb-0">
+                <div class="svg-container">
+                    <svg id="proofSvg" viewBox="0 0 400 400">
+                        <!-- Background Grid -->
+                        <g id="gridBg"></g>
+                        <!-- Dynamic Gnomons -->
+                        <g id="svgGnomons"></g>
+                        <!-- Quadrant Overlay -->
+                        <g id="svgQuadrants"></g>
+                        <!-- Labels -->
+                        <g id="svgLabels"></g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Explanation Box Sidebar -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
+                <h3 class="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3 mb-4" id="stepTitle">Initialization</h3>
+                <p class="text-slate-600 text-[15px] leading-relaxed min-h-[140px]" id="stepDesc">
+                    Select <strong>Play Auto</strong> or <strong>Next</strong> to start the visual proof.
+                </p>
+                <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 text-center font-bold text-slate-700 shadow-inner" id="numericCheck">
+                    Grid Size: $2n \times 2n$
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Insight: Gnomons</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        To visually prove that the ratio of the sum of the first $n$ odd numbers to the next $n$ odd numbers is $\frac{1}{3}$, we use the classic L-shape (gnomon) area of a square concept.
+                    </p>
+                    <p class="mb-4">
+                        Every odd number visually represents an "L-shaped" border added around a square. Therefore, the sum of the first $k$ odd numbers perfectly forms a solid $k \times k$ square with an area of $k^2$.
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">Comparing Quadrants</h3>
+                    <ul class="list-disc list-inside space-y-2 text-sm">
+                        <li><strong>First $n$ odds:</strong> Forms an $n \times n$ square. This takes up exactly $1$ quadrant of a larger $2n \times 2n$ grid.</li>
+                        <li><strong>Total $2n$ odds:</strong> Forms a $2n \times 2n$ square. This takes up all $4$ quadrants.</li>
+                        <li><strong>Next $n$ odds:</strong> Since they are the outer borders added to the first $n$ odds, they perfectly fill the remaining $3$ quadrants.</li>
+                    </ul>
+                    <p class="text-sm font-bold text-sky-800 mt-4">
+                        Therefore, $\frac{\text{First } n}{\text{Next } n} = \frac{1 \text{ quadrant}}{3 \text{ quadrants}} = \frac{1}{3}$.
+                    </p>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-sky-200 bg-sky-50 rounded-xl mt-6">
+                <p class="text-2xl font-bold text-sky-800">
+                    $$ \frac{\sum_{i=1}^n (2i-1)}{\sum_{i=n+1}^{2n} (2i-1)} = \frac{n^2}{3n^2} = \frac{1}{3} $$
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svgGnomons = document.getElementById('svgGnomons');
+            const gridBg = document.getElementById('gridBg');
+            const svgQuadrants = document.getElementById('svgQuadrants');
+            const svgLabels = document.getElementById('svgLabels');
+            
+            const inputN = document.getElementById('inputN');
+            const nValLabel = document.getElementById('n-val');
+            
+            const playBtn = document.getElementById('playBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const stepIndicator = document.getElementById('stepIndicator');
+            
+            const liveEq = document.getElementById('liveEq');
+            const stepTitle = document.getElementById('stepTitle');
+            const stepDesc = document.getElementById('stepDesc');
+            const numericCheck = document.getElementById('numericCheck');
+
+            let n = parseInt(inputN.value);
+            let currentStep = 0;
+            const maxStep = 5;
+            let isPlaying = false;
+            let playInterval = null;
+
+            // Colors for First N and Next N
+            const blues = ['#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb']; // 1 to 5
+            const oranges = ['#fde68a', '#fcd34d', '#fbbf24', '#f59e0b', '#d97706']; // 6 to 10
+
+            // SVG Canvas configuration
+            const SVG_SIZE = 400;
+
+            function initGrid() {
+                const totalCells = 2 * n;
+                const cellSize = SVG_SIZE / totalCells;
+                
+                let html = '';
+                for (let i = 0; i <= totalCells; i++) {
+                    html += `<line x1="${i * cellSize}" y1="0" x2="${i * cellSize}" y2="${SVG_SIZE}" class="grid-bg" />`;
+                    html += `<line x1="0" y1="${i * cellSize}" x2="${SVG_SIZE}" y2="${i * cellSize}" class="grid-bg" />`;
+                }
+                gridBg.innerHTML = html;
+            }
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            function drawGeometry() {
+                const totalCells = 2 * n;
+                const cellSize = SVG_SIZE / totalCells;
+                let gnomonHtml = '';
+
+                // Draw First n Gnomons
+                for (let i = 1; i <= n; i++) {
+                    const opacity = currentStep >= 1 ? 1 : 0;
+                    // L-Shape path
+                    const d = `M 0 ${(i-1)*cellSize} L ${(i-1)*cellSize} ${(i-1)*cellSize} L ${(i-1)*cellSize} 0 L ${i*cellSize} 0 L ${i*cellSize} ${i*cellSize} L 0 ${i*cellSize} Z`;
+                    const color = blues[i-1];
+                    gnomonHtml += `<path d="${d}" fill="${color}" class="gnomon" style="opacity: ${opacity};" />`;
+                }
+
+                // Draw Next n Gnomons
+                for (let i = n + 1; i <= 2 * n; i++) {
+                    const opacity = currentStep >= 2 ? 1 : 0;
+                    const d = `M 0 ${(i-1)*cellSize} L ${(i-1)*cellSize} ${(i-1)*cellSize} L ${(i-1)*cellSize} 0 L ${i*cellSize} 0 L ${i*cellSize} ${i*cellSize} L 0 ${i*cellSize} Z`;
+                    const color = oranges[i - n - 1];
+                    gnomonHtml += `<path d="${d}" fill="${color}" class="gnomon" style="opacity: ${opacity};" />`;
+                }
+                
+                svgGnomons.innerHTML = gnomonHtml;
+
+                // Draw Quadrants Overlay (Step 3+)
+                const mid = SVG_SIZE / 2;
+                let quadHtml = '';
+                
+                // Thick quadrant lines
+                const quadLinesOpacity = currentStep >= 3 ? 1 : 0;
+                quadHtml += `
+                    <line x1="${mid}" y1="0" x2="${mid}" y2="${SVG_SIZE}" class="quadrant-line" style="opacity: ${quadLinesOpacity};" />
+                    <line x1="0" y1="${mid}" x2="${SVG_SIZE}" y2="${mid}" class="quadrant-line" style="opacity: ${quadLinesOpacity};" />
+                `;
+
+                // Solid block overlays for Step 4
+                if (currentStep >= 4) {
+                    const overlayOpacity = currentStep >= 4 ? 0.85 : 0;
+                    // Top-Left (Blue)
+                    quadHtml += `<rect x="0" y="0" width="${mid}" height="${mid}" fill="#3b82f6" class="quadrant-overlay" style="opacity: ${overlayOpacity}; stroke: #1e293b; stroke-width: 2;" />`;
+                    // Top-Right (Orange)
+                    quadHtml += `<rect x="${mid}" y="0" width="${mid}" height="${mid}" fill="#f59e0b" class="quadrant-overlay" style="opacity: ${overlayOpacity}; stroke: #1e293b; stroke-width: 2;" />`;
+                    // Bottom-Left (Orange)
+                    quadHtml += `<rect x="0" y="${mid}" width="${mid}" height="${mid}" fill="#f59e0b" class="quadrant-overlay" style="opacity: ${overlayOpacity}; stroke: #1e293b; stroke-width: 2;" />`;
+                    // Bottom-Right (Orange)
+                    quadHtml += `<rect x="${mid}" y="${mid}" width="${mid}" height="${mid}" fill="#f59e0b" class="quadrant-overlay" style="opacity: ${overlayOpacity}; stroke: #1e293b; stroke-width: 2;" />`;
+                }
+
+                svgQuadrants.innerHTML = quadHtml;
+
+                // Draw Labels
+                let lblHtml = '';
+                if (currentStep >= 3) {
+                    lblHtml += `
+                        <text x="${mid/2}" y="${mid/2}" font-family="Inter" font-size="24" font-weight="bold" fill="${currentStep>=4?'white':'#1e293b'}" text-anchor="middle" dominant-baseline="central">1</text>
+                        <text x="${mid + mid/2}" y="${mid/2}" font-family="Inter" font-size="24" font-weight="bold" fill="${currentStep>=4?'white':'#1e293b'}" text-anchor="middle" dominant-baseline="central">2</text>
+                        <text x="${mid/2}" y="${mid + mid/2}" font-family="Inter" font-size="24" font-weight="bold" fill="${currentStep>=4?'white':'#1e293b'}" text-anchor="middle" dominant-baseline="central">3</text>
+                        <text x="${mid + mid/2}" y="${mid + mid/2}" font-family="Inter" font-size="24" font-weight="bold" fill="${currentStep>=4?'white':'#1e293b'}" text-anchor="middle" dominant-baseline="central">4</text>
+                    `;
+                }
+                svgLabels.innerHTML = lblHtml;
+            }
+
+            function updateUI() {
+                stepIndicator.textContent = `${currentStep} / ${maxStep}`;
+
+                const n2 = n * n;
+                const nextSum = 3 * n * n;
+
+                const stepData = [
+                    {
+                        title: "Initialization",
+                        desc: `Let's set up a $2n \\times 2n$ grid. Here $n = ${n}$, so the grid is $${2*n} \\times ${2*n}$.`,
+                        eq: `$$ \\text{Grid Size: } ${2*n} \\times ${2*n} $$`,
+                        check: `Total Area = $(2n)^2 = ${4*n*n}$`
+                    },
+                    {
+                        title: "1. First n Odd Numbers",
+                        desc: `Each odd number forms an L-shaped gnomon. The sum of the first $n$ odd numbers perfectly forms an $n \\times n$ square in the top-left corner.`,
+                        eq: `$$ S_1 = 1 + 3 + \\dots + (2n-1) = n^2 $$`,
+                        check: `Area = $${n}^2 = ${n2}$`
+                    },
+                    {
+                        title: "2. Next n Odd Numbers",
+                        desc: `The next $n$ odd numbers form larger gnomons that perfectly wrap around our existing square, completing the full $2n \\times 2n$ grid.`,
+                        eq: `$$ S_{\\text{next}} = (2n+1) + \\dots + (4n-1) $$`,
+                        check: `Combined Area = $(2n)^2 = ${4*n*n}$`
+                    },
+                    {
+                        title: "3. Divide into Quadrants",
+                        desc: `Let's draw crosshairs to divide the large $2n \\times 2n$ square into four identical $n \\times n$ quadrants.`,
+                        eq: `$$ S_{\\text{next}} = \\text{Total Area} - S_1 $$`,
+                        check: `Total Area = $4n^2 = 4(${n}^2)$`
+                    },
+                    {
+                        title: "4. The Area Ratio",
+                        desc: `Notice how the first $n$ odd numbers fill exactly <strong>1 quadrant</strong>. The next $n$ odd numbers (the orange gnomons) perfectly fill the remaining <strong>3 quadrants</strong>!`,
+                        eq: `$$ S_1 = 1 \\text{ quadrant}, \\; S_{\\text{next}} = 3 \\text{ quadrants} $$`,
+                        check: `Orange Area = $3n^2 = ${nextSum}$`
+                    },
+                    {
+                        title: "5. Conclusion",
+                        desc: `Because the areas are exactly mapped to 1 quadrant vs 3 quadrants, the ratio of their sums is exactly $1/3$.`,
+                        eq: `$$ \\frac{S_1}{S_{\\text{next}}} = \\frac{n^2}{3n^2} = \\frac{1}{3} $$`,
+                        check: `Ratio = $1 : 3$`
+                    }
+                ];
+
+                stepTitle.innerHTML = stepData[currentStep].title;
+                stepDesc.innerHTML = stepData[currentStep].desc;
+                liveEq.innerHTML = stepData[currentStep].eq;
+                numericCheck.innerHTML = stepData[currentStep].check;
+
+                updateMathJax();
+
+                // Button states
+                prevBtn.disabled = currentStep === 0;
+                
+                if (currentStep < maxStep) {
+                    nextBtn.innerHTML = "Next →";
+                    nextBtn.classList.replace('btn-secondary', 'btn-play');
+                } else {
+                    nextBtn.innerHTML = "Finish";
+                    nextBtn.classList.replace('btn-play', 'btn-secondary');
+                    nextBtn.disabled = true;
+                }
+                
+                if (currentStep < maxStep) {
+                    nextBtn.disabled = false;
+                }
+
+                drawGeometry();
+            }
+
+            function stopPlaying() {
+                isPlaying = false;
+                clearInterval(playInterval);
+                playBtn.innerHTML = '▶ Play Auto';
+                playBtn.classList.replace('btn-secondary', 'btn-play');
+            }
+
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    stopPlaying();
+                } else {
+                    if (currentStep >= maxStep) currentStep = 0;
+                    isPlaying = true;
+                    playBtn.innerHTML = '⏸ Pause';
+                    playBtn.classList.replace('btn-play', 'btn-secondary');
+                    
+                    playInterval = setInterval(() => {
+                        if (currentStep < maxStep) {
+                            currentStep++;
+                            updateUI();
+                        } else {
+                            stopPlaying();
+                        }
+                    }, 2000);
+                }
+            });
+
+            inputN.addEventListener('input', (e) => {
+                n = parseInt(e.target.value);
+                nValLabel.textContent = n;
+                stopPlaying();
+                initGrid();
+                updateUI();
+            });
+
+            nextBtn.addEventListener('click', () => {
+                stopPlaying();
+                if (currentStep < maxStep) {
+                    currentStep++;
+                    updateUI();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                stopPlaying();
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateUI();
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                stopPlaying();
+                currentStep = 0;
+                updateUI();
+            });
+
+            // Initial load
+            initGrid();
+            updateUI();
+        });
+    </script>
+</body>
+</html>

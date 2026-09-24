@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Rearrangement Inequality</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* SVG Geometry Transitions */
+        .geom-rect { transition: all 0.3s ease-out, opacity 0.4s ease; mix-blend-mode: multiply; }
+        .geom-line { transition: all 0.3s ease-out; }
+        .geom-text { transition: all 0.3s ease-out; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-layer-group text-indigo-600 text-2xl"></i> Visual Proof: Rearrangement Inequality
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 min-h-[70px] flex items-center justify-center transition-all flex-wrap gap-4 overflow-x-auto" id="liveEq">
+            $$x_1 y_2 + x_2 y_1 \le x_1 y_1 + x_2 y_2$$
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 w-full lg:w-auto flex-grow max-w-2xl">
+                <!-- X1 Slider -->
+                <div class="flex flex-col gap-2 w-full">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Width <span class="math-font text-sm normal-case text-sky-600">x₁</span></span>
+                        <span id="valX1" class="text-sky-600 text-sm">4.0</span>
+                    </div>
+                    <input type="range" id="sliderX1" value="4.0" min="1.0" max="10.0" step="0.5" class="w-full">
+                </div>
+
+                <!-- X2 Slider -->
+                <div class="flex flex-col gap-2 w-full border-r border-slate-200 pr-2">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Width <span class="math-font text-sm normal-case text-blue-700">x₂</span></span>
+                        <span id="valX2" class="text-blue-700 text-sm">8.0</span>
+                    </div>
+                    <input type="range" id="sliderX2" value="8.0" min="1.0" max="10.0" step="0.5" class="w-full">
+                </div>
+
+                <!-- Y1 Slider -->
+                <div class="flex flex-col gap-2 w-full pl-2">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Height <span class="math-font text-sm normal-case text-rose-500">y₁</span></span>
+                        <span id="valY1" class="text-rose-500 text-sm">3.0</span>
+                    </div>
+                    <input type="range" id="sliderY1" value="3.0" min="1.0" max="10.0" step="0.5" class="w-full">
+                </div>
+                
+                <!-- Y2 Slider -->
+                <div class="flex flex-col gap-2 w-full">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Height <span class="math-font text-sm normal-case text-rose-700">y₂</span></span>
+                        <span id="valY2" class="text-rose-700 text-sm">7.0</span>
+                    </div>
+                    <input type="range" id="sliderY2" value="7.0" min="1.0" max="10.0" step="0.5" class="w-full">
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-lg bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+            
+            <!-- SVG Viewport (Spans 3 cols) -->
+            <div class="lg:col-span-3 svg-container p-4 flex items-center justify-center min-h-[460px] relative">
+                <svg id="proofSvg" viewBox="0 0 500 500" class="w-full max-w-[460px] h-auto overflow-visible">
+                    <defs>
+                        <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#f59e0b" stroke-width="2.5" opacity="0.6"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Coordinate system mapped dynamically via JS. Origin will be visually at bottom-left -->
+                    
+                    <!-- Background / Grid Base -->
+                    <g id="gridGroup">
+                        <!-- Max Bounds Box (Dashed) -->
+                        <rect id="maxBounds" x="50" y="50" width="400" height="400" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6,4" />
+                        
+                        <!-- Internal crosshairs -->
+                        <line id="guideVx" class="geom-line" x1="210" y1="50" x2="210" y2="450" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4" />
+                        <line id="guideHy" class="geom-line" x1="50" y1="330" x2="450" y2="330" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4" />
+                    </g>
+
+                    <!-- Geometry Shapes -->
+                    <g id="shapesGroup">
+                        <!-- Mismatched Setup -->
+                        <g id="grpMismatched" opacity="0">
+                            <!-- x1 * y2 (Tall, blue) -->
+                            <rect id="rectMis1" class="geom-rect" fill="rgba(14, 165, 233, 0.25)" stroke="#0284c7" stroke-width="3" />
+                            <!-- x2 * y1 (Wide, red) -->
+                            <rect id="rectMis2" class="geom-rect" fill="rgba(244, 63, 94, 0.25)" stroke="#e11d48" stroke-width="3" />
+                            
+                            <!-- Area labels for Mismatched -->
+                            <text id="lblMis1" class="geom-text math-font" font-weight="bold" font-size="18" fill="#0369a1" text-anchor="middle" dominant-baseline="middle">x₁y₂</text>
+                            <text id="lblMis2" class="geom-text math-font" font-weight="bold" font-size="18" fill="#be123c" text-anchor="middle" dominant-baseline="middle">x₂y₁</text>
+                        </g>
+
+                        <!-- Sorted Setup -->
+                        <g id="grpSorted" opacity="0">
+                            <!-- x2 * y2 (Huge background, light emerald) -->
+                            <rect id="rectSrt2" class="geom-rect" fill="rgba(52, 211, 153, 0.15)" stroke="#10b981" stroke-width="3" />
+                            <!-- x1 * y1 (Small corner, dark teal) -->
+                            <rect id="rectSrt1" class="geom-rect" fill="rgba(15, 118, 110, 0.4)" stroke="#0f766e" stroke-width="3" />
+                            
+                            <!-- Area labels for Sorted -->
+                            <text id="lblSrt2" class="geom-text math-font" font-weight="bold" font-size="18" fill="#047857" text-anchor="middle" dominant-baseline="middle">x₂y₂</text>
+                            <text id="lblSrt1" class="geom-text math-font" font-weight="bold" font-size="16" fill="#0f766e" text-anchor="middle" dominant-baseline="middle">x₁y₁</text>
+                        </g>
+
+                        <!-- Gained Difference Highlight (Top Right) -->
+                        <g id="grpDiff" opacity="0">
+                            <rect id="rectDiff" class="geom-rect" fill="url(#diagonalHatch)" stroke="#d97706" stroke-width="3" />
+                            <!-- Plus symbol inside gained area -->
+                            <text id="lblDiff" class="geom-text" font-family="Inter" font-weight="900" font-size="28" fill="#d97706" text-anchor="middle" dominant-baseline="middle">+</text>
+                        </g>
+                    </g>
+
+                    <!-- Axes & Labels on top -->
+                    <g id="axesGroup">
+                        <!-- X Axis -->
+                        <line x1="30" y1="450" x2="480" y2="450" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)" />
+                        <!-- Y Axis -->
+                        <line x1="50" y1="470" x2="50" y2="20" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)" />
+
+                        <!-- Ticks & Math Labels -->
+                        <!-- X Ticks -->
+                        <line id="tickX1" class="geom-line" x1="210" y1="445" x2="210" y2="455" stroke="#334155" stroke-width="2" />
+                        <text id="lblX1" class="geom-text math-font" font-weight="bold" font-size="18" fill="#0369a1" text-anchor="middle" dominant-baseline="top" y="465">x₁</text>
+                        
+                        <line id="tickX2" class="geom-line" x1="370" y1="445" x2="370" y2="455" stroke="#334155" stroke-width="2" />
+                        <text id="lblX2" class="geom-text math-font" font-weight="bold" font-size="18" fill="#1d4ed8" text-anchor="middle" dominant-baseline="top" y="465">x₂</text>
+
+                        <!-- Y Ticks -->
+                        <line id="tickY1" class="geom-line" x1="45" y1="330" x2="55" y2="330" stroke="#334155" stroke-width="2" />
+                        <text id="lblY1" class="geom-text math-font" font-weight="bold" font-size="18" fill="#e11d48" text-anchor="end" dominant-baseline="middle" x="35">y₁</text>
+                        
+                        <line id="tickY2" class="geom-line" x1="45" y1="170" x2="55" y2="170" stroke="#334155" stroke-width="2" />
+                        <text id="lblY2" class="geom-text math-font" font-weight="bold" font-size="18" fill="#be123c" text-anchor="end" dominant-baseline="middle" x="35">y₂</text>
+                    </g>
+                    
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 2 L 10 5 L 0 8 z" fill="#334155" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+
+            <!-- Ledger & Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Area Calculations</span>
+                        <span class="text-xs font-normal text-slate-500">Auto-updates</span>
+                    </h2>
+                    
+                    <div id="ledger-lines" class="space-y-3">
+                        <!-- Mismatched Sum Row -->
+                        <div class="flex flex-col p-3 rounded-lg border-2 border-transparent transition-all duration-300 opacity-30" id="ledger-mis">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm font-bold text-rose-700 flex items-center gap-2">
+                                    <i class="fa-solid fa-xmark"></i> Mismatched Sum
+                                </span>
+                                <span class="font-mono font-bold text-rose-700 bg-rose-50 px-2 py-1 rounded-md" id="calcMisTotal">0.0</span>
+                            </div>
+                            <div class="text-[12px] text-slate-600 font-mono pl-6">
+                                <span class="text-sky-600">x₁y₂ (<span id="calcMis1">0</span>)</span> + 
+                                <span class="text-rose-600">x₂y₁ (<span id="calcMis2">0</span>)</span>
+                            </div>
+                        </div>
+
+                        <!-- Sorted Sum Row -->
+                        <div class="flex flex-col p-3 rounded-lg border-2 border-transparent transition-all duration-300 opacity-30" id="ledger-srt">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                                    <i class="fa-solid fa-check-double"></i> Sorted Sum
+                                </span>
+                                <span class="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md" id="calcSrtTotal">0.0</span>
+                            </div>
+                            <div class="text-[12px] text-slate-600 font-mono pl-6">
+                                <span class="text-teal-700">x₁y₁ (<span id="calcSrt1">0</span>)</span> + 
+                                <span class="text-emerald-600">x₂y₂ (<span id="calcSrt2">0</span>)</span>
+                            </div>
+                        </div>
+
+                        <!-- Difference Row -->
+                        <div class="flex flex-col p-3 rounded-lg border border-slate-100 bg-slate-50 mt-2 transition-all duration-300 opacity-0 transform scale-95" id="ledger-diff">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-bold text-amber-700">Gained Area</span>
+                                <span class="font-mono font-bold text-amber-700" id="calcDiffTotal">+0.0</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 mt-1">
+                                $(x_2 - x_1)(y_2 - y_1)$
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation / Status Box -->
+                <div class="bg-indigo-50 p-5 rounded-xl border border-indigo-200 shadow-sm flex flex-col justify-center min-h-[120px]" id="explainerBox">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium" id="statusText">
+                        Adjust the sliders to set lengths for $x$ and $y$. <br>Notice we enforce $x_1 \le x_2$ and $y_1 \le y_2$. Press <strong>Play</strong> to begin the proof.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-8">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Inequality</h3>
+            
+            <div class="text-slate-700 text-base leading-relaxed mb-6">
+                The Rearrangement Inequality states that when we multiply pairs from two sorted sequences, the sum is maximized when they are sorted in the <em>same</em> order (largest with largest), and minimized when sorted in <em>opposite</em> order. Here is why it works visually for two pairs.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-base">
+                
+                <!-- Left Box Section -->
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-900 border-b border-slate-200 pb-2">1. Two Ways to Pair</h3>
+                    <p class="mb-3">
+                        Assume $x_1 \le x_2$ and $y_1 \le y_2$. The four possible areas are $x_1y_1$, $x_1y_2$, $x_2y_1$, and $x_2y_2$. 
+                    </p>
+                    <p class="mb-3">
+                        Pairing "like with like" gives the <strong class="text-emerald-700">sorted sum</strong>; pairing them backwards gives the <strong class="text-rose-700">mismatched sum</strong>:
+                    </p>
+                    
+                    <div class="text-center text-sm font-semibold my-auto bg-white p-4 rounded-lg border border-slate-200 overflow-x-auto">
+                        <div class="text-rose-700 mb-2 whitespace-nowrap">Mismatched = $x_1y_2 + x_2y_1$</div>
+                        <div class="text-emerald-700 whitespace-nowrap">Sorted = $x_1y_1 + x_2y_2$</div>
+                    </div>
+                </div>
+                
+                <!-- Right Box Section -->
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-900 border-b border-slate-200 pb-2">2. The Gained Difference</h3>
+                    <p class="mb-3">If we subtract the Mismatched area from the Sorted area, the terms factor perfectly:</p>
+                    
+                    <div class="text-indigo-700 my-4 text-center overflow-x-auto pb-2">
+                        $$ (x_1y_1 + x_2y_2) - (x_1y_2 + x_2y_1) = (x_2-x_1)(y_2-y_1) $$
+                    </div>
+                    
+                    <p class="mb-3">
+                        Because $x_2 \ge x_1$ and $y_2 \ge y_1$, both factors are non-negative. This product represents the physical area of the top-right quadrant.
+                    </p>
+                    <p class="font-bold text-slate-800 mt-auto">
+                        Since this "gained area" must be $\ge 0$, the Sorted Sum is always greater than or equal to the Mismatched Sum.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data State
+        let state = {
+            x1: 4.0, x2: 8.0,
+            y1: 3.0, y2: 7.0,
+            currentStep: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            playInterval: null
+        };
+
+        // Constants for SVG Coordinate mapping
+        // We use a 400x400 grid inside a 500x500 SVG. Origin at (50, 450). Max value = 10.
+        // Scale = 40px per unit.
+        const OX = 50; 
+        const OY = 450;
+        const SCALE = 40;
+
+        // Helper to convert math values to SVG coords
+        const sX = (val) => OX + val * SCALE;
+        const sY = (val) => OY - val * SCALE; // Y goes UP in math, DOWN in SVG
+        const sW = (val) => val * SCALE;
+        const sH = (val) => val * SCALE;
+
+        // DOM Elements
+        const DOM = {
+            sliders: { x1: document.getElementById('sliderX1'), x2: document.getElementById('sliderX2'), y1: document.getElementById('sliderY1'), y2: document.getElementById('sliderY2') },
+            vals: { x1: document.getElementById('valX1'), x2: document.getElementById('valX2'), y1: document.getElementById('valY1'), y2: document.getElementById('valY2') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            ledger: {
+                misRow: document.getElementById('ledger-mis'), srtRow: document.getElementById('ledger-srt'), diffRow: document.getElementById('ledger-diff'),
+                misTotal: document.getElementById('calcMisTotal'), srtTotal: document.getElementById('calcSrtTotal'), diffTotal: document.getElementById('calcDiffTotal'),
+                mis1: document.getElementById('calcMis1'), mis2: document.getElementById('calcMis2'),
+                srt1: document.getElementById('calcSrt1'), srt2: document.getElementById('calcSrt2')
+            },
+            svg: {
+                guideVx: document.getElementById('guideVx'), guideHy: document.getElementById('guideHy'),
+                grpMis: document.getElementById('grpMismatched'), grpSrt: document.getElementById('grpSorted'), grpDiff: document.getElementById('grpDiff'),
+                rMis1: document.getElementById('rectMis1'), rMis2: document.getElementById('rectMis2'),
+                rSrt1: document.getElementById('rectSrt1'), rSrt2: document.getElementById('rectSrt2'),
+                rDiff: document.getElementById('rectDiff'),
+                lMis1: document.getElementById('lblMis1'), lMis2: document.getElementById('lblMis2'),
+                lSrt1: document.getElementById('lblSrt1'), lSrt2: document.getElementById('lblSrt2'),
+                lDiff: document.getElementById('lblDiff'),
+                tX1: document.getElementById('tickX1'), tX2: document.getElementById('tickX2'), tY1: document.getElementById('tickY1'), tY2: document.getElementById('tickY2'),
+                lx1: document.getElementById('lblX1'), lx2: document.getElementById('lblX2'), ly1: document.getElementById('lblY1'), ly2: document.getElementById('lblY2')
+            }
+        };
+
+        function init() {
+            // Slider Listeners with constraints (x1 <= x2, y1 <= y2)
+            DOM.sliders.x1.addEventListener('input', (e) => handleSlider('x1', parseFloat(e.target.value)));
+            DOM.sliders.x2.addEventListener('input', (e) => handleSlider('x2', parseFloat(e.target.value)));
+            DOM.sliders.y1.addEventListener('input', (e) => handleSlider('y1', parseFloat(e.target.value)));
+            DOM.sliders.y2.addEventListener('input', (e) => handleSlider('y2', parseFloat(e.target.value)));
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.x1 = 4.0; state.x2 = 8.0; state.y1 = 3.0; state.y2 = 7.0;
+                DOM.sliders.x1.value = 4.0; DOM.sliders.x2.value = 8.0;
+                DOM.sliders.y1.value = 3.0; DOM.sliders.y2.value = 7.0;
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function handleSlider(key, val) {
+            pauseAnimation(); // Stop playing if user interacts
+            
+            // Enforce sorting
+            if (key === 'x1' && val > state.x2) val = state.x2;
+            if (key === 'x2' && val < state.x1) val = state.x1;
+            if (key === 'y1' && val > state.y2) val = state.y2;
+            if (key === 'y2' && val < state.y1) val = state.y1;
+
+            state[key] = val;
+            DOM.sliders[key].value = val;
+            DOM.vals[key].textContent = val.toFixed(1);
+            
+            updateGeometry();
+            updateLedgerMath();
+        }
+
+        // Core Geometry Updating Function
+        function updateGeometry() {
+            const { x1, x2, y1, y2 } = state;
+
+            // Update Axes/Ticks
+            DOM.svg.tX1.setAttribute('x1', sX(x1)); DOM.svg.tX1.setAttribute('x2', sX(x1)); DOM.svg.lx1.setAttribute('x', sX(x1));
+            DOM.svg.tX2.setAttribute('x1', sX(x2)); DOM.svg.tX2.setAttribute('x2', sX(x2)); DOM.svg.lx2.setAttribute('x', sX(x2));
+            DOM.svg.tY1.setAttribute('y1', sY(y1)); DOM.svg.tY1.setAttribute('y2', sY(y1)); DOM.svg.ly1.setAttribute('y', sY(y1));
+            DOM.svg.tY2.setAttribute('y1', sY(y2)); DOM.svg.tY2.setAttribute('y2', sY(y2)); DOM.svg.ly2.setAttribute('y', sY(y2));
+
+            // Grid Crosshairs (intersecting at x1, y1)
+            DOM.svg.guideVx.setAttribute('x1', sX(x1)); DOM.svg.guideVx.setAttribute('x2', sX(x1));
+            DOM.svg.guideVx.setAttribute('y2', sY(y2)); // Up to y2 limit
+            DOM.svg.guideHy.setAttribute('y1', sY(y1)); DOM.svg.guideHy.setAttribute('y2', sY(y1));
+            DOM.svg.guideHy.setAttribute('x2', sX(x2)); // Right to x2 limit
+
+            // --- Shapes ---
+            // Helper to set rect easily
+            const setRect = (el, x, y, w, h) => {
+                // SVGs draw from top-left downwards. Math is bottom-left upwards.
+                // Our sY(y) gives the TOP edge for a rectangle starting at origin and going UP to y.
+                el.setAttribute('x', OX); el.setAttribute('y', sY(y));
+                el.setAttribute('width', sW(w)); el.setAttribute('height', sH(h));
+            };
+
+            // Mis1: x1 * y2
+            setRect(DOM.svg.rMis1, 0, y2, x1, y2);
+            DOM.svg.lMis1.setAttribute('x', sX(x1/2)); DOM.svg.lMis1.setAttribute('y', sY(y2) + 20);
+            
+            // Mis2: x2 * y1
+            setRect(DOM.svg.rMis2, 0, y1, x2, y1);
+            DOM.svg.lMis2.setAttribute('x', sX(x2) - 30); DOM.svg.lMis2.setAttribute('y', sY(y1/2));
+
+            // Srt2: x2 * y2 (Large back)
+            setRect(DOM.svg.rSrt2, 0, y2, x2, y2);
+            DOM.svg.lSrt2.setAttribute('x', sX(x2) - 30); DOM.svg.lSrt2.setAttribute('y', sY(y2) + 20);
+
+            // Srt1: x1 * y1 (Small front)
+            setRect(DOM.svg.rSrt1, 0, y1, x1, y1);
+            DOM.svg.lSrt1.setAttribute('x', sX(x1/2)); DOM.svg.lSrt1.setAttribute('y', sY(y1/2));
+
+            // Diff Rect (Top Right: from x1 to x2, y1 to y2)
+            DOM.svg.rDiff.setAttribute('x', sX(x1)); DOM.svg.rDiff.setAttribute('y', sY(y2));
+            DOM.svg.rDiff.setAttribute('width', sW(x2-x1)); DOM.svg.rDiff.setAttribute('height', sH(y2-y1));
+            DOM.svg.lDiff.setAttribute('x', sX(x1 + (x2-x1)/2)); DOM.svg.lDiff.setAttribute('y', sY(y1 + (y2-y1)/2) + 3);
+            
+            // Hide diff plus label if area is tiny
+            if ((x2-x1) < 1 || (y2-y1) < 1) DOM.svg.lDiff.style.opacity = '0';
+            else DOM.svg.lDiff.style.opacity = '1';
+
+            updateLedgerMath();
+        }
+
+        function updateLedgerMath() {
+            const { x1, x2, y1, y2 } = state;
+            const aM1 = x1 * y2, aM2 = x2 * y1;
+            const aS1 = x1 * y1, aS2 = x2 * y2;
+            const diff = (x2 - x1) * (y2 - y1);
+
+            DOM.ledger.mis1.textContent = aM1.toFixed(1);
+            DOM.ledger.mis2.textContent = aM2.toFixed(1);
+            DOM.ledger.misTotal.textContent = (aM1 + aM2).toFixed(1);
+
+            DOM.ledger.srt1.textContent = aS1.toFixed(1);
+            DOM.ledger.srt2.textContent = aS2.toFixed(1);
+            DOM.ledger.srtTotal.textContent = (aS1 + aS2).toFixed(1);
+
+            DOM.ledger.diffTotal.textContent = "+" + diff.toFixed(1);
+        }
+
+        // Step Controller
+        function setStep(step) {
+            state.currentStep = step;
+            DOM.ui.stepInd.textContent = `${step} / ${state.maxSteps}`;
+
+            // Reset classes
+            DOM.ledger.misRow.className = "flex flex-col p-3 rounded-lg border-2 border-transparent transition-all duration-300 opacity-30";
+            DOM.ledger.srtRow.className = "flex flex-col p-3 rounded-lg border-2 border-transparent transition-all duration-300 opacity-30";
+            DOM.ledger.diffRow.classList.remove('opacity-100', 'scale-100');
+            DOM.ledger.diffRow.classList.add('opacity-0', 'scale-95');
+
+            // Visibility Flags
+            let showMis = false, showSrt = false, showDiff = false;
+            let statusHtml = "";
+
+            switch (step) {
+                case 0:
+                    statusHtml = "Adjust the sliders to set lengths for $x$ and $y$. <br>Notice we enforce $x_1 \\le x_2$ and $y_1 \\le y_2$. Press <strong>Play</strong> to begin the proof.";
+                    break;
+                case 1:
+                    showMis = true;
+                    DOM.ledger.misRow.classList.replace('opacity-30', 'opacity-100');
+                    DOM.ledger.misRow.classList.replace('border-transparent', 'border-rose-200');
+                    DOM.ledger.misRow.classList.add('bg-white', 'shadow-sm');
+                    statusHtml = "<strong>Step 1:</strong> We plot the Mismatched Sum ($x_1y_2 + x_2y_1$). <br>Notice the blue and red rectangles overlap in the bottom-left corner.";
+                    break;
+                case 2:
+                    showMis = true;
+                    DOM.ledger.misRow.classList.replace('opacity-30', 'opacity-100');
+                    DOM.ledger.misRow.classList.replace('border-transparent', 'border-rose-200');
+                    DOM.ledger.misRow.classList.add('bg-white', 'shadow-sm');
+                    statusHtml = "<strong>Step 2:</strong> Look closely at the top-right corner. It is completely <strong>empty</strong> in the mismatched arrangement.";
+                    break;
+                case 3:
+                    showSrt = true;
+                    DOM.ledger.srtRow.classList.replace('opacity-30', 'opacity-100');
+                    DOM.ledger.srtRow.classList.replace('border-transparent', 'border-emerald-200');
+                    DOM.ledger.srtRow.classList.add('bg-white', 'shadow-sm');
+                    statusHtml = "<strong>Step 3:</strong> We morph to the Sorted Sum ($x_1y_1 + x_2y_2$). <br>The overlap in the bottom-left remains exactly the same.";
+                    break;
+                case 4:
+                    showSrt = true;
+                    showDiff = true;
+                    DOM.ledger.srtRow.classList.replace('opacity-30', 'opacity-100');
+                    DOM.ledger.srtRow.classList.add('bg-white');
+                    DOM.ledger.diffRow.classList.remove('opacity-0', 'scale-95');
+                    DOM.ledger.diffRow.classList.add('opacity-100', 'scale-100', 'shadow-inner');
+                    statusHtml = "<strong>Step 4:</strong> The Sorted Sum perfectly fills that previously empty top-right corner! We have physically <strong>gained</strong> area.";
+                    break;
+                case 5:
+                    showSrt = true;
+                    showDiff = true;
+                    DOM.ledger.srtRow.classList.replace('opacity-30', 'opacity-100');
+                    DOM.ledger.srtRow.classList.add('bg-white');
+                    DOM.ledger.diffRow.classList.remove('opacity-0', 'scale-95');
+                    DOM.ledger.diffRow.classList.add('opacity-100', 'scale-100');
+                    statusHtml = "<strong>Conclusion:</strong> The Sorted Sum covers the exact same base area as the Mismatched Sum, plus a non-negative gained area. <br>Therefore, Sorted $\\ge$ Mismatched.";
+                    pauseAnimation();
+                    break;
+            }
+
+            // Apply SVG Opacities
+            DOM.svg.grpMis.setAttribute('opacity', showMis ? '1' : '0');
+            DOM.svg.grpSrt.setAttribute('opacity', showSrt ? '1' : '0');
+            DOM.svg.grpDiff.setAttribute('opacity', showDiff ? '1' : '0');
+
+            // Button States
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+
+            // Update Text & Trigger MathJax
+            DOM.ui.status.innerHTML = statusHtml;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+        }
+
+        // Animation Controls
+        function stepForward() {
+            if (state.currentStep < state.maxSteps) {
+                setStep(state.currentStep + 1);
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.currentStep >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                // Initial step trigger
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 500);
+                
+                state.playInterval = setInterval(() => {
+                    stepForward();
+                }, 2500); // 2.5s per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.playInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        // Boot
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

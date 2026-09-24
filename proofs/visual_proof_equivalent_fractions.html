@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Equivalent Fractions</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.5s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+        
+        /* Specific line animations */
+        .draw-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            transition: stroke-dashoffset 0.8s ease-in-out;
+        }
+        .draw-line.drawn {
+            stroke-dashoffset: 0;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-table-columns text-indigo-600 text-2xl"></i> Visual Proof: Equivalent Fractions
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Subdividing a rectangle to geometrically prove that multiplying the numerator and denominator by the same value preserves the shaded area.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ \frac{1}{2} = \frac{1 \times 3}{2 \times 3} = \frac{3}{6} $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-3xl">
+                <!-- Numerator Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[160px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Numerator <span class="math-font text-sm normal-case text-emerald-600">n</span></span>
+                        <span id="valN" class="text-emerald-600 font-mono text-sm font-bold">1</span>
+                    </div>
+                    <input type="range" id="sliderN" value="1" min="1" max="6" step="1" class="w-full accent-emerald-600">
+                </div>
+
+                <!-- Denominator Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[160px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Denominator <span class="math-font text-sm normal-case text-indigo-600">d</span></span>
+                        <span id="valD" class="text-indigo-600 font-mono text-sm font-bold">2</span>
+                    </div>
+                    <input type="range" id="sliderD" value="2" min="1" max="6" step="1" class="w-full">
+                </div>
+
+                <!-- Multiplier Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[160px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Multiplier <span class="math-font text-sm normal-case text-amber-600">m</span></span>
+                        <span id="valM" class="text-amber-600 font-mono text-sm font-bold">3</span>
+                    </div>
+                    <input type="range" id="sliderM" value="3" min="1" max="6" step="1" class="w-full accent-amber-500">
+                </div>
+                
+                <!-- Live Values -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Shaded Value</span>
+                        <span class="font-mono text-sm font-bold text-slate-800" id="stat-val">0.500</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <pattern id="dotHatch" width="8" height="8" patternUnits="userSpaceOnUse">
+                            <circle cx="2" cy="2" r="1.5" fill="#f59e0b" opacity="0.3" />
+                        </pattern>
+                    </defs>
+
+                    <!-- Main Dynamic Group -->
+                    <g id="geometry-layers">
+                        
+                        <!-- Base Solid Rectangle -->
+                        <rect id="rect-base" class="geom-rect" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" />
+                        
+                        <!-- Shaded Numerator Region -->
+                        <rect id="rect-shaded" class="geom-rect" fill="rgba(16, 185, 129, 0.2)" stroke="none" />
+                        
+                        <!-- Vertical Grid Lines (Base Fraction) -->
+                        <g id="vertical-lines"></g>
+
+                        <!-- Horizontal Grid Lines (Multiplier) -->
+                        <g id="horizontal-lines"></g>
+
+                        <!-- Main Border Overlay -->
+                        <rect id="rect-border" class="geom-rect" fill="none" stroke="#334155" stroke-width="3" />
+
+                        <!-- Dimension Lines & Labels -->
+                        <g id="dims-layer">
+                            <!-- Denominator (Total Width) -->
+                            <line id="dim-d" stroke="#64748b" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text id="lbl-d" class="geom-text math-font font-bold text-indigo-700 text-xl" text-anchor="middle" dominant-baseline="bottom"></text>
+                            <text id="lbl-d-pieces" class="geom-text font-bold text-slate-500 text-sm" text-anchor="middle" dominant-baseline="bottom"></text>
+
+                            <!-- Numerator (Shaded Width) -->
+                            <line id="dim-n" class="geom-line fade" stroke="#059669" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text id="lbl-n" class="geom-text math-font font-bold text-emerald-700 text-xl fade" text-anchor="middle" dominant-baseline="bottom"></text>
+                            <text id="lbl-n-pieces" class="geom-text font-bold text-emerald-600/70 text-sm fade" text-anchor="middle" dominant-baseline="bottom"></text>
+
+                            <!-- Multiplier (Height) -->
+                            <g id="grp-dim-m" class="fade" opacity="0">
+                                <line id="dim-m" stroke="#d97706" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                                <text id="lbl-m" class="geom-text math-font font-bold text-amber-700 text-xl" text-anchor="end" dominant-baseline="middle"></text>
+                                <text id="lbl-m-pieces" class="geom-text font-bold text-amber-600/70 text-sm" text-anchor="end" dominant-baseline="middle"></text>
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Base Fraction</span>
+                            <span class="text-xs text-slate-600">A rectangle is divided into $d$ equal vertical columns. We shade $n$ of them to represent the fraction $n/d$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-amber-600 block mb-1">2. The Multiplier</span>
+                            <span class="text-xs text-slate-600">We choose to subdivide the entire shape. We will slice every single column into $m$ new horizontal pieces.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-indigo-700 block mb-1">3. Subdividing the Whole</span>
+                            <span class="text-xs text-slate-600">By cutting the shape horizontally, the total number of pieces in the entire rectangle becomes $d \times m$. This is our new denominator.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-700 block mb-1">4. The New Numerator</span>
+                            <span class="text-xs text-slate-600">Look at the shaded region. It was originally $n$ pieces, but because of the slicing, it is now made of $n \times m$ smaller pieces.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. Conservation of Area</span>
+                            <span class="text-xs text-slate-600">The physical boundary of the shaded area hasn't changed at all! Since the area is conserved, the new fraction represents the exact same mathematical quantity.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the sliders for $n$, $d$, and $m$. Press <strong>Play</strong> to visualize the subdivision.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Mathematical Analysis
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Multiplication by 1 -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Multiplying by One</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The fundamental rule of equivalent fractions relies on the identity property of multiplication: multiplying any number by $1$ leaves it unchanged.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        We represent the number $1$ as a fraction where the numerator and denominator are the same: $\frac{m}{m} = 1$. Therefore:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \frac{n}{d} \times 1 = \frac{n}{d} \times \frac{m}{m} = \frac{n \times m}{d \times m} $$
+                    </div>
+                </div>
+
+                <!-- Right: Visual Translation -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. The Geometric Translation</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Our visual proof translates this algebra directly into geometry. 
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2">
+                        <li>The <strong>denominator</strong> dictates the total number of sub-blocks forming the whole (Area = 1).</li>
+                        <li>The <strong>numerator</strong> counts how many of those blocks are shaded.</li>
+                        <li>By slicing the shape orthogonally (multiplying by $m$), every single block is split into $m$ smaller blocks. Both the total count and shaded count scale up by the exact same factor, maintaining the area ratio.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            n: 1,
+            d: 2,
+            m: 3,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animReq: null
+        };
+
+        // Canvas / Rendering Config
+        const W_TOTAL = 600; // SVG Width capacity
+        const H_TOTAL = 400; // SVG Height capacity
+        const OX = 100; // Origin X
+        const OY = 80;  // Origin Y
+
+        // DOM Map
+        const DOM = {
+            sliders: { 
+                n: document.getElementById('sliderN'), 
+                d: document.getElementById('sliderD'),
+                m: document.getElementById('sliderM')
+            },
+            vals: { 
+                n: document.getElementById('valN'), 
+                d: document.getElementById('valD'), 
+                m: document.getElementById('valM'),
+                area: document.getElementById('stat-val')
+            },
+            btns: { 
+                play: document.getElementById('playPauseBtn'), 
+                step: document.getElementById('stepBtn'), 
+                reset: document.getElementById('resetBtn') 
+            },
+            ui: { 
+                stepInd: document.getElementById('stepIndicator'), 
+                status: document.getElementById('statusText'), 
+                eq: document.getElementById('live-equation') 
+            },
+            svg: {
+                rectBase: document.getElementById('rect-base'),
+                rectShaded: document.getElementById('rect-shaded'),
+                vLines: document.getElementById('vertical-lines'),
+                hLines: document.getElementById('horizontal-lines'),
+                rectBorder: document.getElementById('rect-border'),
+                
+                dimD: document.getElementById('dim-d'), lblD: document.getElementById('lbl-d'), lblDPieces: document.getElementById('lbl-d-pieces'),
+                dimN: document.getElementById('dim-n'), lblN: document.getElementById('lbl-n'), lblNPieces: document.getElementById('lbl-n-pieces'),
+                grpDimM: document.getElementById('grp-dim-m'), dimM: document.getElementById('dim-m'), lblM: document.getElementById('lbl-m'), lblMPieces: document.getElementById('lbl-m-pieces')
+            }
+        };
+
+        const descriptions = [
+            "A rectangle is divided into $d$ equal vertical columns. We shade $n$ of them to represent the fraction $n/d$.",
+            "We choose to subdivide the entire shape. We will slice every single column into $m$ new horizontal pieces.",
+            "By cutting the shape horizontally, the total number of pieces in the entire rectangle becomes $d \\times m$. This is our new denominator.",
+            "Look at the shaded region. It was originally $n$ pieces, but because of the slicing, it is now made of $n \\times m$ smaller pieces.",
+            "The physical boundary of the shaded area hasn't changed at all! Since the area is conserved, the new fraction represents the exact same mathematical quantity."
+        ];
+
+        function init() {
+            // Slider Listeners with Constraints
+            DOM.sliders.d.addEventListener('input', (e) => {
+                pauseAnimation();
+                let v = parseInt(e.target.value);
+                state.d = v;
+                // Enforce n <= d
+                if (state.n > state.d) {
+                    state.n = state.d;
+                    DOM.sliders.n.value = state.d;
+                }
+                DOM.sliders.n.max = state.d; // Update max of n slider
+                updateGeometry();
+            });
+
+            DOM.sliders.n.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.n = parseInt(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.sliders.m.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.m = parseInt(e.target.value);
+                if (state.step > 0 && state.step < 4) {
+                    // Force complete redraw of lines if we are mid-step
+                    setStep(0); 
+                }
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.n = 1; state.d = 2; state.m = 3;
+                DOM.sliders.n.value = 1; DOM.sliders.d.value = 2; DOM.sliders.m.value = 3;
+                DOM.sliders.n.max = 2;
+                updateGeometry();
+                setStep(0);
+            });
+
+            // Set initial max for n slider
+            DOM.sliders.n.max = state.d;
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { n, d, m, step } = state;
+            
+            // Math calculations
+            const val = n / d;
+
+            // UI Stats
+            DOM.vals.n.textContent = n;
+            DOM.vals.d.textContent = d;
+            DOM.vals.m.textContent = m;
+            DOM.vals.area.textContent = val.toFixed(3);
+
+            // Pixel Calculation
+            // We use the full W_TOTAL and H_TOTAL to represent the whole (1)
+            const colWidth = W_TOTAL / d;
+            const shadedWidth = n * colWidth;
+            const rowHeight = H_TOTAL / m;
+
+            // Base Rects
+            DOM.svg.rectBase.setAttribute('x', OX);
+            DOM.svg.rectBase.setAttribute('y', OY);
+            DOM.svg.rectBase.setAttribute('width', W_TOTAL);
+            DOM.svg.rectBase.setAttribute('height', H_TOTAL);
+
+            DOM.svg.rectShaded.setAttribute('x', OX);
+            DOM.svg.rectShaded.setAttribute('y', OY);
+            DOM.svg.rectShaded.setAttribute('width', shadedWidth);
+            DOM.svg.rectShaded.setAttribute('height', H_TOTAL);
+
+            DOM.svg.rectBorder.setAttribute('x', OX);
+            DOM.svg.rectBorder.setAttribute('y', OY);
+            DOM.svg.rectBorder.setAttribute('width', W_TOTAL);
+            DOM.svg.rectBorder.setAttribute('height', H_TOTAL);
+
+            // Generate Vertical Lines (Denominator)
+            let vLinesHtml = '';
+            for (let i = 1; i < d; i++) {
+                const lx = OX + i * colWidth;
+                vLinesHtml += `<line x1="${lx}" y1="${OY}" x2="${lx}" y2="${OY + H_TOTAL}" stroke="#94a3b8" stroke-width="2" />`;
+            }
+            DOM.svg.vLines.innerHTML = vLinesHtml;
+
+            // Generate Horizontal Lines (Multiplier)
+            let hLinesHtml = '';
+            for (let j = 1; j < m; j++) {
+                const ly = OY + j * rowHeight;
+                // Add class for animation triggers based on step
+                const lineClass = step >= 2 ? "draw-line drawn" : "draw-line";
+                hLinesHtml += `<line class="${lineClass}" x1="${OX}" y1="${ly}" x2="${OX + W_TOTAL}" y2="${ly}" stroke="#d97706" stroke-width="2.5" />`;
+            }
+            DOM.svg.hLines.innerHTML = hLinesHtml;
+
+            // Dimensions Setup
+            const offD = 25;
+            const offN = 65;
+            const offM = 25;
+
+            // Total Width (d)
+            DOM.svg.dimD.setAttribute('x1', OX); DOM.svg.dimD.setAttribute('x2', OX + W_TOTAL);
+            DOM.svg.dimD.setAttribute('y1', OY - offD); DOM.svg.dimD.setAttribute('y2', OY - offD);
+            DOM.svg.lblD.setAttribute('x', OX + W_TOTAL/2); DOM.svg.lblD.setAttribute('y', OY - offD - 8);
+            DOM.svg.lblD.textContent = d;
+            
+            DOM.svg.lblDPieces.setAttribute('x', OX + W_TOTAL/2); DOM.svg.lblDPieces.setAttribute('y', OY - offD - 30);
+            DOM.svg.lblDPieces.textContent = step >= 2 ? `Total Pieces = ${d} × ${m} = ${d*m}` : `Total Columns = ${d}`;
+
+            // Shaded Width (n)
+            if (n > 0) {
+                DOM.svg.dimN.setAttribute('x1', OX); DOM.svg.dimN.setAttribute('x2', OX + shadedWidth);
+                DOM.svg.dimN.setAttribute('y1', OY - offN); DOM.svg.dimN.setAttribute('y2', OY - offN);
+                DOM.svg.lblN.setAttribute('x', OX + shadedWidth/2); DOM.svg.lblN.setAttribute('y', OY - offN - 8);
+                DOM.svg.lblN.textContent = n;
+
+                DOM.svg.lblNPieces.setAttribute('x', OX + shadedWidth/2); DOM.svg.lblNPieces.setAttribute('y', OY - offN - 30);
+                DOM.svg.lblNPieces.textContent = step >= 3 ? `Shaded Pieces = ${n} × ${m} = ${n*m}` : `Shaded Columns = ${n}`;
+                
+                DOM.svg.dimN.style.opacity = 1;
+                DOM.svg.lblN.style.opacity = 1;
+                DOM.svg.lblNPieces.style.opacity = 1;
+            } else {
+                DOM.svg.dimN.style.opacity = 0;
+                DOM.svg.lblN.style.opacity = 0;
+                DOM.svg.lblNPieces.style.opacity = 0;
+            }
+
+            // Height (Multiplier m)
+            DOM.svg.dimM.setAttribute('x1', OX - offM); DOM.svg.dimM.setAttribute('x2', OX - offM);
+            DOM.svg.dimM.setAttribute('y1', OY); DOM.svg.dimM.setAttribute('y2', OY + H_TOTAL);
+            DOM.svg.lblM.setAttribute('x', OX - offM - 10); DOM.svg.lblM.setAttribute('y', OY + H_TOTAL/2);
+            DOM.svg.lblM.textContent = m;
+
+            DOM.svg.lblMPieces.setAttribute('x', OX - offM - 35); DOM.svg.lblMPieces.setAttribute('y', OY + H_TOTAL/2);
+            DOM.svg.lblMPieces.textContent = `Rows`;
+
+            applyStepLogic(step, n, d, m);
+        }
+
+        function applyStepLogic(step, n, d, m) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            // Multiplier Dimension
+            op(DOM.svg.grpDimM, step >= 1 ? 1 : 0);
+
+            // Shaded Colors based on step focus
+            if (step === 3) {
+                // Emphasize shaded area
+                DOM.svg.rectShaded.style.fill = 'rgba(16, 185, 129, 0.4)'; // Darker emerald
+            } else {
+                DOM.svg.rectShaded.style.fill = 'rgba(16, 185, 129, 0.2)'; // Normal
+            }
+
+            // Equation Header
+            let eqLatex = "";
+            if (step === 0) {
+                eqLatex = `\\text{Fraction} = \\frac{${n}}{${d}}`;
+            } else if (step === 1) {
+                eqLatex = `\\text{Multiply by } 1: \\quad \\frac{${n}}{${d}} \\times \\frac{${m}}{${m}}`;
+            } else if (step === 2) {
+                eqLatex = `\\text{New Denominator: } d \\times m = ${d} \\times ${m} = ${d*m}`;
+            } else if (step === 3) {
+                eqLatex = `\\text{New Numerator: } n \\times m = ${n} \\times ${m} = ${n*m}`;
+            } else if (step === 4) {
+                eqLatex = `\\frac{${n}}{${d}} = \\frac{${n} \\times ${m}}{${d} \\times ${m}} = \\frac{${n*m}}{${d*m}}`;
+            }
+
+            DOM.ui.eq.innerHTML = `$$ ${eqLatex} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // Throttled refresh
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 80);
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger Active Highlight
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            updateGeometry();
+
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    // Need to reset without slider flash
+                    state.step = 0;
+                    updateGeometry();
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animReq = setInterval(() => {
+                    stepForward();
+                }, 3000); // 3s step gives time to watch line drawing
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animReq);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

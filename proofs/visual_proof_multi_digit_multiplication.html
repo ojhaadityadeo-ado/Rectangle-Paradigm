@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Multi-Digit Multiplication</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5;}
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1;}
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .geom-line { transition: all 0.5s ease-out; }
+        .geom-text { user-select: none; transition: all 0.5s ease; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-table-cells-large text-indigo-600 text-2xl"></i> Visual Proof: Multi-Digit Multiplication
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Breaking down complex products into simple area components using place value decomposition.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center justify-center gap-3" id="live-equation">
+                $$ 23 \times 14 = (20 + 3)(10 + 4) = 200 + 80 + 30 + 12 = 322 $$
+            </div>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-2xl">
+                <!-- X Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[220px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Width <span class="math-font text-sm normal-case text-indigo-600">x</span></span>
+                        <span id="valX" class="text-indigo-600 font-mono text-sm font-bold">23</span>
+                    </div>
+                    <input type="range" id="sliderX" value="23" min="11" max="49" step="1" class="w-full">
+                </div>
+
+                <!-- Y Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[220px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Height <span class="math-font text-sm normal-case text-emerald-600">y</span></span>
+                        <span id="valY" class="text-emerald-600 font-mono text-sm font-bold">14</span>
+                    </div>
+                    <input type="range" id="sliderY" value="14" min="11" max="49" step="1" class="w-full">
+                </div>
+
+                <!-- Live Area Value -->
+                <div class="bg-white px-5 py-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col items-center justify-center min-w-[140px]">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Area</span>
+                    <span class="font-mono text-lg font-bold text-slate-800" id="stat-total">322</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Main Dynamic Group -->
+                    <g id="geometry-layers">
+                        
+                        <!-- Base Solid Rectangle (Step 0) -->
+                        <rect id="rect-main" class="geom-rect" fill="rgba(79, 70, 229, 0.1)" stroke="#4f46e5" stroke-width="3" />
+                        
+                        <!-- The 4 Sub-Rectangles -->
+                        <g id="sub-rects" class="fade" opacity="0">
+                            <!-- Top Left (Tens x Tens) -->
+                            <rect id="rect-tl" class="geom-rect" fill="rgba(79, 70, 229, 0.2)" stroke="#4338ca" stroke-width="2" />
+                            <text id="lbl-area-tl" class="geom-text math-font font-bold text-2xl text-indigo-900" text-anchor="middle" dominant-baseline="middle"></text>
+
+                            <!-- Top Right (Units x Tens) -->
+                            <rect id="rect-tr" class="geom-rect" fill="rgba(16, 185, 129, 0.2)" stroke="#059669" stroke-width="2" />
+                            <text id="lbl-area-tr" class="geom-text math-font font-bold text-xl text-emerald-900" text-anchor="middle" dominant-baseline="middle"></text>
+
+                            <!-- Bottom Left (Tens x Units) -->
+                            <rect id="rect-bl" class="geom-rect" fill="rgba(245, 158, 11, 0.2)" stroke="#d97706" stroke-width="2" />
+                            <text id="lbl-area-bl" class="geom-text math-font font-bold text-xl text-amber-900" text-anchor="middle" dominant-baseline="middle"></text>
+
+                            <!-- Bottom Right (Units x Units) -->
+                            <rect id="rect-br" class="geom-rect" fill="rgba(225, 29, 72, 0.2)" stroke="#e11d48" stroke-width="2" />
+                            <text id="lbl-area-br" class="geom-text math-font font-bold text-lg text-rose-900" text-anchor="middle" dominant-baseline="middle"></text>
+                        </g>
+
+                        <!-- Dimension Lines & Labels -->
+                        <g id="dims-layer">
+                            <!-- Full Dimensions (Step 0) -->
+                            <g id="dims-full" class="fade">
+                                <line id="dim-w-full" stroke="#64748b" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                                <text id="lbl-w-full" class="geom-text math-font font-bold text-indigo-700 text-xl" text-anchor="middle" dominant-baseline="bottom"></text>
+                                
+                                <line id="dim-h-full" stroke="#64748b" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                                <text id="lbl-h-full" class="geom-text math-font font-bold text-emerald-700 text-xl" text-anchor="end" dominant-baseline="middle"></text>
+                            </g>
+
+                            <!-- Split Dimensions (Steps 1+) -->
+                            <g id="dims-split" class="fade" opacity="0">
+                                <!-- Top splits (x) -->
+                                <line id="dim-w-tens" class="geom-line" stroke="#4338ca" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                                <text id="lbl-w-tens" class="geom-text math-font font-bold text-indigo-700 text-lg" text-anchor="middle" dominant-baseline="bottom"></text>
+                                
+                                <line id="dim-w-ones" class="geom-line" stroke="#059669" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                                <text id="lbl-w-ones" class="geom-text math-font font-bold text-emerald-700 text-lg" text-anchor="middle" dominant-baseline="bottom"></text>
+
+                                <!-- Left splits (y) -->
+                                <line id="dim-h-tens" class="geom-line" stroke="#4338ca" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                                <text id="lbl-h-tens" class="geom-text math-font font-bold text-indigo-700 text-lg" text-anchor="end" dominant-baseline="middle"></text>
+                                
+                                <line id="dim-h-ones" class="geom-line" stroke="#d97706" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                                <text id="lbl-h-ones" class="geom-text math-font font-bold text-amber-700 text-lg" text-anchor="end" dominant-baseline="middle"></text>
+                            </g>
+                        </g>
+
+                        <!-- Plus symbols for exploded view -->
+                        <g id="plus-symbols" class="fade" opacity="0">
+                            <text id="plus-1" class="geom-text font-bold text-3xl text-slate-400" text-anchor="middle" dominant-baseline="middle">+</text>
+                            <text id="plus-2" class="geom-text font-bold text-3xl text-slate-400" text-anchor="middle" dominant-baseline="middle">+</text>
+                            <text id="plus-3" class="geom-text font-bold text-3xl text-slate-400" text-anchor="middle" dominant-baseline="middle">+</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Full Area</span>
+                            <span class="text-xs text-slate-600">Multiplication computes the total area of a rectangle. We want to find the area of an $x \times y$ box.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Place Value Decomposition</span>
+                            <span class="text-xs text-slate-600">We split each number into its Tens and Ones. This partitions our single large rectangle cleanly into four distinct sub-rectangles via a grid.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-700 block mb-1">3. Partial Products</span>
+                            <span class="text-xs text-slate-600">We calculate the area of each sub-rectangle independently. Multiplying base-10 components is much easier than evaluating the full product at once.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Exploding the Area</span>
+                            <span class="text-xs text-slate-600">Because area is strictly additive, pulling the pieces apart proves that the whole is exactly equal to the sum of its parts.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-rose-600 block mb-1">5. Final Summation</span>
+                            <span class="text-xs text-slate-600">Adding the four partial products together yields the final, exact answer for the original multiplication problem!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the sliders for $x$ and $y$. Press <strong>Play</strong> to visualize the area decomposition.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Mathematical Analysis
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Distribution -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. The Distributive Property</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The visual area model is the geometric manifestation of the <strong>distributive property</strong> of multiplication over addition. When we break the numbers apart (e.g., $23 = 20 + 3$), we are formally executing:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ (x_{10} + x_1)(y_{10} + y_1) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Often taught in algebra as FOIL (First, Outer, Inner, Last), this expands exactly into our four visual boxes:
+                        $$ x_{10}y_{10} + x_{10}y_1 + x_1y_{10} + x_1y_1 $$
+                    </p>
+                </div>
+
+                <!-- Right: Traditional Algorithm -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Link to Vertical Multiplication</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The standard algorithm taught in elementary schools hides these exact four rectangles inside its rows! 
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        When multiplying $23 \times 14$ vertically:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2">
+                        <li>The first row ($4 \times 23 = 92$) is the sum of the bottom two visual rectangles ($80 + 12$).</li>
+                        <li>The second row ($10 \times 23 = 230$) is the sum of the top two visual rectangles ($200 + 30$).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            x: 23,
+            y: 14,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animReq: null
+        };
+
+        // Canvas / Rendering Config
+        // Max value is 49. Let's make 1 unit = 9 pixels. Max dim = 49 * 9 = 441px. Fits well in 800x600.
+        const SCALE = 9; 
+        const CX = 400; // Center X of SVG
+        const CY = 300; // Center Y of SVG
+
+        // DOM Map
+        const DOM = {
+            sliders: { x: document.getElementById('sliderX'), y: document.getElementById('sliderY') },
+            vals: { x: document.getElementById('valX'), y: document.getElementById('valY'), total: document.getElementById('stat-total') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: {
+                rectMain: document.getElementById('rect-main'),
+                subRects: document.getElementById('sub-rects'),
+                rectTL: document.getElementById('rect-tl'), lblTL: document.getElementById('lbl-area-tl'),
+                rectTR: document.getElementById('rect-tr'), lblTR: document.getElementById('lbl-area-tr'),
+                rectBL: document.getElementById('rect-bl'), lblBL: document.getElementById('lbl-area-bl'),
+                rectBR: document.getElementById('rect-br'), lblBR: document.getElementById('lbl-area-br'),
+                
+                dimsFull: document.getElementById('dims-full'),
+                dimWFull: document.getElementById('dim-w-full'), lblWFull: document.getElementById('lbl-w-full'),
+                dimHFull: document.getElementById('dim-h-full'), lblHFull: document.getElementById('lbl-h-full'),
+                
+                dimsSplit: document.getElementById('dims-split'),
+                dimWTens: document.getElementById('dim-w-tens'), lblWTens: document.getElementById('lbl-w-tens'),
+                dimWOnes: document.getElementById('dim-w-ones'), lblWOnes: document.getElementById('lbl-w-ones'),
+                dimHTens: document.getElementById('dim-h-tens'), lblHTens: document.getElementById('lbl-h-tens'),
+                dimHOnes: document.getElementById('dim-h-ones'), lblHOnes: document.getElementById('lbl-h-ones'),
+
+                plusGroup: document.getElementById('plus-symbols'),
+                plus1: document.getElementById('plus-1'), plus2: document.getElementById('plus-2'), plus3: document.getElementById('plus-3')
+            }
+        };
+
+        const descriptions = [
+            "Multiplication computes the total area of a rectangle. We want to find the area of an $x \\times y$ box.",
+            "We split each number into its Tens and Ones. This partitions our single large rectangle cleanly into four distinct sub-rectangles.",
+            "We calculate the area of each sub-rectangle independently. Multiplying base-10 components is much easier than evaluating the full product.",
+            "Because area is strictly additive, pulling the pieces apart proves that the whole is exactly equal to the sum of its parts.",
+            "Adding the four partial products together yields the final, exact answer for the original multiplication problem!"
+        ];
+
+        function init() {
+            DOM.sliders.x.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.x = parseInt(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.sliders.y.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.y = parseInt(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.x = 23; state.y = 14;
+                DOM.sliders.x.value = 23; DOM.sliders.y.value = 14;
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { x, y, step } = state;
+            
+            // Math calculations
+            const x10 = Math.floor(x / 10) * 10;
+            const x1 = x % 10;
+            const y10 = Math.floor(y / 10) * 10;
+            const y1 = y % 10;
+
+            const areaTL = x10 * y10;
+            const areaTR = x1 * y10;
+            const areaBL = x10 * y1;
+            const areaBR = x1 * y1;
+            const totalArea = x * y;
+
+            // UI Stats
+            DOM.vals.x.textContent = x;
+            DOM.vals.y.textContent = y;
+            DOM.vals.total.textContent = totalArea;
+
+            // Pixels Calculation
+            const wTL = x10 * SCALE; const wTR = x1 * SCALE;
+            const hTL = y10 * SCALE; const hBL = y1 * SCALE;
+            
+            const totalW = wTL + wTR;
+            const totalH = hTL + hBL;
+
+            // Origin of full box (Centered)
+            const ox = CX - totalW / 2;
+            const oy = CY - totalH / 2;
+
+            // Step configuration for gaps (Explode effect)
+            const gapX = (step >= 3) ? 25 : 0;
+            const gapY = (step >= 3) ? 25 : 0;
+
+            // Overall shifted origin if exploded to keep centered
+            const sox = ox - gapX/2;
+            const soy = oy - gapY/2;
+
+            // Helper to set rect easily
+            const setRect = (el, lbl, px, py, pw, ph, textVal) => {
+                el.setAttribute('x', px); el.setAttribute('y', py);
+                el.setAttribute('width', Math.max(0, pw)); el.setAttribute('height', Math.max(0, ph));
+                if (lbl && step >= 2) { // Only show area text from step 2
+                    lbl.setAttribute('x', px + pw / 2);
+                    lbl.setAttribute('y', py + ph / 2);
+                    lbl.textContent = textVal;
+                    lbl.style.opacity = (pw < 25 || ph < 20) ? '0' : '1'; // Hide if too small
+                } else if (lbl) {
+                    lbl.style.opacity = '0';
+                }
+            };
+
+            // Main Base Rect (Step 0)
+            setRect(DOM.svg.rectMain, null, ox, oy, totalW, totalH);
+
+            // Sub-Rectangles
+            // Top-Left
+            setRect(DOM.svg.rectTL, DOM.svg.lblTL, sox, soy, wTL, hTL, areaTL);
+            // Top-Right
+            setRect(DOM.svg.rectTR, DOM.svg.lblTR, sox + wTL + gapX, soy, wTR, hTL, areaTR);
+            // Bottom-Left
+            setRect(DOM.svg.rectBL, DOM.svg.lblBL, sox, soy + hTL + gapY, wTL, hBL, areaBL);
+            // Bottom-Right
+            setRect(DOM.svg.rectBR, DOM.svg.lblBR, sox + wTL + gapX, soy + hTL + gapY, wTR, hBL, areaBR);
+
+            // Dimensions Setup
+            const off = 25;
+            
+            // Full Dims (Step 0)
+            DOM.svg.dimWFull.setAttribute('x1', ox); DOM.svg.dimWFull.setAttribute('x2', ox + totalW);
+            DOM.svg.dimWFull.setAttribute('y1', oy - off); DOM.svg.dimWFull.setAttribute('y2', oy - off);
+            DOM.svg.lblWFull.setAttribute('x', ox + totalW/2); DOM.svg.lblWFull.setAttribute('y', oy - off - 10);
+            DOM.svg.lblWFull.textContent = x;
+
+            DOM.svg.dimHFull.setAttribute('x1', ox - off); DOM.svg.dimHFull.setAttribute('x2', ox - off);
+            DOM.svg.dimHFull.setAttribute('y1', oy); DOM.svg.dimHFull.setAttribute('y2', oy + totalH);
+            DOM.svg.lblHFull.setAttribute('x', ox - off - 10); DOM.svg.lblHFull.setAttribute('y', oy + totalH/2);
+            DOM.svg.lblHFull.textContent = y;
+
+            // Split Dims (Steps 1+)
+            // Top Widths
+            DOM.svg.dimWTens.setAttribute('x1', sox); DOM.svg.dimWTens.setAttribute('x2', sox + wTL);
+            DOM.svg.dimWTens.setAttribute('y1', soy - off); DOM.svg.dimWTens.setAttribute('y2', soy - off);
+            DOM.svg.lblWTens.setAttribute('x', sox + wTL/2); DOM.svg.lblWTens.setAttribute('y', soy - off - 8);
+            DOM.svg.lblWTens.textContent = x10;
+
+            DOM.svg.dimWOnes.setAttribute('x1', sox + wTL + gapX); DOM.svg.dimWOnes.setAttribute('x2', sox + totalW + gapX);
+            DOM.svg.dimWOnes.setAttribute('y1', soy - off); DOM.svg.dimWOnes.setAttribute('y2', soy - off);
+            DOM.svg.lblWOnes.setAttribute('x', sox + wTL + gapX + wTR/2); DOM.svg.lblWOnes.setAttribute('y', soy - off - 8);
+            DOM.svg.lblWOnes.textContent = x1;
+
+            // Left Heights
+            DOM.svg.dimHTens.setAttribute('x1', sox - off); DOM.svg.dimHTens.setAttribute('x2', sox - off);
+            DOM.svg.dimHTens.setAttribute('y1', soy); DOM.svg.dimHTens.setAttribute('y2', soy + hTL);
+            DOM.svg.lblHTens.setAttribute('x', sox - off - 10); DOM.svg.lblHTens.setAttribute('y', soy + hTL/2);
+            DOM.svg.lblHTens.textContent = y10;
+
+            DOM.svg.dimHOnes.setAttribute('x1', sox - off); DOM.svg.dimHOnes.setAttribute('x2', sox - off);
+            DOM.svg.dimHOnes.setAttribute('y1', soy + hTL + gapY); DOM.svg.dimHOnes.setAttribute('y2', soy + totalH + gapY);
+            DOM.svg.lblHOnes.setAttribute('x', sox - off - 10); DOM.svg.lblHOnes.setAttribute('y', soy + hTL + gapY + hBL/2);
+            DOM.svg.lblHOnes.textContent = y1;
+
+            // Plus Symbols for Explosion
+            if (step >= 3) {
+                DOM.svg.plus1.setAttribute('x', sox + wTL + gapX/2); DOM.svg.plus1.setAttribute('y', soy + hTL/2);
+                DOM.svg.plus2.setAttribute('x', sox + wTL/2); DOM.svg.plus2.setAttribute('y', soy + hTL + gapY/2);
+                DOM.svg.plus3.setAttribute('x', sox + wTL + gapX/2); DOM.svg.plus3.setAttribute('y', soy + hTL + gapY/2);
+            }
+
+            applyStepOpacities(step);
+            updateMathHeader(x, y, x10, x1, y10, y1, areaTL, areaTR, areaBL, areaBR, totalArea, step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            // Base vs Split Rects
+            op(DOM.svg.rectMain, step === 0 ? 1 : 0);
+            op(DOM.svg.subRects, step >= 1 ? 1 : 0);
+
+            // Dimensions
+            op(DOM.svg.dimsFull, step === 0 ? 1 : 0);
+            op(DOM.svg.dimsSplit, step >= 1 ? 1 : 0);
+
+            // Plus symbols
+            op(DOM.svg.plusGroup, step >= 3 ? 1 : 0);
+        }
+
+        function updateMathHeader(x, y, x10, x1, y10, y1, tl, tr, bl, br, total, step) {
+            let eqLatex = "";
+            
+            if (step === 0) {
+                eqLatex = `${x} \\times ${y} = \\text{Area}`;
+            } else if (step === 1) {
+                eqLatex = `${x} \\times ${y} = (${x10} + ${x1})(${y10} + ${y1})`;
+            } else if (step === 2) {
+                eqLatex = `(${x10} + ${x1})(${y10} + ${y1}) = ${tl} + ${tr} + ${bl} + ${br}`;
+            } else if (step === 3) {
+                eqLatex = `\\text{Area} = ${tl} + ${tr} + ${bl} + ${br}`;
+            } else if (step === 4) {
+                eqLatex = `${x} \\times ${y} = ${tl} + ${tr} + ${bl} + ${br} = \\mathbf{${total}}`;
+            }
+
+            DOM.ui.eq.innerHTML = `$$ ${eqLatex} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // Throttled refresh
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 80);
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger Active Highlight
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            updateGeometry();
+
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animReq = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s step gives time to read mathjax
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animReq);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

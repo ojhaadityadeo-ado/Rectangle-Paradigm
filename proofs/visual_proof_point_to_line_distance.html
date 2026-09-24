@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Distance from a Point to a Line</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 25px 25px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-poly { transition: fill-opacity 0.4s ease, opacity 0.4s ease; }
+        .geom-line { transition: all 0.4s ease; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+        
+        /* Text Halo for legibility over lines */
+        .text-halo {
+            paint-order: stroke fill;
+            stroke: rgba(255, 255, 255, 0.9);
+            stroke-width: 4px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-ruler-combined text-indigo-600 text-2xl"></i> Visual Proof: Distance to a Line
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Deriving the exact perpendicular distance formula by computing the area of a carefully constructed parallelogram in two different ways.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ d = \frac{|Ax_0 + By_0 + C|}{\sqrt{A^2 + B^2}} $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-4xl">
+                <!-- Line Sliders A, B, C -->
+                <div class="flex flex-col gap-2 w-full max-w-[280px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        <span>Line: <span class="math-font normal-case text-indigo-600">Ax + By + C = 0</span></span>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex flex-col w-1/3">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-bold"><span>A</span><span id="valA">3</span></div>
+                            <input type="range" id="sliderA" value="3" min="1" max="5" step="1" class="w-full">
+                        </div>
+                        <div class="flex flex-col w-1/3">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-bold"><span>B</span><span id="valB">4</span></div>
+                            <input type="range" id="sliderB" value="4" min="1" max="5" step="1" class="w-full">
+                        </div>
+                        <div class="flex flex-col w-1/3">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-bold"><span>C</span><span id="valC">-12</span></div>
+                            <input type="range" id="sliderC" value="-12" min="-20" max="0" step="1" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Point Sliders x0, y0 -->
+                <div class="flex flex-col gap-2 w-full max-w-[200px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        <span>Point <span class="math-font normal-case text-rose-600">P(x₀, y₀)</span></span>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex flex-col w-1/2">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-bold"><span>x₀</span><span id="valX0">4</span></div>
+                            <input type="range" id="sliderX0" value="4" min="-5" max="10" step="1" class="w-full">
+                        </div>
+                        <div class="flex flex-col w-1/2">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-bold"><span>y₀</span><span id="valY0">5</span></div>
+                            <input type="range" id="sliderY0" value="5" min="-5" max="10" step="1" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Math Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center h-[72px]">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Base |QR|</span>
+                        <span class="font-mono text-sm font-bold text-emerald-600" id="stat-base">5.00</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Det Area</span>
+                        <span class="font-mono text-sm font-bold text-indigo-600" id="stat-area">20.00</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Distance d</span>
+                        <span class="font-mono text-sm font-bold text-rose-600" id="stat-dist">4.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowhead-indigo" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#4f46e5" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes -->
+                    <g id="axes">
+                        <!-- Horizontal Grid Lines -->
+                        <path id="grid-h" d="" stroke="#e2e8f0" stroke-width="1.5" />
+                        <!-- Vertical Grid Lines -->
+                        <path id="grid-v" d="" stroke="#e2e8f0" stroke-width="1.5" />
+
+                        <!-- x-axis -->
+                        <line x1="0" y1="350" x2="800" y2="350" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <!-- y-axis -->
+                        <line x1="250" y1="600" x2="250" y2="0" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        
+                        <text x="780" y="375" class="math-font font-bold text-lg" fill="#475569">x</text>
+                        <text x="225" y="20" class="math-font font-bold text-lg" fill="#475569">y</text>
+                        <text x="235" y="370" class="math-font font-bold text-sm" fill="#64748b">0</text>
+                    </g>
+
+                    <g id="dynamic-layers">
+                        <!-- Main Line Ax + By + C = 0 -->
+                        <line id="main-line" class="geom-line" stroke="#1e293b" stroke-width="3" />
+                        <text id="lbl-main-line" class="geom-text math-font font-bold text-slate-800 text-halo" font-size="16">Ax + By + C = 0</text>
+
+                        <!-- Distance d -->
+                        <line id="line-d" class="geom-line" stroke="#e11d48" stroke-width="2.5" stroke-dasharray="6,4" />
+                        <text id="lbl-d" class="geom-text math-font font-bold text-rose-600 text-halo" font-size="18" text-anchor="middle">d</text>
+                        
+                        <!-- Right Angle Marker -->
+                        <polyline id="rt-angle" class="geom-line fade" fill="none" stroke="#64748b" stroke-width="1.5" opacity="0" />
+
+                        <!-- Primary Triangle PQR -->
+                        <polygon id="poly-t1" class="geom-poly fade" fill="rgba(79, 70, 229, 0.2)" stroke="#4f46e5" stroke-width="2" opacity="0" />
+                        
+                        <!-- Rotating/Shearing Secondary Triangle -->
+                        <polygon id="poly-t2" class="geom-poly fade" fill="rgba(16, 185, 129, 0.2)" stroke="#059669" stroke-width="2" opacity="0" />
+
+                        <!-- Base Vector QR -->
+                        <line id="vec-qr" class="geom-line fade" stroke="#4f46e5" stroke-width="4" marker-end="url(#arrowhead-indigo)" opacity="0" />
+                        <text id="lbl-qr" class="geom-text math-font font-bold text-indigo-700 text-halo fade" font-size="16" opacity="0">√(A² + B²)</text>
+
+                        <!-- Vertices & Points -->
+                        <circle id="pt-p" r="6" fill="#e11d48" />
+                        <text id="lbl-p" class="geom-text math-font font-bold text-rose-700 text-halo" font-size="16">P(x₀, y₀)</text>
+
+                        <circle id="pt-proj" r="4" fill="#64748b" class="fade" opacity="0" />
+
+                        <circle id="pt-q" r="5" fill="#059669" class="fade" opacity="0" />
+                        <text id="lbl-q" class="geom-text math-font font-bold text-emerald-700 text-halo fade" font-size="16" opacity="0">Q</text>
+
+                        <circle id="pt-r" r="5" fill="#059669" class="fade" opacity="0" />
+                        <text id="lbl-r" class="geom-text math-font font-bold text-emerald-700 text-halo fade" font-size="16" opacity="0">R</text>
+
+                        <!-- Rectangle Area Label -->
+                        <text id="lbl-rect-area" class="geom-text math-font font-bold text-slate-800 text-halo fade" font-size="20" text-anchor="middle" dominant-baseline="middle" opacity="0">Area = d√(A²+B²)</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Point and the Line</span>
+                            <span class="text-xs text-slate-600">We want to find the perpendicular distance $d$ from the external point $P(x_0, y_0)$ to the line $Ax+By+C=0$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Constructing the Base</span>
+                            <span class="text-xs text-slate-600">Pick an intercept point $Q$ on the line. Construct $R = Q + (B, -A)$. Because $(A,B) \cdot (B,-A) = 0$, $QR$ perfectly lies on the line. The length of this base is $\sqrt{A^2+B^2}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-700 block mb-1">3. Transforming to a Rectangle</span>
+                            <span class="text-xs text-slate-600">Duplicate $\Delta PQR$ to form a parallelogram. Then horizontally shear it into a perfect rectangle. Because shearing preserves area, the combined area is exactly $d \sqrt{A^2+B^2}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Area via Determinant</span>
+                            <span class="text-xs text-slate-600">Using coordinates, the area of a parallelogram spanned by $\vec{QR}$ and $\vec{QP}$ is given by their absolute determinant: $|B(y_0-y_1) - (-A)(x_0-x_1)|$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. Equating the Areas</span>
+                            <span class="text-xs text-slate-600">The determinant simplifies beautifully to $|Ax_0+By_0+C|$. By equating this to our geometric rectangle area $d\sqrt{A^2+B^2}$, we derive the final distance formula!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the parameters for the line and point. Press <strong>Play</strong> to visualize the area conservation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Distance Formula</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Geometric Area -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. The Geometric Area</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        By duplicating $\Delta PQR$, we form a parallelogram. As shown in the animation, a physical shear transforms this parallelogram into a rectangle without altering its area.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The base of this rectangle is the segment $QR$, which we constructed using the vector $(B, -A)$. Its length is exactly $\sqrt{B^2 + (-A)^2} = \sqrt{A^2 + B^2}$.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area} = \text{base} \times \text{height} = \sqrt{A^2 + B^2} \cdot d $$
+                    </div>
+                </div>
+
+                <!-- Right: Determinant Expansion -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. The Coordinate Area</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Linear algebra tells us the area of a parallelogram spanned by two vectors is the absolute determinant of the matrix formed by those vectors. Let $\vec{QR} = (B, -A)$ and $\vec{QP} = (x_0-x_1, y_0-y_1)$.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area} = \left| \det \begin{pmatrix} B & -A \\ x_0-x_1 & y_0-y_1 \end{pmatrix} \right| $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Expanding this gives $|B(y_0 - y_1) + A(x_0 - x_1)|$. Rearranging terms, we get $|Ax_0 + By_0 - (Ax_1 + By_1)|$. Since $Q(x_1, y_1)$ is on the line $Ax+By+C=0$, we know $Ax_1 + By_1 = -C$. This perfectly simplifies the Area to $|Ax_0 + By_0 + C|$!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            A: 3, B: 4, C: -12,
+            x0: 4, y0: 5,
+            step: 0,
+            maxSteps: 4,
+            animT: 0, // Master animation param: 0 to 2
+            isPlaying: false,
+            animReq: null
+        };
+
+        // Canvas Config
+        const OX = 250;
+        const OY = 350;
+        const SCALE = 25;
+
+        // DOM Map
+        const DOM = {
+            sliders: { A: document.getElementById('sliderA'), B: document.getElementById('sliderB'), C: document.getElementById('sliderC'), X0: document.getElementById('sliderX0'), Y0: document.getElementById('sliderY0') },
+            vals: { A: document.getElementById('valA'), B: document.getElementById('valB'), C: document.getElementById('valC'), X0: document.getElementById('valX0'), Y0: document.getElementById('valY0') },
+            stats: { base: document.getElementById('stat-base'), area: document.getElementById('stat-area'), dist: document.getElementById('stat-dist') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: {
+                mainLine: document.getElementById('main-line'), lblMainLine: document.getElementById('lbl-main-line'),
+                lineD: document.getElementById('line-d'), lblD: document.getElementById('lbl-d'), rtAngle: document.getElementById('rt-angle'),
+                polyT1: document.getElementById('poly-t1'), polyT2: document.getElementById('poly-t2'),
+                vecQR: document.getElementById('vec-qr'), lblQR: document.getElementById('lbl-qr'),
+                ptP: document.getElementById('pt-p'), lblP: document.getElementById('lbl-p'),
+                ptProj: document.getElementById('pt-proj'),
+                ptQ: document.getElementById('pt-q'), lblQ: document.getElementById('lbl-q'),
+                ptR: document.getElementById('pt-r'), lblR: document.getElementById('lbl-r'),
+                lblRectArea: document.getElementById('lbl-rect-area')
+            }
+        };
+
+        const descriptions = [
+            "We want to find the perpendicular distance $d$ from the external point $P(x_0, y_0)$ to the line $Ax+By+C=0$.",
+            "Pick intercept $Q$ on the line. Construct $R = Q + (B, -A)$. The base $QR$ has length exactly $\\sqrt{A^2+B^2}$.",
+            "Duplicate $\\Delta PQR$ to form a parallelogram, then shear it into a perfect rectangle. The area is preserved! Twice the triangle area is exactly $d \\sqrt{A^2+B^2}$.",
+            "Using coordinates, the area of the parallelogram formed by vectors $\\vec{QR}$ and $\\vec{QP}$ is the absolute determinant, which beautifully simplifies to $|Ax_0+By_0+C|$.",
+            "By equating the geometric area $d\\sqrt{A^2+B^2}$ with the coordinate area $|Ax_0+By_0+C|$, we derive the final distance formula."
+        ];
+
+        const mapX = (x) => OX + x * SCALE;
+        const mapY = (y) => OY - y * SCALE;
+        const pts = (coords) => coords.map(c => `${mapX(c[0])},${mapY(c[1])}`).join(' ');
+
+        function init() {
+            // Draw faint grid background dynamically
+            let dH = '', dV = '';
+            for(let i = -15; i <= 25; i++) {
+                let py = mapY(i);
+                dH += `M 0 ${py} L 800 ${py} `;
+                let px = mapX(i);
+                dV += `M ${px} 0 L ${px} 600 `;
+            }
+            document.getElementById('grid-h').setAttribute('d', dH);
+            document.getElementById('grid-v').setAttribute('d', dV);
+
+            // Sliders
+            ['A', 'B', 'C', 'X0', 'Y0'].forEach(key => {
+                DOM.sliders[key].addEventListener('input', (e) => {
+                    pauseAnimation();
+                    state[key.toLowerCase()] = parseFloat(e.target.value);
+                    if (key === 'X0') state.x0 = parseFloat(e.target.value);
+                    if (key === 'Y0') state.y0 = parseFloat(e.target.value);
+                    DOM.vals[key].textContent = e.target.value;
+                    if(state.step > 0 && state.step < 4 && state.animT > 0) {
+                        state.animT = 0; setStep(1); // Drop out of active animation if user scrubs
+                    }
+                    updateGeometry();
+                });
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.a = 3; state.b = 4; state.c = -12; state.x0 = 4; state.y0 = 5;
+                state.animT = 0;
+                DOM.sliders.A.value = 3; DOM.sliders.B.value = 4; DOM.sliders.C.value = -12;
+                DOM.sliders.X0.value = 4; DOM.sliders.Y0.value = 5;
+                ['A', 'B', 'C', 'X0', 'Y0'].forEach(k => DOM.vals[k].textContent = DOM.sliders[k].value);
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { a, b, c, x0, y0, step, animT } = state;
+            
+            // Math calculations
+            const denom = a*a + b*b;
+            const baseLen = Math.sqrt(denom);
+            const num = Math.abs(a*x0 + b*y0 + c);
+            const d = num / baseLen;
+            const area = num;
+
+            // Update UI Stats
+            DOM.stats.base.textContent = baseLen.toFixed(2);
+            DOM.stats.area.textContent = area.toFixed(2);
+            DOM.stats.dist.textContent = d.toFixed(2);
+
+            // Calculate Base Point Q
+            let qx, qy;
+            if (Math.abs(a) >= Math.abs(b)) {
+                qy = 0; qx = -c / a;
+            } else {
+                qx = 0; qy = -c / b;
+            }
+            const Q = [qx, qy];
+            const R = [Q[0] + b, Q[1] - a];
+            const P = [x0, y0];
+
+            // Projection of P onto line
+            const t = -(a*x0 + b*y0 + c) / denom;
+            const Pproj = [x0 + t*a, y0 + t*b];
+
+            // Primary Line mapping (draw far off screen)
+            let lx1 = -20, ly1, lx2 = 30, ly2;
+            if (b !== 0) { ly1 = (-c - a*lx1)/b; ly2 = (-c - a*lx2)/b; }
+            else { lx1 = -c/a; lx2 = lx1; ly1 = -20; ly2 = 30; }
+
+            DOM.svg.mainLine.setAttribute('x1', mapX(lx1)); DOM.svg.mainLine.setAttribute('y1', mapY(ly1));
+            DOM.svg.mainLine.setAttribute('x2', mapX(lx2)); DOM.svg.mainLine.setAttribute('y2', mapY(ly2));
+            
+            // Line Label positioning
+            const midL_x = (lx1+lx2)/2; const midL_y = (ly1+ly2)/2;
+            DOM.svg.lblMainLine.setAttribute('x', mapX(midL_x) + 20); DOM.svg.lblMainLine.setAttribute('y', mapY(midL_y) - 20);
+            DOM.svg.lblMainLine.textContent = `${a}x + ${b}y ${c>=0?'+':'-'} ${Math.abs(c)} = 0`;
+
+            // Point P and Projection d
+            DOM.svg.ptP.setAttribute('cx', mapX(P[0])); DOM.svg.ptP.setAttribute('cy', mapY(P[1]));
+            DOM.svg.lblP.setAttribute('x', mapX(P[0]) + 10); DOM.svg.lblP.setAttribute('y', mapY(P[1]) - 15);
+            DOM.svg.lblP.textContent = `P(${P[0]}, ${P[1]})`;
+
+            DOM.svg.ptProj.setAttribute('cx', mapX(Pproj[0])); DOM.svg.ptProj.setAttribute('cy', mapY(Pproj[1]));
+            
+            DOM.svg.lineD.setAttribute('x1', mapX(P[0])); DOM.svg.lineD.setAttribute('y1', mapY(P[1]));
+            DOM.svg.lineD.setAttribute('x2', mapX(Pproj[0])); DOM.svg.lineD.setAttribute('y2', mapY(Pproj[1]));
+            
+            DOM.svg.lblD.setAttribute('x', mapX((P[0]+Pproj[0])/2) + 15);
+            DOM.svg.lblD.setAttribute('y', mapY((P[1]+Pproj[1])/2));
+
+            // Right angle symbol
+            const normA = a / baseLen, normB = b / baseLen; // vector normal to line
+            const dirA = b / baseLen, dirB = -a / baseLen;  // vector along line
+            const rtSize = 0.5;
+            const rt1 = [Pproj[0] + rtSize*dirA, Pproj[1] + rtSize*dirB];
+            const rt2 = [rt1[0] + rtSize*normA * Math.sign(t), rt1[1] + rtSize*normB * Math.sign(t)];
+            const rt3 = [Pproj[0] + rtSize*normA * Math.sign(t), Pproj[1] + rtSize*normB * Math.sign(t)];
+            DOM.svg.rtAngle.setAttribute('points', pts([rt1, rt2, rt3]));
+
+            // Base QR
+            DOM.svg.ptQ.setAttribute('cx', mapX(Q[0])); DOM.svg.ptQ.setAttribute('cy', mapY(Q[1]));
+            DOM.svg.lblQ.setAttribute('x', mapX(Q[0]) - 15); DOM.svg.lblQ.setAttribute('y', mapY(Q[1]) + 20);
+
+            DOM.svg.ptR.setAttribute('cx', mapX(R[0])); DOM.svg.ptR.setAttribute('cy', mapY(R[1]));
+            DOM.svg.lblR.setAttribute('x', mapX(R[0]) + 15); DOM.svg.lblR.setAttribute('y', mapY(R[1]) + 20);
+
+            DOM.svg.vecQR.setAttribute('x1', mapX(Q[0])); DOM.svg.vecQR.setAttribute('y1', mapY(Q[1]));
+            DOM.svg.vecQR.setAttribute('x2', mapX(R[0])); DOM.svg.vecQR.setAttribute('y2', mapY(R[1]));
+            DOM.svg.lblQR.setAttribute('x', mapX((Q[0]+R[0])/2)); DOM.svg.lblQR.setAttribute('y', mapY((Q[1]+R[1])/2) + 20);
+
+            // Complex Morphing Geometry
+            let poly1Pts = [P, Q, R];
+            let poly2Pts = [];
+            let rectAreaCenter = [0,0];
+
+            if (step >= 2) {
+                if (animT <= 1.0) {
+                    // Triangle 1 is stable PQR
+                    // Triangle 2 rotates 180 degrees around midpoint of PR
+                    const M = [(P[0]+R[0])/2, (P[1]+R[1])/2];
+                    const theta = Math.PI * animT; // 0 to Pi
+                    
+                    const rotPt = (pt) => {
+                        const dx = pt[0] - M[0], dy = pt[1] - M[1];
+                        return [
+                            M[0] + dx * Math.cos(theta) - dy * Math.sin(theta),
+                            M[1] + dx * Math.sin(theta) + dy * Math.cos(theta)
+                        ];
+                    };
+                    poly2Pts = [rotPt(P), rotPt(Q), rotPt(R)];
+
+                    // Fade in P' (rotated Q)
+                    if (animT > 0.9) {
+                        rectAreaCenter = [(Q[0]+rotPt(Q)[0])/2, (Q[1]+rotPt(Q)[1])/2];
+                    }
+                } else {
+                    // Parallelogram formed by Q, R, P', P
+                    // P' = P + (B, -A)
+                    const P_prime = [P[0] + b, P[1] - a];
+                    
+                    // Shear phase: s goes 0 to 1
+                    const s = animT - 1.0;
+                    
+                    // Shift vector is Q - P_proj
+                    const shiftX = Q[0] - Pproj[0];
+                    const shiftY = Q[1] - Pproj[1];
+                    
+                    const curP = [P[0] + s * shiftX, P[1] + s * shiftY];
+                    const curP_prime = [P_prime[0] + s * shiftX, P_prime[1] + s * shiftY];
+                    
+                    // Triangle 1 (P -> Q -> R) -> Morph P
+                    poly1Pts = [curP, Q, R];
+                    // Triangle 2 (P' -> R -> P) -> Morph P and P'
+                    poly2Pts = [curP_prime, R, curP];
+
+                    rectAreaCenter = [(Q[0]+curP_prime[0])/2, (Q[1]+curP_prime[1])/2];
+                }
+                
+                DOM.svg.polyT2.setAttribute('points', pts(poly2Pts));
+                
+                if (animT >= 1.0) {
+                    DOM.svg.lblRectArea.setAttribute('x', mapX(rectAreaCenter[0]));
+                    DOM.svg.lblRectArea.setAttribute('y', mapY(rectAreaCenter[1]));
+                }
+            }
+
+            DOM.svg.polyT1.setAttribute('points', pts(poly1Pts));
+
+            applyStepOpacities(step, animT);
+        }
+
+        function applyStepOpacities(step, animT) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            op(DOM.svg.rtAngle, step >= 0 ? 1 : 0);
+            
+            // Step 1 additions
+            op(DOM.svg.ptQ, step >= 1 ? 1 : 0); op(DOM.svg.lblQ, step >= 1 ? 1 : 0);
+            op(DOM.svg.ptR, step >= 1 ? 1 : 0); op(DOM.svg.lblR, step >= 1 ? 1 : 0);
+            op(DOM.svg.vecQR, step >= 1 ? 1 : 0); op(DOM.svg.lblQR, step >= 1 ? 1 : 0);
+            op(DOM.svg.polyT1, step >= 1 ? 1 : 0);
+
+            // Step 2 additions (Morph)
+            op(DOM.svg.polyT2, step >= 2 && animT > 0 ? 1 : 0);
+            op(DOM.svg.lblRectArea, step >= 2 && animT > 1.8 ? 1 : 0); // Show label near end of shear
+            
+            // Step 3 & 4 (Equations)
+            // Driven primarily by mathjax updates below
+            
+            // Top Equation Formatting
+            let eqLatex = "";
+            if (step === 0) eqLatex = "d = ?";
+            else if (step === 1) eqLatex = "\\text{Area} = \\frac{1}{2} \\sqrt{A^2+B^2} \\cdot d";
+            else if (step === 2) eqLatex = "2 \\times \\text{Area} = d \\sqrt{A^2+B^2}";
+            else if (step === 3) eqLatex = "2 \\times \\text{Area} = \\left| \\det \\begin{pmatrix} B & -A \\\\ x_0-x_1 & y_0-y_1 \\end{pmatrix} \\right| = |Ax_0 + By_0 + C|";
+            else if (step === 4) eqLatex = "d = \\frac{|Ax_0 + By_0 + C|}{\\sqrt{A^2 + B^2}}";
+
+            DOM.ui.eq.innerHTML = `$$ ${eqLatex} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // Throttle rendering during animation to prevent lag
+                if (!state.isPlaying || step !== 2) {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger Active Highlight
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            if (!state.isPlaying) {
+                if (stepVal < 2) state.animT = 0;
+                else state.animT = 2.0;
+                updateGeometry();
+            }
+
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function playMorph() {
+            state.isPlaying = true;
+            state.animT = 0;
+            const duration = 2500; // ms total
+            const start = performance.now();
+
+            const animate = (time) => {
+                if (!state.isPlaying) return;
+                let progress = (time - start) / duration;
+                if (progress > 1) progress = 1;
+                
+                // Custom easing for two-part animation
+                // 0 to 0.5 is rotation (t: 0->1). 0.5 to 1.0 is shear (t: 1->2).
+                if (progress < 0.5) {
+                    let p2 = progress * 2;
+                    let ease = p2 < 0.5 ? 2 * p2 * p2 : 1 - Math.pow(-2 * p2 + 2, 2) / 2;
+                    state.animT = ease;
+                } else {
+                    let p2 = (progress - 0.5) * 2;
+                    let ease = p2 < 0.5 ? 2 * p2 * p2 : 1 - Math.pow(-2 * p2 + 2, 2) / 2;
+                    state.animT = 1.0 + ease;
+                }
+
+                updateGeometry();
+
+                if (progress < 1) {
+                    state.animReq = requestAnimationFrame(animate);
+                } else {
+                    state.isPlaying = false;
+                    setTimeout(stepForward, 800);
+                }
+            };
+            state.animReq = requestAnimationFrame(animate);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                const nextStep = state.step + 1;
+                setStep(nextStep);
+                
+                if (nextStep === 2) {
+                    playMorph();
+                } else if (state.isPlaying) {
+                    setTimeout(stepForward, 3500); // Wait 3.5s for normal steps
+                }
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    state.animT = 0;
+                    updateGeometry();
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                if (state.step === 1) {
+                    stepForward(); // Will trigger morph immediately
+                } else if (state.step === 2 && state.animT < 2.0) {
+                    playMorph(); // Resume morph
+                } else {
+                    setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                }
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            if (state.animReq) cancelAnimationFrame(state.animReq);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Fubini's Theorem for Area</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.2s ease-out; mix-blend-mode: multiply; }
+        .geom-path { transition: opacity 0.5s ease; }
+        .fade { transition: opacity 0.4s ease; }
+        .text-halo {
+            paint-order: stroke fill;
+            stroke: rgba(255, 255, 255, 0.9);
+            stroke-width: 4px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-layer-group text-indigo-600 text-2xl"></i> Fubini's Theorem for Area
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Computing the exact same 2D area by slicing it into vertical strips (integrating $y$ then $x$) versus horizontal strips (integrating $x$ then $y$).
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ \text{Area}(D) = \iint_D 1 \, dA $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-3xl">
+                <!-- Resolution Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex-1 min-w-[200px]">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Grid Resolution (<span class="math-font text-sm normal-case text-indigo-600">N</span>)</span>
+                        <span id="valN" class="text-indigo-600 font-mono text-sm font-bold">12</span>
+                    </div>
+                    <input type="range" id="sliderN" value="12" min="4" max="40" step="1" class="w-full">
+                </div>
+
+                <!-- Live Area Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center min-w-[300px] justify-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Approx Area</span>
+                        <span class="font-mono text-lg font-bold text-amber-600" id="stat-approx">0.000</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Exact Area</span>
+                        <span class="font-mono text-lg font-bold text-indigo-700" id="stat-exact">1.333</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Auto-Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Axes -->
+                    <g id="axes">
+                        <!-- X-axis -->
+                        <line x1="80" y1="500" x2="720" y2="500" stroke="#334155" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <text x="730" y="505" class="math-font font-bold text-lg fill-slate-700" dominant-baseline="middle">x</text>
+                        
+                        <!-- Y-axis -->
+                        <line x1="100" y1="520" x2="100" y2="80" stroke="#334155" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <text x="100" y="65" class="math-font font-bold text-lg fill-slate-700" text-anchor="middle">y</text>
+
+                        <!-- Ticks -->
+                        <text x="85" y="515" class="math-font text-slate-500 text-sm">0</text>
+                        
+                        <!-- X Ticks -->
+                        <line x1="400" y1="500" x2="400" y2="508" stroke="#334155" stroke-width="2" />
+                        <text x="400" y="525" class="math-font text-slate-600 text-sm" text-anchor="middle">2</text>
+                        <line x1="700" y1="500" x2="700" y2="508" stroke="#334155" stroke-width="2" />
+                        <text x="700" y="525" class="math-font text-slate-600 text-sm" text-anchor="middle">4</text>
+                        
+                        <!-- Y Ticks -->
+                        <line x1="92" y1="300" x2="100" y2="300" stroke="#334155" stroke-width="2" />
+                        <text x="80" y="300" class="math-font text-slate-600 text-sm" text-anchor="end" dominant-baseline="middle">1</text>
+                        <line x1="92" y1="100" x2="100" y2="100" stroke="#334155" stroke-width="2" />
+                        <text x="80" y="100" class="math-font text-slate-600 text-sm" text-anchor="end" dominant-baseline="middle">2</text>
+                    </g>
+
+                    <g id="geometry-layers">
+                        <!-- Shaded Region D -->
+                        <path id="region-d" class="geom-path fade" fill="rgba(148, 163, 184, 0.2)" stroke="none" />
+                        
+                        <!-- Curves -->
+                        <path id="curve-upper" class="geom-path" fill="none" stroke="#2563eb" stroke-width="3" />
+                        <text id="lbl-upper" class="geom-text math-font font-bold text-blue-700 text-halo" x="650" y="180" text-anchor="end">y = x / 2</text>
+                        
+                        <path id="curve-lower" class="geom-path" fill="none" stroke="#e11d48" stroke-width="3" />
+                        <text id="lbl-lower" class="geom-text math-font font-bold text-rose-700 text-halo" x="680" y="350" text-anchor="start">y = x² / 8</text>
+
+                        <!-- Dynamic Rectangles for Riemann Sums -->
+                        <g id="rects-vertical" class="fade" opacity="0"></g>
+                        <g id="rects-horizontal" class="fade" opacity="0"></g>
+
+                        <!-- Sweep highlight lines -->
+                        <line id="sweep-line-v" class="geom-line fade" stroke="#4f46e5" stroke-width="3" stroke-dasharray="6,4" opacity="0" />
+                        <line id="sweep-line-h" class="geom-line fade" stroke="#059669" stroke-width="3" stroke-dasharray="6,4" opacity="0" />
+
+                        <!-- Region Label -->
+                        <text id="lbl-region-D" class="geom-text math-font font-bold text-3xl text-slate-500 text-halo fade" x="400" y="320" text-anchor="middle">Region D</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The 2D Region $D$</span>
+                            <span class="text-xs text-slate-600">Consider the area bounded between the line $y = \frac{x}{2}$ and the parabola $y = \frac{x^2}{8}$. We want to find the exact area of Region $D$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Inner Integral (Fix $x$, Integrate $y$)</span>
+                            <span class="text-xs text-slate-600">Fix an $x$-coordinate. The vertical distance between the curves forms a strip of height $(\frac{x}{2} - \frac{x^2}{8})$ and thickness $dx$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-indigo-900 block mb-1">3. Outer Integral (Sweep $x$)</span>
+                            <span class="text-xs text-slate-600">By sweeping these vertical strips across the $x$-axis from $0$ to $4$, we accumulate the total area: $\int_0^4 \left( \int_{x^2/8}^{x/2} 1 \, dy \right) dx$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-700 block mb-1">4. Inner Integral (Fix $y$, Integrate $x$)</span>
+                            <span class="text-xs text-slate-600">Alternatively, fix a $y$-coordinate. The horizontal distance between the curves forms a strip of width $(\sqrt{8y} - 2y)$ and thickness $dy$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-emerald-900 block mb-1">5. Outer Integral (Sweep $y$)</span>
+                            <span class="text-xs text-slate-600">By sweeping these horizontal strips up the $y$-axis from $0$ to $2$, we also accumulate the exact same total area: $\int_0^2 \left( \int_{2y}^{\sqrt{8y}} 1 \, dx \right) dy$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-slate-800 block mb-1">6. Fubini's Conclusion</span>
+                            <span class="text-xs text-slate-600">Because both slicing methods perfectly tile the exact same region $D$, the order of integration is interchangeable. Both evaluate to $\frac{4}{3}$!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust grid resolution $N$. Press <strong>Auto-Play</strong> to visualize the area sweeping.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Mathematical Analysis
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Type I Region -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Vertical Slicing (Type I Region)</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        When we treat the shape as a Type I region, we integrate with respect to $y$ first. The lower boundary is $y = x^2/8$ and the upper boundary is $y = x/2$.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_0^4 \left[ \int_{x^2/8}^{x/2} 1 \, dy \right] dx $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Evaluating the inner integral yields $(x/2 - x^2/8)$. The outer integral then computes $\int_0^4 (\frac{x}{2} - \frac{x^2}{8}) dx = \left[\frac{x^2}{4} - \frac{x^3}{24}\right]_0^4 = 4 - \frac{64}{24} = \frac{4}{3}$.
+                    </p>
+                </div>
+
+                <!-- Right: Type II Region -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Horizontal Slicing (Type II Region)</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        To treat it as a Type II region, we must invert the functions to solve for $x$. The left boundary becomes $x = 2y$ and the right boundary becomes $x = \sqrt{8y}$.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_0^2 \left[ \int_{2y}^{\sqrt{8y}} 1 \, dx \right] dy $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Evaluating the inner integral yields $(\sqrt{8y} - 2y)$. The outer integral computes $\int_0^2 (\sqrt{8}y^{1/2} - 2y) dy = \left[\sqrt{8}\frac{2}{3}y^{3/2} - y^2\right]_0^2 = \frac{16}{3} - 4 = \frac{4}{3}$.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            n: 12,
+            step: 0,
+            maxSteps: 5,
+            animT: 0, // 0 to 1 for sweep progress
+            isPlaying: false,
+            animReq: null,
+            lastTime: 0
+        };
+
+        // Math Constants
+        const X_MIN = 0;
+        const X_MAX = 4;
+        const Y_MIN = 0;
+        const Y_MAX = 2;
+        
+        // Functions
+        const fTop = (x) => x / 2;
+        const fBot = (x) => (x * x) / 8;
+        const gRight = (y) => Math.sqrt(8 * y);
+        const gLeft = (y) => 2 * y;
+
+        // SVG Canvas Mapping
+        const OX = 100;
+        const OY = 500;
+        const PX_PER_X = 150; // 4 units = 600px
+        const PX_PER_Y = 200; // 2 units = 400px
+
+        const mapX = (x) => OX + x * PX_PER_X;
+        const mapY = (y) => OY - y * PX_PER_Y;
+
+        // DOM Elements
+        const DOM = {
+            sliders: { n: document.getElementById('sliderN') },
+            vals: { n: document.getElementById('valN'), approx: document.getElementById('stat-approx'), exact: document.getElementById('stat-exact') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: { 
+                curveUpper: document.getElementById('curve-upper'), 
+                curveLower: document.getElementById('curve-lower'),
+                regionD: document.getElementById('region-d'),
+                lblRegionD: document.getElementById('lbl-region-D'),
+                rectsV: document.getElementById('rects-vertical'),
+                rectsH: document.getElementById('rects-horizontal'),
+                sweepV: document.getElementById('sweep-line-v'),
+                sweepH: document.getElementById('sweep-line-h')
+            }
+        };
+
+        const equations = [
+            "\\text{Area}(D) = \\iint_D 1 \\, dA",
+            "dA = dy \\, dx \\implies \\int_{x^2/8}^{x/2} 1 \\, dy",
+            "\\text{Area} = \\int_0^4 \\left( \\int_{x^2/8}^{x/2} 1 \\, dy \\right) dx",
+            "dA = dx \\, dy \\implies \\int_{2y}^{\\sqrt{8y}} 1 \\, dx",
+            "\\text{Area} = \\int_0^2 \\left( \\int_{2y}^{\\sqrt{8y}} 1 \\, dx \\right) dy",
+            "\\int_0^4 \\int_{x^2/8}^{x/2} dy \\, dx = \\int_0^2 \\int_{2y}^{\\sqrt{8y}} dx \\, dy = \\frac{4}{3}"
+        ];
+
+        const descriptions = [
+            "Consider the area bounded between the line $y = \\frac{x}{2}$ and the parabola $y = \\frac{x^2}{8}$. We want to find the exact area of Region $D$.",
+            "Fix an $x$-coordinate. The vertical distance between the curves forms a strip of height $(\\frac{x}{2} - \\frac{x^2}{8})$ and thickness $dx$.",
+            "By sweeping these vertical strips across the $x$-axis from $0$ to $4$, we accumulate the total area.",
+            "Alternatively, fix a $y$-coordinate. The horizontal distance between the curves forms a strip of width $(\\sqrt{8y} - 2y)$ and thickness $dy$.",
+            "By sweeping these horizontal strips up the $y$-axis from $0$ to $2$, we also accumulate the exact same total area.",
+            "Because both slicing methods perfectly tile the exact same region $D$, the order of integration is interchangeable. Both evaluate to $\\frac{4}{3}$!"
+        ];
+
+        function init() {
+            // Draw static curves
+            drawCurves();
+
+            DOM.sliders.n.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.n = parseInt(e.target.value);
+                state.animT = 1.0; // Show full rendering when scrubbing N manually
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.n = 12; state.step = 0; state.animT = 0;
+                DOM.sliders.n.value = 12;
+                setStep(0);
+            });
+
+            setStep(0);
+        }
+
+        function drawCurves() {
+            let pathUp = `M ${mapX(0)} ${mapY(0)} L ${mapX(4)} ${mapY(2)}`;
+            DOM.svg.curveUpper.setAttribute('d', pathUp);
+
+            let pathLow = `M ${mapX(0)} ${mapY(0)} `;
+            const steps = 50;
+            for(let i=1; i<=steps; i++) {
+                let x = (i/steps)*4;
+                pathLow += `L ${mapX(x)} ${mapY(fBot(x))} `;
+            }
+            DOM.svg.curveLower.setAttribute('d', pathLow);
+
+            // Shaded region combines them
+            let pathD = pathUp + " ";
+            for(let i=steps-1; i>=0; i--) {
+                let x = (i/steps)*4;
+                pathD += `L ${mapX(x)} ${mapY(fBot(x))} `;
+            }
+            pathD += "Z";
+            DOM.svg.regionD.setAttribute('d', pathD);
+        }
+
+        function updateGeometry() {
+            const { n, step, animT } = state;
+            DOM.vals.n.textContent = n;
+
+            let approxArea = 0;
+            let htmlV = '';
+            let htmlH = '';
+
+            // Calculate Vertical Rectangles
+            const dx = 4 / n;
+            for(let i=0; i<n; i++) {
+                // To create the sweeping effect, we only render rectangles up to animT proportion
+                if ((i / n) > animT && (step === 1 || step === 2)) break;
+
+                const xMid = (i + 0.5) * dx;
+                const yTop = fTop(xMid);
+                const yBot = fBot(xMid);
+                const h = yTop - yBot;
+                
+                approxArea += h * dx;
+
+                const px = mapX(i * dx);
+                const py = mapY(yTop);
+                const pw = dx * PX_PER_X;
+                const ph = h * PX_PER_Y;
+
+                // Color differentiation for inner vs outer integral step
+                const fill = step === 1 ? 'rgba(79, 70, 229, 0.4)' : 'rgba(79, 70, 229, 0.2)';
+                const stroke = step === 1 ? '#4338ca' : '#6366f1';
+                
+                // In step 1, only show a single representative strip if animT is 0
+                if (step === 1 && animT === 0 && i !== Math.floor(n/2)) continue;
+
+                htmlV += `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" class="geom-rect" />`;
+            }
+
+            // Calculate Horizontal Rectangles
+            const dy = 2 / n;
+            let approxAreaH = 0;
+            for(let j=0; j<n; j++) {
+                if ((j / n) > animT && (step === 3 || step === 4)) break;
+
+                const yMid = (j + 0.5) * dy;
+                const xRight = gRight(yMid);
+                const xLeft = gLeft(yMid);
+                const w = xRight - xLeft;
+                
+                approxAreaH += w * dy;
+
+                const px = mapX(xLeft);
+                const py = mapY((j+1) * dy);
+                const pw = w * PX_PER_X;
+                const ph = dy * PX_PER_Y;
+
+                const fill = step === 3 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.2)';
+                const stroke = step === 3 ? '#059669' : '#10b981';
+
+                if (step === 3 && animT === 0 && j !== Math.floor(n/2)) continue;
+
+                htmlH += `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" class="geom-rect" />`;
+            }
+
+            DOM.svg.rectsV.innerHTML = htmlV;
+            DOM.svg.rectsH.innerHTML = htmlH;
+
+            // Update UI Stats
+            if (step === 0 || step === 5) {
+                DOM.vals.approx.textContent = "1.333";
+            } else if (step === 1 || step === 2) {
+                DOM.vals.approx.textContent = approxArea.toFixed(3);
+            } else {
+                DOM.vals.approx.textContent = approxAreaH.toFixed(3);
+            }
+
+            // Sweep Lines
+            if (step === 2 && animT > 0 && animT < 1) {
+                const sx = mapX(animT * 4);
+                DOM.svg.sweepV.setAttribute('x1', sx); DOM.svg.sweepV.setAttribute('x2', sx);
+                DOM.svg.sweepV.setAttribute('y1', mapY(fBot(animT*4)) + 20); DOM.svg.sweepV.setAttribute('y2', mapY(fTop(animT*4)) - 20);
+                DOM.svg.sweepV.style.opacity = 1;
+            } else {
+                DOM.svg.sweepV.style.opacity = 0;
+            }
+
+            if (step === 4 && animT > 0 && animT < 1) {
+                const sy = mapY(animT * 2);
+                DOM.svg.sweepH.setAttribute('y1', sy); DOM.svg.sweepH.setAttribute('y2', sy);
+                DOM.svg.sweepH.setAttribute('x1', mapX(gLeft(animT*2)) - 20); DOM.svg.sweepH.setAttribute('x2', mapX(gRight(animT*2)) + 20);
+                DOM.svg.sweepH.style.opacity = 1;
+            } else {
+                DOM.svg.sweepH.style.opacity = 0;
+            }
+
+            applyStepLogic(step);
+        }
+
+        function applyStepLogic(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            op(DOM.svg.regionD, step === 0 || step === 5 ? 1 : 0.1);
+            op(DOM.svg.lblRegionD, step === 0 ? 1 : 0);
+            
+            op(DOM.svg.rectsV, (step === 1 || step === 2) ? 1 : 0);
+            op(DOM.svg.rectsH, (step === 3 || step === 4) ? 1 : 0);
+
+            // Math Equation
+            DOM.ui.eq.innerHTML = `$$ ${equations[step]} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // Debounce
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 80);
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger highlights
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            if (!state.isPlaying) {
+                state.animT = (stepVal === 1 || stepVal === 3) ? 0 : 1;
+                updateGeometry();
+            }
+
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function playSweepAnimation(onComplete) {
+            state.animT = 0;
+            state.lastTime = performance.now();
+            const sweepDuration = 2500; // 2.5 seconds to sweep
+
+            function animLoop(currentTime) {
+                if (!state.isPlaying) return;
+
+                const deltaTime = currentTime - state.lastTime;
+                state.lastTime = currentTime;
+
+                state.animT += deltaTime / sweepDuration;
+
+                if (state.animT >= 1.0) {
+                    state.animT = 1.0;
+                    updateGeometry();
+                    if (onComplete) setTimeout(onComplete, 800);
+                } else {
+                    updateGeometry();
+                    state.animReq = requestAnimationFrame(animLoop);
+                }
+            }
+            
+            state.animReq = requestAnimationFrame(animLoop);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function masterLoop() {
+            if (!state.isPlaying) return;
+
+            if (state.step === 2 || state.step === 4) {
+                // These steps trigger sweeps
+                playSweepAnimation(() => {
+                    if (state.isPlaying) stepForward();
+                    if (state.isPlaying) setTimeout(masterLoop, 200);
+                });
+            } else if (state.step < state.maxSteps) {
+                // Static steps just pause for reading
+                setTimeout(() => {
+                    if (state.isPlaying) stepForward();
+                    if (state.isPlaying) setTimeout(masterLoop, 200);
+                }, 2500); 
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { 
+                    if (state.isPlaying) {
+                        stepForward();
+                        masterLoop();
+                    }
+                }, 500);
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            if (state.animReq) cancelAnimationFrame(state.animReq);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Auto-Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

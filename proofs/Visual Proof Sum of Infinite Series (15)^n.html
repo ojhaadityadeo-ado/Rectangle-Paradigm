@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Sum of Infinite Series (1/5)^n</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            aspect-ratio: 1 / 1;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: high-quality;
+        }
+
+        /* Button styling */
+        .btn-action {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-play {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+        }
+        .btn-play:hover { background-color: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 10px rgba(59, 130, 246, 0.3); }
+        .btn-play:active { transform: translateY(1px); }
+
+        .btn-pause {
+            background-color: #ef4444;
+            color: white;
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+        }
+        .btn-pause:hover { background-color: #dc2626; transform: translateY(-1px); }
+
+        /* Custom Sliders */
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: $\sum_{n=1}^{\infty} \left(\frac{1}{5}\right)^n = \frac{1}{4}$
+        </h1>
+
+        <!-- Live Math Equation -->
+        <div class="text-center text-xl font-bold p-4 bg-blue-50 text-blue-900 rounded-lg mb-6 shadow-sm border border-blue-100 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$\frac{1}{5} + \left(\frac{1}{5}\right)^2 + \left(\frac{1}{5}\right)^3 + \dots = \frac{1}{4}$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="iterationSlider" class="font-semibold text-slate-700">
+                            Iterations ($n$): <span id="iterCount" class="text-blue-600 font-bold text-lg">1</span>
+                        </label>
+                    </div>
+                    <input type="range" id="iterationSlider" min="0" max="10" value="1">
+                </div>
+
+                <div class="flex items-center justify-between md:justify-end gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="highlightCheck" class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
+                        <span class="font-medium text-slate-700">Highlight Single Arm (Red)</span>
+                    </label>
+
+                    <button id="playBtn" class="btn-action btn-play">
+                        ▶ Play Auto
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Visualization Board -->
+        <div class="visualization-area">
+            <div class="canvas-container">
+                <canvas id="proofCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Explanation Box -->
+        <div class="bg-slate-50 border-l-4 border-blue-500 p-5 rounded-r-lg shadow-sm mb-6 min-h-[100px] flex items-center">
+            <p class="text-slate-700 text-lg leading-relaxed w-full transition-opacity duration-300" id="status-text">
+                <!-- Status update via JS -->
+            </p>
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">How to understand this proof:</h3>
+            <ol class="list-decimal list-inside space-y-3 text-slate-700 text-lg">
+                <li>
+                    <strong>Start with a unit square:</strong> The outer square has an area of $1$.
+                </li>
+                <li>
+                    <strong>First Iteration ($n=1$):</strong> By drawing lines from each vertex to the midpoint of the opposite side, we partition the square into $4$ identical right triangles and $1$ central tilted square. Each right triangle has an area of exactly $\frac{1}{5}$.
+                </li>
+                <li>
+                    <strong>Recursive Tiling ($n \to \infty$):</strong> We repeat this exact slicing process inside the central square. This produces $4$ smaller triangles of area $\left(\frac{1}{5}\right)^2$. Continuing this process indefinitely forms $4$ identical, non-overlapping spiral "arms".
+                </li>
+                <li>
+                    <strong>The Final Sum:</strong> Together, these $4$ symmetric arms completely tile the unit square (area $1$) without leaving any gaps. Therefore, the area of a single arm (represented by the sum of its triangles) must equal exactly one-quarter of the total area:
+                </li>
+            </ol>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto mt-6">
+                $$\frac{1}{5} + \left(\frac{1}{5}\right)^2 + \left(\frac{1}{5}\right)^3 + \dots = \frac{1}{4}$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('proofCanvas');
+            const ctx = canvas.getContext('2d');
+            const slider = document.getElementById('iterationSlider');
+            const iterCount = document.getElementById('iterCount');
+            const playBtn = document.getElementById('playBtn');
+            const highlightCheck = document.getElementById('highlightCheck');
+            const liveEq = document.getElementById('liveEq');
+            const statusText = document.getElementById('status-text');
+
+            // Internal high resolution setup
+            const size = 1000;
+            canvas.width = size;
+            canvas.height = size;
+
+            let iterations = parseInt(slider.value);
+            let isPlaying = false;
+            let playInterval = null;
+
+            // Base Arm Colors (Red, Blue, Green, Orange)
+            const baseColors = [
+                [239, 68, 68],   // Red (Target Arm)
+                [59, 130, 246],  // Blue
+                [34, 197, 94],   // Green
+                [249, 115, 22]   // Orange
+            ];
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            function calculateSum(n) {
+                let sum = 0;
+                for (let i = 1; i <= n; i++) {
+                    sum += Math.pow(1/5, i);
+                }
+                return sum;
+            }
+
+            function updateExplanation() {
+                let text = "";
+                if (iterations === 0) {
+                    text = "<strong>Initial State:</strong> We start with a unit square of total area $1$. Move the slider or press Play to begin recursive slicing.";
+                } else if (iterations === 1) {
+                    text = "<strong>Step 1:</strong> Slicing the square creates 4 right triangles and 1 tilted central square. Each triangle has an area of exactly $\\frac{1}{5} = 0.2$.";
+                } else if (iterations === 2 || iterations === 3) {
+                    text = "<strong>Step " + iterations + ":</strong> Slicing the new central square in the same ratio produces 4 smaller triangles, each with an area of $\\left(\\frac{1}{5}\\right)^{" + iterations + "}$.";
+                } else {
+                    text = "<strong>Infinite Limit:</strong> Repeating this process indefinitely builds 4 identical spiral arms. Since all 4 arms perfectly cover the square of area $1$, each arm equals exactly $\\frac{1}{4} = 0.25$.";
+                }
+
+                statusText.style.opacity = '0';
+                setTimeout(() => {
+                    statusText.innerHTML = text;
+                    statusText.style.opacity = '1';
+                    updateMathJax();
+                }, 200);
+            }
+
+            function renderMath() {
+                let eq = "";
+                if (iterations === 0) {
+                    eq = "$$\\text{Area} = 0$$";
+                } else if (iterations === 1) {
+                    eq = "$$\\frac{1}{5} = 0.2$$";
+                } else if (iterations === 2) {
+                    eq = "$$\\frac{1}{5} + \\left(\\frac{1}{5}\\right)^2 = 0.24$$";
+                } else if (iterations === 3) {
+                    eq = "$$\\frac{1}{5} + \\left(\\frac{1}{5}\\right)^2 + \\left(\\frac{1}{5}\\right)^3 = 0.248$$";
+                } else if (iterations < 9) {
+                    let sum = calculateSum(iterations);
+                    eq = "$$\\frac{1}{5} + \\left(\\frac{1}{5}\\right)^2 + \\dots + \\left(\\frac{1}{5}\\right)^{" + iterations + "} = " + sum.toFixed(5) + "$$";
+                } else {
+                    eq = "$$\\frac{1}{5} + \\left(\\frac{1}{5}\\right)^2 + \\left(\\frac{1}{5}\\right)^3 + \\dots = \\frac{1}{4} = 0.25$$";
+                }
+                
+                liveEq.innerHTML = eq;
+                updateMathJax();
+            }
+
+            // Main Canvas Render Function
+            function render() {
+                ctx.clearRect(0, 0, size, size);
+                ctx.save();
+
+                // Translate canvas to standard Cartesian Y-up coordinate space
+                ctx.translate(0, size);
+                ctx.scale(size, -size);
+
+                const highlight = highlightCheck.checked;
+
+                for (let i = 0; i < iterations; i++) {
+                    ctx.save();
+
+                    // Geometric transformation linking nested central squares
+                    for (let j = 0; j < i; j++) {
+                        ctx.translate(0.4, 0.2);
+                        ctx.rotate(Math.atan(0.5));
+                        ctx.scale(1 / Math.sqrt(5), 1 / Math.sqrt(5));
+                    }
+
+                    // 4 Right Triangles tiling each level
+                    const triangles = [
+                        [[0, 0], [1, 0], [0.8, 0.4]], // Bottom (Red)
+                        [[1, 0], [1, 1], [0.6, 0.8]], // Right (Blue)
+                        [[1, 1], [0, 1], [0.2, 0.6]], // Top (Green)
+                        [[0, 1], [0, 0], [0.4, 0.2]]  // Left (Orange)
+                    ];
+
+                    triangles.forEach((pts, idx) => {
+                        ctx.beginPath();
+                        ctx.moveTo(pts[0][0], pts[0][1]);
+                        ctx.lineTo(pts[1][0], pts[1][1]);
+                        ctx.lineTo(pts[2][0], pts[2][1]);
+                        ctx.closePath();
+
+                        // Dim other arms if single arm highlight is enabled
+                        let opacity = 0.88;
+                        if (highlight && idx !== 0) opacity = 0.12;
+
+                        const [r, g, b] = baseColors[idx];
+                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                        ctx.fill();
+
+                        // Keep stroke width visually constant across recursive zooms
+                        ctx.lineWidth = 2 / (size * Math.pow(1 / Math.sqrt(5), i));
+                        ctx.strokeStyle = (highlight && idx !== 0) ? `rgba(148, 163, 184, 0.2)` : '#1e293b';
+                        ctx.lineJoin = 'miter';
+                        ctx.stroke();
+                    });
+
+                    ctx.restore();
+                }
+
+                // Draw central square outline for current iteration boundary
+                if (iterations > 0 && iterations < 10) {
+                    ctx.save();
+                    for (let j = 0; j < iterations; j++) {
+                        ctx.translate(0.4, 0.2);
+                        ctx.rotate(Math.atan(0.5));
+                        ctx.scale(1 / Math.sqrt(5), 1 / Math.sqrt(5));
+                    }
+                    ctx.lineWidth = 2 / (size * Math.pow(1 / Math.sqrt(5), iterations));
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.strokeRect(0, 0, 1, 1);
+                    ctx.restore();
+                }
+
+                ctx.restore();
+
+                updateExplanation();
+                renderMath();
+            }
+
+            // Controls listeners
+            slider.addEventListener('input', (e) => {
+                iterations = parseInt(e.target.value);
+                iterCount.innerText = iterations;
+                render();
+            });
+
+            highlightCheck.addEventListener('change', render);
+
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    clearInterval(playInterval);
+                    playBtn.innerHTML = '▶ Play Auto';
+                    playBtn.className = 'btn-action btn-play';
+                } else {
+                    if (iterations === 10) {
+                        iterations = 0;
+                        slider.value = 0;
+                        iterCount.innerText = 0;
+                    }
+                    playBtn.innerHTML = '⏸ Pause';
+                    playBtn.className = 'btn-action btn-pause';
+
+                    playInterval = setInterval(() => {
+                        if (iterations < 10) {
+                            iterations++;
+                            slider.value = iterations;
+                            iterCount.innerText = iterations;
+                            render();
+                        } else {
+                            clearInterval(playInterval);
+                            isPlaying = false;
+                            playBtn.innerHTML = '▶ Play Auto';
+                            playBtn.className = 'btn-action btn-play';
+                        }
+                    }, 1000);
+                }
+                isPlaying = !isPlaying;
+            });
+
+            // Initial Draw
+            render();
+        });
+    </script>
+</body>
+</html>

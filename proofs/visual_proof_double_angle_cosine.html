@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Double-Angle Formula for Cosine</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+        
+        /* Text Halo for legibility over lines */
+        .text-halo {
+            paint-order: stroke fill;
+            stroke: rgba(255, 255, 255, 0.95);
+            stroke-width: 4px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Pulse Animation for Subtracted Region */
+        @keyframes pulse-hatch {
+            0%, 100% { stroke: #e11d48; opacity: 0.6; }
+            50% { stroke: #be123c; opacity: 0.9; }
+        }
+        .anim-hatch line { animation: pulse-hatch 2s infinite; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-angle-double-right text-indigo-600 text-2xl"></i> Visual Proof: Cosine Double-Angle
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Deriving $\cos(2\theta)$ using the dot product of symmetric unit vectors, and transforming it visually using a Unit Area bar.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ \cos(2\theta) = \cos^2\theta - \sin^2\theta $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-2xl">
+                <!-- Theta Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[200px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Angle <span class="math-font text-sm normal-case text-indigo-600">θ</span></span>
+                        <span id="valTheta" class="text-indigo-600 font-mono text-sm font-bold">30°</span>
+                    </div>
+                    <input type="range" id="sliderTheta" value="30" min="10" max="40" step="1" class="w-full">
+                </div>
+
+                <!-- Live Calculated Area Values -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center min-w-[340px] justify-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">$\cos^2\theta$</span>
+                        <span class="font-mono text-sm font-bold text-indigo-600" id="stat-cos2">0.750</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">$\sin^2\theta$</span>
+                        <span class="font-mono text-sm font-bold text-rose-600" id="stat-sin2">0.250</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Diff = $\cos(2\theta)$</span>
+                        <span class="font-mono text-sm font-bold text-emerald-600" id="stat-diff">0.500</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <pattern id="hatch-red" class="anim-hatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#e11d48" stroke-width="2.5" opacity="0.7"/>
+                        </pattern>
+                        <marker id="arrowhead-u" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#4f46e5" />
+                        </marker>
+                        <marker id="arrowhead-v" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#059669" />
+                        </marker>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- ================= LEFT PANEL: Vector Diagram ================= -->
+                    <g id="panel-vectors" transform="translate(180, 250)">
+                        <!-- Axes -->
+                        <line x1="-120" y1="0" x2="180" y2="0" stroke="#cbd5e1" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="0" y1="180" x2="0" y2="-180" stroke="#cbd5e1" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- Unit Circle Arc -->
+                        <path id="unit-circle" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="6,4" />
+
+                        <!-- Coordinate Dashed Lines -->
+                        <g id="coord-lines" class="fade" opacity="0">
+                            <line id="line-cos" x1="0" y1="0" x2="130" y2="0" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,2" />
+                            <line id="line-sin-u" x1="130" y1="0" x2="130" y2="-75" stroke="#e11d48" stroke-width="1.5" stroke-dasharray="4,2" />
+                            <line id="line-sin-v" x1="130" y1="0" x2="130" y2="75" stroke="#e11d48" stroke-width="1.5" stroke-dasharray="4,2" />
+                        </g>
+
+                        <!-- Vectors -->
+                        <line id="vec-u" class="geom-line" x1="0" y1="0" x2="130" y2="-75" stroke="#4f46e5" stroke-width="3" marker-end="url(#arrowhead-u)" />
+                        <line id="vec-v" class="geom-line" x1="0" y1="0" x2="130" y2="75" stroke="#059669" stroke-width="3" marker-end="url(#arrowhead-v)" />
+
+                        <!-- Angle Arc -->
+                        <path id="arc-2theta" class="geom-poly fade" fill="rgba(79, 70, 229, 0.1)" stroke="#4f46e5" stroke-width="1.5" opacity="0" />
+                        <text id="lbl-arc-2theta" class="geom-text math-font font-bold text-indigo-700 text-halo fade" text-anchor="middle" dominant-baseline="middle" opacity="0">2θ</text>
+
+                        <!-- Vector Labels -->
+                        <text id="lbl-vec-u" class="geom-text math-font font-bold text-indigo-700 text-halo" x="140" y="-85">u = (cos θ, sin θ)</text>
+                        <text id="lbl-vec-v" class="geom-text math-font font-bold text-emerald-700 text-halo" x="140" y="85">v = (cos θ, -sin θ)</text>
+                    </g>
+
+                    <!-- ================= RIGHT PANEL: Area Bar ================= -->
+                    <g id="panel-areas" transform="translate(550, 75)" class="fade" opacity="0">
+                        
+                        <!-- Unit Bar Outline (Area = 1) -->
+                        <rect x="0" y="0" width="120" height="350" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" rx="4" />
+                        
+                        <!-- Top Rect: cos^2 -->
+                        <rect id="rect-cos2" class="geom-rect" x="0" y="0" width="120" height="262.5" fill="rgba(79, 70, 229, 0.2)" stroke="#4338ca" stroke-width="2" rx="4" />
+                        <text id="lbl-cos2" class="geom-text math-font font-bold text-indigo-800 text-xl" x="60" y="131.25" text-anchor="middle" dominant-baseline="middle">cos²θ</text>
+
+                        <!-- Bottom Rect: sin^2 -->
+                        <rect id="rect-sin2" class="geom-rect" x="0" y="262.5" width="120" height="87.5" fill="rgba(225, 29, 72, 0.2)" stroke="#e11d48" stroke-width="2" rx="4" />
+                        <text id="lbl-sin2" class="geom-text math-font font-bold text-rose-800 text-lg" x="60" y="306.25" text-anchor="middle" dominant-baseline="middle">sin²θ</text>
+
+                        <!-- Subtraction Rect (Slides up during animation) -->
+                        <rect id="rect-sub" class="geom-rect fade" x="0" y="262.5" width="120" height="87.5" fill="url(#hatch-red)" stroke="#be123c" stroke-width="2.5" rx="4" opacity="0" />
+                        <text id="lbl-sub" class="geom-text math-font font-bold text-rose-900 text-lg text-halo fade" x="60" y="306.25" text-anchor="middle" dominant-baseline="middle" opacity="0">- sin²θ</text>
+
+                        <!-- Result Highlight Box (The remaining cos(2theta) part) -->
+                        <rect id="rect-res" class="geom-rect fade" x="-4" y="-4" width="128" height="183.5" fill="none" stroke="#059669" stroke-width="4" rx="6" opacity="0" />
+                        <text id="lbl-res" class="geom-text math-font font-bold text-emerald-700 text-xl text-halo fade" x="60" y="87.5" text-anchor="middle" dominant-baseline="middle" opacity="0">cos(2θ)</text>
+
+                        <!-- Dimension Lines for Unit Area -->
+                        <g id="dim-unit" class="fade" opacity="0">
+                            <line x1="-20" y1="0" x2="-20" y2="350" stroke="#64748b" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                            <text x="-30" y="175" class="geom-text math-font font-bold text-slate-700 text-xl text-halo" text-anchor="end" dominant-baseline="middle">Area = 1</text>
+                        </g>
+
+                        <!-- Alternative Form Label Box -->
+                        <g id="alt-form-box" class="fade" opacity="0" transform="translate(140, 150)">
+                            <path d="M 0 25 L -15 25" stroke="#94a3b8" stroke-width="2" />
+                            <rect x="0" y="0" width="100" height="50" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" rx="6" />
+                            <text x="50" y="25" class="geom-text math-font font-bold text-emerald-700 text-lg" text-anchor="middle" dominant-baseline="middle">1 - 2sin²θ</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Unit Vectors</span>
+                            <span class="text-xs text-slate-600">Construct two unit vectors symmetric across the x-axis: $\mathbf{u}$ at angle $\theta$, and $\mathbf{v}$ at angle $-\theta$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Dot Product (Geometry)</span>
+                            <span class="text-xs text-slate-600">The total angle between $\mathbf{u}$ and $\mathbf{v}$ is $2\theta$. By definition, the dot product of two unit vectors is the cosine of the angle between them: $\mathbf{u} \cdot \mathbf{v} = \cos(2\theta)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-700 block mb-1">3. Dot Product (Algebra)</span>
+                            <span class="text-xs text-slate-600">Multiplying their coordinate components yields the exact same dot product mathematically: $\mathbf{u} \cdot \mathbf{v} = (\cos\theta)(\cos\theta) + (\sin\theta)(-\sin\theta) = \cos^2\theta - \sin^2\theta$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Area Representation</span>
+                            <span class="text-xs text-slate-600">We can represent this difference visually. A "Unit Bar" (Total Area = $1$) is naturally split into $\cos^2\theta$ and $\sin^2\theta$ via the Pythagorean Identity.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-rose-600 block mb-1">5. Visual Subtraction</span>
+                            <span class="text-xs text-slate-600">To calculate $\cos^2\theta - \sin^2\theta$, we slide a red subtraction block up. The remaining unshaded top area is exactly our target: $\cos(2\theta)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-slate-800 block mb-1">6. Alternative Forms</span>
+                            <span class="text-xs text-slate-600">Looking at the entire unit bar, the remaining $\cos(2\theta)$ section is precisely the whole $1$ minus <em>two</em> red blocks. Thus, $\cos(2\theta) = 1 - 2\sin^2\theta$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust angle $\theta$. Press <strong>Play</strong> to visualize the vector-to-area translation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Mathematical Analysis
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: The Dot Product -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Equating the Dot Product</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The elegance of this proof lies in evaluating the dot product $\mathbf{u} \cdot \mathbf{v}$ in two fundamentally different ways and setting them equal.
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2 mb-4">
+                        <li><strong>Geometrically:</strong> $\mathbf{u} \cdot \mathbf{v} = \|\mathbf{u}\|\|\mathbf{v}\|\cos(\text{angle}) = (1)(1)\cos(2\theta)$.</li>
+                        <li><strong>Algebraically:</strong> $\mathbf{u} \cdot \mathbf{v} = x_u x_v + y_u y_v = (\cos\theta)(\cos\theta) + (\sin\theta)(-\sin\theta)$.</li>
+                    </ul>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        This avoids entirely the messy triangle constructions typically required for angle addition proofs, arriving cleanly at $\cos(2\theta) = \cos^2\theta - \sin^2\theta$.
+                    </p>
+                </div>
+
+                <!-- Right: Pythagorean Substitution -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. The Unit Bar Transformations</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The fundamental Pythagorean identity states that $\cos^2\theta + \sin^2\theta = 1$. This means any $1 \times 1$ physical area can be partitioned perfectly into these two components.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        We can substitute this identity into our primary formula to derive the two alternate forms:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-sm font-mono text-slate-800 overflow-x-auto min-w-0 mb-4 space-y-2">
+                        <div>$\cos(2\theta) = \cos^2\theta - \sin^2\theta$</div>
+                        <div>$\text{Sub } \cos^2\theta = 1 - \sin^2\theta:$</div>
+                        <div class="text-emerald-700 font-bold">$\implies \cos(2\theta) = 1 - 2\sin^2\theta$</div>
+                        <div class="mt-2 border-t pt-2 text-slate-400">--- OR ---</div>
+                        <div>$\text{Sub } \sin^2\theta = 1 - \cos^2\theta:$</div>
+                        <div class="text-indigo-700 font-bold">$\implies \cos(2\theta) = 2\cos^2\theta - 1$</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            theta_deg: 30,
+            step: 0,
+            maxSteps: 5,
+            animT: 0, // Master animation param for the sliding subtraction block (0 to 1)
+            isPlaying: false,
+            animReq: null
+        };
+
+        // Canvas Config
+        const VEC_RADIUS = 150;
+        const BAR_H = 350;
+
+        // DOM Map
+        const DOM = {
+            sliders: { theta: document.getElementById('sliderTheta') },
+            vals: { theta: document.getElementById('valTheta'), cos2: document.getElementById('stat-cos2'), sin2: document.getElementById('stat-sin2'), diff: document.getElementById('stat-diff') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: {
+                // Left Panel
+                unitCircle: document.getElementById('unit-circle'),
+                coordLines: document.getElementById('coord-lines'),
+                lineCos: document.getElementById('line-cos'), lineSinU: document.getElementById('line-sin-u'), lineSinV: document.getElementById('line-sin-v'),
+                vecU: document.getElementById('vec-u'), vecV: document.getElementById('vec-v'),
+                arc2Theta: document.getElementById('arc-2theta'), lblArc2Theta: document.getElementById('lbl-arc-2theta'),
+                lblVecU: document.getElementById('lbl-vec-u'), lblVecV: document.getElementById('lbl-vec-v'),
+                
+                // Right Panel
+                panelAreas: document.getElementById('panel-areas'),
+                rectCos2: document.getElementById('rect-cos2'), lblCos2: document.getElementById('lbl-cos2'),
+                rectSin2: document.getElementById('rect-sin2'), lblSin2: document.getElementById('lbl-sin2'),
+                rectSub: document.getElementById('rect-sub'), lblSub: document.getElementById('lbl-sub'),
+                rectRes: document.getElementById('rect-res'), lblRes: document.getElementById('lbl-res'),
+                dimUnit: document.getElementById('dim-unit'), altFormBox: document.getElementById('alt-form-box')
+            }
+        };
+
+        const descriptions = [
+            "Construct two unit vectors symmetric across the x-axis: $\\mathbf{u}$ at angle $\\theta$, and $\\mathbf{v}$ at angle $-\\theta$.",
+            "The total angle between $\\mathbf{u}$ and $\\mathbf{v}$ is $2\\theta$. By definition, the dot product of two unit vectors is the cosine of the angle between them: $\\mathbf{u} \\cdot \\mathbf{v} = \\cos(2\\theta)$.",
+            "Multiplying their coordinate components yields the exact same dot product mathematically: $\\mathbf{u} \\cdot \\mathbf{v} = (\\cos\\theta)(\\cos\\theta) + (\\sin\\theta)(-\\sin\\theta) = \\cos^2\\theta - \\sin^2\\theta$.",
+            "We can represent this difference visually. A \"Unit Bar\" (Total Area = $1$) is naturally split into $\\cos^2\\theta$ and $\\sin^2\\theta$ via the Pythagorean Identity.",
+            "To calculate $\\cos^2\\theta - \\sin^2\\theta$, we slide a red subtraction block up. The remaining unshaded top area is exactly our target: $\\cos(2\\theta)$.",
+            "Looking at the entire unit bar, the remaining $\\cos(2\\theta)$ section is precisely the whole $1$ minus <em>two</em> red blocks. Thus, $\\cos(2\\theta) = 1 - 2\\sin^2\\theta$."
+        ];
+
+        const equations = [
+            "\\cos(2\\theta) = \\cos^2\\theta - \\sin^2\\theta",
+            "\\mathbf{u} \\cdot \\mathbf{v} = \\|\mathbf{u}\\|\\|\mathbf{v}\\|\\cos(2\\theta) = \\cos(2\\theta)",
+            "\\mathbf{u} \\cdot \\mathbf{v} = \\cos\\theta\\cos\\theta - \\sin\\theta\\sin\\theta = \\cos^2\\theta - \\sin^2\\theta",
+            "1 = \\cos^2\\theta + \\sin^2\\theta",
+            "\\cos(2\\theta) = \\cos^2\\theta - \\sin^2\\theta",
+            "\\cos(2\\theta) = 1 - 2\\sin^2\\theta"
+        ];
+
+        // Math for describing arcs
+        const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
+            const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
+            return {
+                x: centerX + (radius * Math.cos(angleInRadians)),
+                y: centerY - (radius * Math.sin(angleInRadians)) // SVG Y is inverted
+            };
+        };
+
+        const describeArc = (x, y, radius, startAngle, endAngle) => {
+            const start = polarToCartesian(x, y, radius, endAngle);
+            const end = polarToCartesian(x, y, radius, startAngle);
+            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+            return ["M", x, y, "L", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y, "Z"].join(" ");
+        };
+
+        function init() {
+            // Draw static Unit Circle Arc (Right half)
+            const arcR = VEC_RADIUS;
+            DOM.svg.unitCircle.setAttribute('d', `M 0 -${arcR} A ${arcR} ${arcR} 0 0 1 0 ${arcR}`);
+
+            DOM.sliders.theta.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.theta_deg = parseFloat(e.target.value);
+                
+                // If scrubbing while in animation states, snap animT to bounds
+                if (state.step === 4 || state.step === 5) {
+                    state.animT = 1.0;
+                } else {
+                    state.animT = 0;
+                }
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.theta_deg = 30;
+                state.animT = 0;
+                DOM.sliders.theta.value = 30;
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { theta_deg, step, animT } = state;
+            const theta_rad = theta_deg * Math.PI / 180;
+            
+            // Math calculations
+            const cosVal = Math.cos(theta_rad);
+            const sinVal = Math.sin(theta_rad);
+            
+            const cos2 = cosVal * cosVal;
+            const sin2 = sinVal * sinVal;
+            const diff = cos2 - sin2;
+
+            // UI Stats
+            DOM.vals.theta.textContent = `${theta_deg}°`;
+            DOM.vals.cos2.textContent = cos2.toFixed(3);
+            DOM.vals.sin2.textContent = sin2.toFixed(3);
+            DOM.vals.diff.textContent = diff.toFixed(3);
+
+            // ================= LEFT PANEL (VECTORS) =================
+            const vx = VEC_RADIUS * cosVal;
+            const vy = VEC_RADIUS * sinVal; // Note: vy is positive magnitude
+
+            DOM.svg.vecU.setAttribute('x2', vx); DOM.svg.vecU.setAttribute('y2', -vy);
+            DOM.svg.vecV.setAttribute('x2', vx); DOM.svg.vecV.setAttribute('y2', vy);
+
+            // Angle Arc
+            const arcRadius = 50;
+            // Draw arc from -theta to +theta
+            DOM.svg.arc2Theta.setAttribute('d', describeArc(0, 0, arcRadius, -theta_deg, theta_deg));
+            
+            // Label pos
+            DOM.svg.lblArc2Theta.setAttribute('x', arcRadius + 15);
+            DOM.svg.lblArc2Theta.setAttribute('y', 0);
+
+            // Coordinate lines
+            DOM.svg.lineCos.setAttribute('x2', vx);
+            DOM.svg.lineSinU.setAttribute('x1', vx); DOM.svg.lineSinU.setAttribute('x2', vx); DOM.svg.lineSinU.setAttribute('y2', -vy);
+            DOM.svg.lineSinV.setAttribute('x1', vx); DOM.svg.lineSinV.setAttribute('x2', vx); DOM.svg.lineSinV.setAttribute('y2', vy);
+
+            // Vector Labels position
+            DOM.svg.lblVecU.setAttribute('x', vx + 10); DOM.svg.lblVecU.setAttribute('y', -vy - 10);
+            DOM.svg.lblVecV.setAttribute('x', vx + 10); DOM.svg.lblVecV.setAttribute('y', vy + 10);
+
+
+            // ================= RIGHT PANEL (AREA BAR) =================
+            const hCos2 = BAR_H * cos2;
+            const hSin2 = BAR_H * sin2;
+
+            // Base Rects
+            DOM.svg.rectCos2.setAttribute('height', hCos2);
+            DOM.svg.lblCos2.setAttribute('y', hCos2 / 2);
+
+            DOM.svg.rectSin2.setAttribute('y', hCos2);
+            DOM.svg.rectSin2.setAttribute('height', hSin2);
+            DOM.svg.lblSin2.setAttribute('y', hCos2 + hSin2 / 2);
+
+            // Subtraction Block Logic
+            // It starts at Y = hCos2 (sitting perfectly over the sin2 block)
+            // It slides UP to Y = hCos2 - hSin2 to "subtract" from the bottom of the cos2 block
+            DOM.svg.rectSub.setAttribute('height', hSin2);
+            
+            const startY = hCos2;
+            const endY = hCos2 - hSin2;
+            const currentY = startY + (endY - startY) * animT;
+            
+            DOM.svg.rectSub.setAttribute('y', currentY);
+            DOM.svg.lblSub.setAttribute('y', currentY + hSin2 / 2);
+
+            // Result Highlight Box (cos 2theta region)
+            // It is the top part of the cos2 block that is NOT overlapped by the subtraction block
+            // Area = cos2 - sin2. Height = hCos2 - hSin2 = endY
+            DOM.svg.rectRes.setAttribute('height', endY + 4); // +4 for stroke padding
+            DOM.svg.lblRes.setAttribute('y', endY / 2);
+
+            // Alternative Form Box position
+            DOM.svg.altFormBox.setAttribute('transform', `translate(140, ${endY / 2 - 25})`);
+
+            applyStepOpacities(step, animT);
+        }
+
+        function applyStepOpacities(step, animT) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            // Step 1: Angle Arc
+            op(DOM.svg.arc2Theta, step >= 1 ? 1 : 0);
+            op(DOM.svg.lblArc2Theta, step >= 1 ? 1 : 0);
+
+            // Step 2: Coord Lines
+            op(DOM.svg.coordLines, step >= 2 ? 1 : 0);
+
+            // Step 3: Area Panel appears
+            op(DOM.svg.panelAreas, step >= 3 ? 1 : 0);
+
+            // Step 4: Subtraction
+            op(DOM.svg.rectSub, step >= 4 ? 1 : 0);
+            op(DOM.svg.lblSub, step >= 4 ? 1 : 0);
+            
+            // Show result frame only when fully slid up
+            op(DOM.svg.rectRes, step >= 4 && animT > 0.9 ? 1 : 0);
+            op(DOM.svg.lblRes, step >= 4 && animT > 0.9 ? 1 : 0);
+
+            // Step 5: Alt Form
+            op(DOM.svg.dimUnit, step >= 5 ? 1 : 0);
+            op(DOM.svg.altFormBox, step >= 5 ? 1 : 0);
+            
+            // Hide standard cos2theta label to make room for alternative form
+            if (step >= 5) {
+                op(DOM.svg.lblRes, 0);
+            }
+
+            // Update Equation Header
+            DOM.ui.eq.innerHTML = `$$ ${equations[step]} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // Throttle rendering
+                if (!state.isPlaying || step !== 4) {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger Active Highlight
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            if (!state.isPlaying) {
+                if (stepVal < 4) state.animT = 0;
+                else state.animT = 1.0;
+                updateGeometry();
+            }
+
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function playSlideAnimation() {
+            state.isPlaying = true;
+            state.animT = 0;
+            const duration = 2000; // ms
+            const start = performance.now();
+
+            const animate = (time) => {
+                if (!state.isPlaying) return;
+                let progress = (time - start) / duration;
+                if (progress > 1) progress = 1;
+                
+                // Smooth ease in out
+                state.animT = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                updateGeometry();
+
+                if (progress < 1) {
+                    state.animReq = requestAnimationFrame(animate);
+                } else {
+                    state.isPlaying = false;
+                    setTimeout(stepForward, 800);
+                }
+            };
+            state.animReq = requestAnimationFrame(animate);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                const nextStep = state.step + 1;
+                setStep(nextStep);
+                
+                if (nextStep === 4) {
+                    playSlideAnimation();
+                } else if (state.isPlaying) {
+                    setTimeout(stepForward, 3500); // Wait for reading
+                }
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    state.animT = 0;
+                    updateGeometry();
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                if (state.step === 3) {
+                    stepForward(); // Will trigger slide immediately
+                } else if (state.step === 4 && state.animT < 1.0) {
+                    playSlideAnimation(); // Resume slide
+                } else {
+                    setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                }
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            if (state.animReq) cancelAnimationFrame(state.animReq);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

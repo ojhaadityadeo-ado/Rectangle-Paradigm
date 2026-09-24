@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Sum of Squares</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 1180px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* SVG Board Styling */
+        .visualization-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        svg {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* SVG Shape Base Styles */
+        .band-line { stroke: #1e293b; stroke-width: 2; }
+        .outer-border { stroke: #1e293b; stroke-width: 2.5; fill: none; }
+        .axis-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            fill: #475569;
+        }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .n-btn {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            color: #334155;
+            transition: all 0.2s ease;
+        }
+        .n-btn.active { background: #4f46e5; color: #ffffff; border-color: #4f46e5; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3); }
+        .n-btn:hover:not(.active) { border-color: #4f46e5; color: #4f46e5; }
+
+        /* Custom Sliders */
+        input[type="range"] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Ledger Row Animations */
+        .ledger-line {
+            transition: opacity 0.4s ease, background-color 0.3s ease;
+            opacity: 0.25;
+        }
+        .ledger-line.revealed { opacity: 1; }
+        .ledger-line.active-term { background-color: #e0e7ff; border-radius: 6px;}
+
+        /* Math Font Utility */
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Sum of Squares
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$3(1^2 + 2^2 + \dots + n^2) = (2n+1)(1 + 2 + \dots + n)$$
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            
+            <div class="flex items-center gap-6">
+                <!-- N Selector -->
+                <div class="flex flex-col gap-2">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Value of <span class="math-font text-sm normal-case">n</span></span>
+                    <div id="n-buttons" class="flex gap-2">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <div class="w-px h-10 bg-slate-300"></div>
+
+                <!-- Speed Slider -->
+                <div class="flex flex-col gap-2 w-32">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Speed</span>
+                    <input type="range" id="speed" min="1" max="5" value="3" style="transform: rotate(180deg);">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-lg bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="play-btn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play Auto</button>
+                <button id="step-btn" class="btn-action btn-secondary">Next →</button>
+                <button id="reset-btn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <div class="lg:col-span-2 visualization-area mb-0 relative">
+                
+                <!-- Dynamic Legend -->
+                <div class="flex flex-wrap justify-center gap-2 mb-4 w-full" id="legend-row">
+                    <!-- Populated by JS -->
+                </div>
+
+                <svg id="grid-svg" viewBox="0 0 600 500">
+                    <!-- Geometries generated via JS -->
+                </svg>
+
+                <div class="absolute bottom-4 left-0 right-0 px-8 text-center text-sm font-medium text-slate-600 bg-white/80 backdrop-blur mx-auto w-11/12 rounded-lg py-2 border border-slate-200 shadow-sm" id="caption">
+                    Every band $s$ (where $s = 1 \dots n$) holds two $i \times i$ blocks at its ends and a strip of the tower in the middle. Press <b>Play</b> to reveal.
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-3 flex justify-between items-center">
+                        <span>Running Tally</span>
+                        <span class="text-xs font-normal text-slate-500 font-mono" id="ledger-n">n = 5</span>
+                    </h3>
+                    <div id="ledger-lines" class="space-y-1 overflow-y-auto max-h-[300px] pr-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t-2 border-slate-800">
+                    <div class="flex justify-between items-center text-sm font-bold text-slate-600 mb-1">
+                        <span>$\sum$ so far:</span>
+                        <span id="running-sq" class="font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-[15px] font-bold text-indigo-700">
+                        <span>$3\sum$ so far:</span>
+                        <span id="running-3sq" class="font-mono text-lg">0</span>
+                    </div>
+                    
+                    <div id="qed-line" class="mt-4 p-3 bg-indigo-50 text-indigo-900 rounded-lg border border-indigo-200 text-center text-sm font-semibold opacity-0 transition-opacity duration-500">
+                        Both sides tile the same rectangle. Equation holds!
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Insight</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        To prove that $3 \sum_{i=1}^n i^2 = (2n+1)\frac{n(n+1)}{2}$, we construct a visual proof showing that <strong>three sets</strong> of squares from $1^2$ up to $n^2$ can perfectly tile a specific rectangle.
+                    </p>
+                    <p class="mb-4">
+                        We define the target rectangle to have a width of $(2n+1)$ and a height equal to the sum of the first $n$ integers: $(1 + 2 + \dots + n)$. 
+                        <br>
+                        <em>Note: The sum of the first $n$ integers is also known as the $n$-th triangular number.</em>
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">The Tiling Strategy</h3>
+                    <p class="text-sm mb-3">For every color $i$ (where $i$ ranges from $1$ to $n$), the animation places exactly three $i \times i$ blocks into the rectangle:</p>
+                    <ul class="list-disc list-inside space-y-2 text-sm ml-2">
+                        <li><strong>One $i \times i$ block</strong> on the far left side.</li>
+                        <li><strong>One $i \times i$ block</strong> on the far right side.</li>
+                        <li><strong>A stepped tower strip</strong> in the middle. The tower strip is composed of $i$ rows, and their lengths are the first $i$ odd numbers ($1, 3, 5, \dots$). The sum of the first $i$ odd numbers is exactly $i^2$.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-indigo-200 bg-indigo-50 rounded-xl mt-6">
+                <p class="text-sm mt-2 max-w-2xl mx-auto mb-3 text-slate-700">
+                    Since every color perfectly accounts for exactly $3 \times i^2$ blocks, and together all colors perfectly tile the $(2n+1) \times (1+2+\dots+n)$ rectangle with no gaps, the areas must be exactly equal:
+                </p>
+                <p class="text-2xl font-bold text-indigo-800 mt-4 overflow-x-auto">
+                    $$ 3\sum_{i=1}^n i^2 = (2n+1)\sum_{i=1}^n i = (2n+1)\frac{n(n+1)}{2} $$
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tailwind Color Palette mapping
+            const PALETTE = [
+                '#ef4444', // Red-500
+                '#f59e0b', // Amber-500
+                '#10b981', // Emerald-500
+                '#0ea5e9', // Sky-500
+                '#8b5cf6', // Violet-500
+                '#ec4899', // Pink-500
+                '#84cc16'  // Lime-500
+            ];
+            const NEUTRAL = '#f8fafc'; // slate-50
+            const STROKE = '#cbd5e1';  // slate-300
+            const INK = '#1e293b';     // slate-800
+
+            let n = 5;
+            let currentStep = 0; // 0..n
+            let playing = false;
+            let playTimer = null;
+            let layout = null;
+            
+            // Dictionaries for SVG Elements per step
+            let leftRects = {}, rightRects = {}, towerRects = {}; 
+            let cellSize = 34;
+
+            // DOM Elements
+            const svg = document.getElementById('grid-svg');
+            const nButtonsEl = document.getElementById('n-buttons');
+            const legendRow = document.getElementById('legend-row');
+            const ledgerLines = document.getElementById('ledger-lines');
+            
+            const runningSq = document.getElementById('running-sq');
+            const running3sq = document.getElementById('running-3sq');
+            const ledgerN = document.getElementById('ledger-n');
+            const qedLine = document.getElementById('qed-line');
+            const stepIndicator = document.getElementById('stepIndicator');
+            const captionEl = document.getElementById('caption');
+            const liveEq = document.getElementById('liveEq');
+            
+            const playBtn = document.getElementById('play-btn');
+            const stepBtn = document.getElementById('step-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const speedInput = document.getElementById('speed');
+
+            const svgNS = 'http://www.w3.org/2000/svg';
+            function el(tag, attrs){
+                const e = document.createElementNS(svgNS, tag);
+                for(const k in attrs) e.setAttribute(k, attrs[k]);
+                return e;
+            }
+
+            // Central MathJax trigger
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            // Core Layout Calculations
+            function buildLayout(n){
+                const W = 2*n+1;
+                const N = n*(n+1)/2; // Sum of 1..n
+                const rows = [];
+                let rowIndex = 0;
+                
+                for(let s=1; s<=n; s++){
+                    for(let r=1; r<=s; r++){
+                        rowIndex++;
+                        const v = n - r + 1; // tower group this row belongs to
+                        const towerWidth = W - 2*s;
+                        rows.push({
+                            rowIndex, s, r, v, towerWidth,
+                            towerColStart: s+1, towerColEnd: W-s
+                        });
+                    }
+                }
+                return {W, N, rows};
+            }
+
+            function bandRowRange(n, s){
+                const start = s*(s-1)/2 + 1;
+                return {start, end: start + s - 1};
+            }
+
+            function oddSeq(count){
+                const arr = [];
+                for(let k=count; k>=1; k--) arr.push(2*k-1);
+                return arr;
+            }
+
+            function sumOfSquares(n){ let t=0; for(let i=1;i<=n;i++) t+=i*i; return t; }
+
+            function render(){
+                layout = buildLayout(n);
+                const {W, N} = layout;
+                
+                // Dynamic cell sizing to fit container gracefully
+                cellSize = Math.max(16, Math.min(42, Math.floor(600/W), Math.floor(450/N)));
+                const pad = 50;
+                const svgW = W * cellSize;
+                const svgH = N * cellSize;
+                
+                svg.setAttribute('viewBox', `0 0 ${svgW + pad*2} ${svgH + pad*1.8}`);
+                svg.innerHTML = '';
+                leftRects = {}; rightRects = {}; towerRects = {};
+
+                const g = el('g', {transform: `translate(${pad}, ${pad*0.6})`});
+                svg.appendChild(g);
+
+                // Base neutral background
+                g.appendChild(el('rect', {x:0, y:0, width:svgW, height:svgH, fill:NEUTRAL, stroke:'none'}));
+
+                // LEFT & RIGHT square blocks
+                for(let s=1; s<=n; s++){
+                    const {start, end} = bandRowRange(n, s);
+                    const yTop = (N - end) * cellSize; 
+                    const size = s * cellSize;
+
+                    // Bases
+                    g.appendChild(el('rect', {x:0, y:yTop, width:size, height:size, fill:NEUTRAL, stroke:STROKE, 'stroke-width':1}));
+                    g.appendChild(el('rect', {x:svgW-size, y:yTop, width:size, height:size, fill:NEUTRAL, stroke:STROKE, 'stroke-width':1}));
+                    
+                    // Colored overlays
+                    const leftColor = el('rect', {x:0, y:yTop, width:size, height:size, fill:PALETTE[(s-1)%PALETTE.length], stroke:INK, 'stroke-width':1.5, opacity:0, style:'transition:opacity .5s ease'});
+                    const rightColor = el('rect', {x:svgW-size, y:yTop, width:size, height:size, fill:PALETTE[(s-1)%PALETTE.length], stroke:INK, 'stroke-width':1.5, opacity:0, style:'transition:opacity .5s ease'});
+                    
+                    g.appendChild(leftColor);
+                    g.appendChild(rightColor);
+
+                    leftRects[s] = leftColor;
+                    rightRects[s] = rightColor;
+                }
+
+                // TOWER rows
+                for(let v=1; v<=n; v++) towerRects[v] = [];
+                layout.rows.forEach(row => {
+                    const yTop = (N - row.rowIndex) * cellSize;
+                    const x = (row.towerColStart - 1) * cellSize;
+                    const w = row.towerWidth * cellSize;
+                    
+                    g.appendChild(el('rect', {x, y:yTop, width:w, height:cellSize, fill:NEUTRAL, stroke:STROKE, 'stroke-width':1}));
+                    const color = el('rect', {x, y:yTop, width:w, height:cellSize, fill:PALETTE[(row.v-1)%PALETTE.length], stroke:INK, 'stroke-width':1, opacity:0, style:'transition:opacity .4s ease'});
+                    
+                    g.appendChild(color);
+                    towerRects[row.v].push(color);
+                });
+
+                // Background Unit Grid
+                for(let c=0; c<=W; c++) {
+                    g.appendChild(el('line', {x1:c*cellSize, y1:0, x2:c*cellSize, y2:svgH, stroke:STROKE, 'stroke-width':0.5}));
+                }
+                for(let r=0; r<=N; r++) {
+                    g.appendChild(el('line', {x1:0, y1:r*cellSize, x2:svgW, y2:r*cellSize, stroke:STROKE, 'stroke-width':0.5}));
+                }
+
+                // Bold band separator lines
+                let cum = 0;
+                for(let s=1; s<=n; s++){
+                    cum += s;
+                    const y = (N-cum) * cellSize;
+                    g.appendChild(el('line', {x1:0, y1:y, x2:svgW, y2:y, class:'band-line'}));
+                }
+                g.appendChild(el('line', {x1:0, y1:0, x2:svgW, y2:0, class:'band-line'}));
+
+                // Vertical separators between blocks per band
+                for(let s=1; s<=n; s++){
+                    const {start, end} = bandRowRange(n, s);
+                    const yTop = (N-end)*cellSize, yBot = (N-start+1)*cellSize;
+                    g.appendChild(el('line', {x1:s*cellSize, y1:yTop, x2:s*cellSize, y2:yBot, class:'band-line'}));
+                    g.appendChild(el('line', {x1:(W-s)*cellSize, y1:yTop, x2:(W-s)*cellSize, y2:yBot, class:'band-line'}));
+                }
+
+                // Outer border
+                g.appendChild(el('rect', {x:0, y:0, width:svgW, height:svgH, class:'outer-border'}));
+
+                // Axis labels
+                const bottomLabel = el('text', {x:svgW/2, y:svgH+25, 'text-anchor':'middle', class:'axis-label'});
+                bottomLabel.textContent = `Width = 2n+1 = ${W}`;
+                g.appendChild(bottomLabel);
+
+                const leftLabel = el('text', {x:-15, y:svgH/2, 'text-anchor':'middle', class:'axis-label', transform:`rotate(-90, -15, ${svgH/2})`});
+                leftLabel.textContent = `Height = (1+...+n) = ${N}`;
+                g.appendChild(leftLabel);
+
+                buildLegend();
+                buildLedgerSkeleton();
+                updateIdentityLine();
+            }
+
+            function buildLegend(){
+                legendRow.innerHTML = '';
+                for(let i=1; i<=n; i++){
+                    const chip = document.createElement('div');
+                    chip.className = `flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-200 bg-white shadow-sm opacity-40 transition-opacity duration-300`;
+                    chip.id = 'chip-'+i;
+                    chip.innerHTML = `<span class="w-3 h-3 rounded-full" style="background:${PALETTE[(i-1)%PALETTE.length]}"></span> <span class="font-mono text-sm font-semibold">${i}²</span>`;
+                    legendRow.appendChild(chip);
+                }
+            }
+
+            function buildLedgerSkeleton(){
+                ledgerLines.innerHTML = '';
+                ledgerN.textContent = `n = ${n}`;
+                for(let i=1; i<=n; i++){
+                    const line = document.createElement('div');
+                    line.className = 'ledger-line flex justify-between items-center p-2 rounded-md font-mono text-sm';
+                    line.id = 'ledger-'+i;
+                    line.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-sm" style="background:${PALETTE[(i-1)%PALETTE.length]}"></span>
+                            <span>$3 \\times ${i}^2$</span>
+                        </div>
+                        <span class="amt font-bold text-slate-700"></span>
+                    `;
+                    ledgerLines.appendChild(line);
+                }
+                runningSq.textContent = '0';
+                running3sq.textContent = '0';
+                qedLine.classList.remove('opacity-100');
+                qedLine.classList.add('opacity-0');
+            }
+
+            function updateIdentityLine(){
+                const sumSq = sumOfSquares(n);
+                const sumLin = n*(n+1)/2;
+                liveEq.innerHTML = `$$3(1^2 + 2^2 + \\dots + ${n}^2) = 3 \\times ${sumSq} = ${3*sumSq}$$ $$= (${2*n+1})(${sumLin}) = ${(2*n+1)*sumLin}$$`;
+                updateMathJax();
+            }
+
+            function buildNButtons(){
+                nButtonsEl.innerHTML = '';
+                for(let val=3; val<=7; val++){
+                    const b = document.createElement('button');
+                    b.className = 'n-btn' + (val === n ? ' active' : '');
+                    b.textContent = val;
+                    b.addEventListener('click', () => {
+                        stopPlaying();
+                        n = val;
+                        currentStep = 0;
+                        render();
+                        [...nButtonsEl.children].forEach(c => c.classList.remove('active'));
+                        b.classList.add('active');
+                        updatePlayButtonState();
+                    });
+                    nButtonsEl.appendChild(b);
+                }
+            }
+
+            function captionForStep(i){
+                const bands = [];
+                for(let s=n-i+1; s<=n; s++) bands.push(s);
+                const widths = oddSeq(i);
+                
+                return `Color <b>${i}</b> appears three times: an $${i} \\times ${i}$ block on the left, an $${i} \\times ${i}$ block on the right ($${i}^2 + ${i}^2 = 2 \\times ${i}^2$ tiles), `+
+                    `and one row taken from each of the ${i===1? 'top' : 'last '+i} band${i>1?'s':''} of the tower (bands ${bands.join(', ')}).<br>`+
+                    `Those tower rows have lengths $${widths.join(' , ')}$ (the first $${i}$ odd numbers) which uniquely sum to $${i}^2$. `+
+                    `Total for color $${i}$: $2 \\times ${i}^2 + ${i}^2 = 3 \\times ${i}^2$.`;
+            }
+
+            function revealStep(i){
+                // SVG updates
+                leftRects[i].style.opacity = 1;
+                rightRects[i].style.opacity = 1;
+                towerRects[i].forEach((r, idx) => {
+                    r.style.transitionDelay = (idx*60)+'ms';
+                    r.style.opacity = 1;
+                });
+                
+                // Legend
+                const chip = document.getElementById('chip-'+i);
+                if(chip) {
+                    chip.classList.remove('opacity-40');
+                    chip.classList.add('opacity-100', 'border-slate-400');
+                }
+
+                // Ledger
+                const line = document.getElementById('ledger-'+i);
+                if(line){
+                    line.classList.add('revealed', 'active-term');
+                    line.querySelector('.amt').innerHTML = `$${3*i*i}$`;
+                }
+
+                // Remove active-term from previous steps
+                for(let j=1; j<i; j++) {
+                    const prevLine = document.getElementById('ledger-'+j);
+                    if(prevLine) prevLine.classList.remove('active-term');
+                }
+
+                let rSq = 0, r3 = 0;
+                for(let k=1; k<=i; k++){ rSq += k*k; r3 += 3*k*k; }
+                runningSq.textContent = rSq.toString();
+                running3sq.textContent = r3.toString();
+
+                captionEl.innerHTML = captionForStep(i);
+                stepIndicator.textContent = `${i} / ${n}`;
+                updateMathJax();
+
+                if(i === n){
+                    qedLine.classList.remove('opacity-0');
+                    qedLine.classList.add('opacity-100');
+                }
+            }
+
+            function hideStep(i){
+                if(!leftRects[i]) return;
+                leftRects[i].style.opacity = 0;
+                rightRects[i].style.opacity = 0;
+                towerRects[i].forEach(r => { r.style.transitionDelay = '0ms'; r.style.opacity = 0; });
+                
+                const chip = document.getElementById('chip-'+i);
+                if(chip) {
+                    chip.classList.add('opacity-40');
+                    chip.classList.remove('opacity-100', 'border-slate-400');
+                }
+                
+                const line = document.getElementById('ledger-'+i);
+                if(line){ 
+                    line.classList.remove('revealed', 'active-term'); 
+                    line.querySelector('.amt').innerHTML = ''; 
+                }
+
+                // Restore active-term to the previous step if applicable
+                if(i > 1) {
+                    const prevLine = document.getElementById('ledger-'+(i-1));
+                    if(prevLine) prevLine.classList.add('active-term');
+                }
+            }
+
+            function goToStep(target){
+                if(target > currentStep){
+                    for(let i=currentStep+1; i<=target; i++) revealStep(i);
+                } else if(target < currentStep){
+                    for(let i=currentStep; i>target; i--) hideStep(i);
+                }
+                
+                currentStep = target;
+                
+                if(currentStep === 0){
+                    stepIndicator.textContent = `0 / ${n}`;
+                    captionEl.innerHTML = `Every band $s$ (where $s = 1 \\dots n$) holds two $i \\times i$ blocks at its ends and a strip of the tower in the middle. Press <b>Play</b> to reveal.`;
+                    runningSq.textContent = '0';
+                    running3sq.textContent = '0';
+                    qedLine.classList.remove('opacity-100');
+                    qedLine.classList.add('opacity-0');
+                    updateMathJax();
+                }
+                
+                updatePlayButtonState();
+            }
+
+            function updatePlayButtonState(){
+                stepBtn.disabled = currentStep >= n;
+            }
+
+            function stepForward(){
+                if(currentStep < n) goToStep(currentStep+1);
+                if(currentStep >= n) stopPlaying();
+            }
+
+            function stopPlaying(){
+                playing = false;
+                clearTimeout(playTimer);
+                playBtn.innerHTML = '<i class="fa-solid fa-play"></i> Play Auto';
+                playBtn.classList.replace('btn-secondary', 'btn-play');
+            }
+
+            function playLoop(){
+                if(!playing) return;
+                if(currentStep >= n){ stopPlaying(); return; }
+                stepForward();
+                
+                const speed = 6 - (+speedInput.value); // 1..5 -> 5..1
+                playTimer = setTimeout(playLoop, speed * 600);
+            }
+
+            // Attach Global Event Listeners
+            playBtn.addEventListener('click', () => {
+                if(playing){ stopPlaying(); return; }
+                if(currentStep >= n) goToStep(0);
+                playing = true;
+                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                playBtn.classList.replace('btn-play', 'btn-secondary');
+                playLoop();
+            });
+
+            stepBtn.addEventListener('click', () => { stopPlaying(); stepForward(); });
+            resetBtn.addEventListener('click', () => { stopPlaying(); goToStep(0); });
+
+            // Initialize App
+            buildNButtons();
+            render();
+            updatePlayButtonState();
+            updateMathJax();
+        });
+    </script>
+</body>
+</html>

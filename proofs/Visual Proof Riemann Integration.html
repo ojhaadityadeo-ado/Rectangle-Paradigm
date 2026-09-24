@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Riemann Integration</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+        select { cursor: pointer; outline: none; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.3s ease; mix-blend-mode: multiply; }
+        .geom-line { transition: all 0.5s ease; }
+        .geom-path { transition: opacity 0.5s ease; }
+        .fade { transition: opacity 0.4s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-chart-column text-indigo-600 text-2xl"></i> Visual Proof: Riemann Integration
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Approximating the area under a curve using rectangles, and taking the infinite limit to find the exact Definite Integral.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap">
+                $$ \int_{a}^{b} f(x)\,dx = \lim_{N \to \infty} \sum_{i=1}^{N} f(x_i^*) \Delta x $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-4xl">
+                
+                <!-- Method Selector -->
+                <div class="flex flex-col gap-1 bg-white p-2 rounded-lg border border-slate-200 shadow-sm w-40">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Sampling Method</span>
+                    <select id="select-method" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded px-2 py-1 font-semibold focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        <option value="left">Left Riemann Sum</option>
+                        <option value="right">Right Riemann Sum</option>
+                        <option value="mid" selected>Midpoint Sum</option>
+                    </select>
+                </div>
+
+                <!-- N Slider -->
+                <div class="flex flex-col gap-1 bg-white p-2 px-4 rounded-lg border border-slate-200 shadow-sm flex-grow min-w-[200px]">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Rectangles (<span class="math-font text-xs normal-case text-indigo-600">N</span>)</span>
+                        <span id="val-n" class="text-indigo-600 text-sm font-mono font-bold">12</span>
+                    </div>
+                    <input type="range" id="slider-n" value="12" min="2" max="60" step="1" class="w-full mt-1">
+                </div>
+
+                <!-- Live Area Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Est. Area</span>
+                        <span class="font-mono text-sm font-bold text-amber-600" id="val-est-area">0.000</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Exact Area</span>
+                        <span class="font-mono text-sm font-bold text-indigo-600" id="val-exact-area">12.566</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[550px]" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Grid pattern -->
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="0.5"/>
+                        </pattern>
+                        <!-- Hatch pattern for exact area -->
+                        <pattern id="areaHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#4f46e5" stroke-width="1.5" opacity="0.3"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Background Grid -->
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+
+                    <!-- Axes -->
+                    <g id="axes">
+                        <!-- X Axis -->
+                        <line x1="60" y1="420" x2="760" y2="420" stroke="#334155" stroke-width="2.5" />
+                        <polygon points="760,416 768,420 760,424" fill="#334155" />
+                        <text x="750" y="445" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="18" fill="#334155">x</text>
+                        
+                        <!-- Y Axis -->
+                        <line x1="80" y1="440" x2="80" y2="40" stroke="#334155" stroke-width="2.5" />
+                        <polygon points="76,40 80,32 84,40" fill="#334155" />
+                        <text x="60" y="50" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="18" fill="#334155">y</text>
+                        
+                        <!-- Origin -->
+                        <text x="65" y="440" font-family="Times New Roman" font-size="14" fill="#64748b">0</text>
+                        <!-- Key X points -->
+                        <line x1="80" y1="420" x2="80" y2="426" stroke="#334155" stroke-width="2" />
+                        <text x="80" y="442" font-family="Inter" font-weight="600" font-size="14" fill="#0f172a" text-anchor="middle">a</text>
+                        
+                        <line x1="680" y1="420" x2="680" y2="426" stroke="#334155" stroke-width="2" />
+                        <text x="680" y="442" font-family="Inter" font-weight="600" font-size="14" fill="#0f172a" text-anchor="middle">b</text>
+                    </g>
+
+                    <!-- Exact True Area (Shaded Region under curve) -->
+                    <path id="exact-area-path" class="geom-path fade" fill="url(#areaHatch)" opacity="0"/>
+
+                    <!-- Riemann Rectangles Injected via JS -->
+                    <g id="rectangles-group" class="fade"></g>
+
+                    <!-- Interval Markers (Vertical Dashed Lines) -->
+                    <g id="partitions-group" class="fade" opacity="0"></g>
+
+                    <!-- The Function Curve f(x) -->
+                    <path id="curve-path" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                    
+                    <!-- Curve Label -->
+                    <text x="320" y="70" class="math-font" font-weight="bold" font-size="20" fill="#4338ca">y = f(x)</text>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Integration Process</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Target Area</span>
+                            <span class="text-xs text-slate-600">Our goal is to find the exact area bound between the continuous curve $f(x)$, the $x$-axis, and the interval limits $[a, b]$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. Partition the Interval</span>
+                            <span class="text-xs text-slate-600">We divide the horizontal interval $[a, b]$ into $N$ equal sub-intervals. The width of each sub-interval is $\Delta x = \frac{b-a}{N}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-slate-800 block mb-1">3. Select Sample Points</span>
+                            <span class="text-xs text-slate-600">Within each sub-interval, we pick a sample point $x_i^*$ (Left, Right, or Midpoint) to determine the height $f(x_i^*)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-700 block mb-1">4. Form the Riemann Sum</span>
+                            <span class="text-xs text-slate-600">We draw $N$ rectangles with width $\Delta x$ and height $f(x_i^*)$. Summing their areas gives us a solid approximation. Notice the over/under estimation errors.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-indigo-700 block mb-1">5. The Infinite Limit</span>
+                            <span class="text-xs text-slate-600">As $N \to \infty$, the rectangles become infinitely thin. The approximation error vanishes entirely, and the sum perfectly converges to the Definite Integral!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Context Box -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Press <strong>Play</strong> to visualize the step-by-step construction of the Riemann Integral.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Mathematical Formulation</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Riemann Sums -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-amber-700">1. Finite Approximation (Riemann Sum)</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The area under the curve is approximated by summing the areas of $N$ rectangles. Each rectangle has a base width of $\Delta x$ and a height based on a sample point $x_i^*$:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ S_N = \sum_{i=1}^{N} f(x_i^*) \Delta x \quad \text{where} \quad \Delta x = \frac{b-a}{N} $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Depending on the chosen sample point $x_i^*$, this forms a Left, Right, or Midpoint Riemann Sum.
+                    </p>
+                </div>
+
+                <!-- Right: Definite Integral -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">2. Infinite Limit (Definite Integral)</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        As we increase the number of rectangles ($N \to \infty$), the width of each rectangle $\Delta x \to 0$. The sum converges to a precise, single value. 
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_{a}^{b} f(x)\,dx = \lim_{N \to \infty} \sum_{i=1}^{N} f(x_i^*) \Delta x $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        This limit is the formal definition of the <strong>Riemann Integral</strong>, represented continuously using the integral sign $\int$.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            N: 12,
+            method: 'mid', // 'left', 'right', 'mid'
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animReq: null,
+            limitAnimInterval: null
+        };
+
+        // Mathematical Function: f(x) = sin(x) + 2 over interval [0, 2pi]
+        const mathConf = {
+            a: 0,
+            b: 2 * Math.PI,
+            f: (x) => Math.sin(x) + 2,
+            exactArea: 4 * Math.PI // Integral of sin(x)+2 from 0 to 2pi is 4pi
+        };
+
+        // SVG Mapping Constants
+        const svgConf = {
+            viewW: 800,
+            viewH: 500,
+            padX: 80,   // Left padding for Y axis
+            padY: 80,   // Bottom padding for X axis
+            graphW: 600, // b-a maps to 600px
+            graphH: 350, // max y maps to 350px
+            yMax: 3.5    // function max is 3, give some headroom
+        };
+
+        // DOM Elements
+        const DOM = {
+            sliderN: document.getElementById('slider-n'), valN: document.getElementById('val-n'),
+            selMethod: document.getElementById('select-method'),
+            valEstArea: document.getElementById('val-est-area'), valExactArea: document.getElementById('val-exact-area'),
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                curve: document.getElementById('curve-path'), exactArea: document.getElementById('exact-area-path'),
+                rectsGrp: document.getElementById('rectangles-group'), partsGrp: document.getElementById('partitions-group')
+            }
+        };
+
+        const descriptions = [
+            "Our goal is to find the exact area bound between the continuous curve $f(x)$, the $x$-axis, and the interval limits $[a, b]$.",
+            "We divide the horizontal interval $[a, b]$ into $N$ equal sub-intervals. The width of each sub-interval is $\\Delta x = \\frac{b-a}{N}$.",
+            "Within each sub-interval, we pick a sample point $x_i^*$ based on the selected method to determine the height.",
+            "We draw $N$ rectangles with width $\\Delta x$ and height $f(x_i^*)$. Summing their areas gives us a solid approximation.",
+            "As $N \\to \\infty$, the rectangles become infinitely thin. The approximation perfectly converges to the Definite Integral!"
+        ];
+
+        // Core Coordinate Mapping Functions
+        const mapX = (x) => svgConf.padX + ((x - mathConf.a) / (mathConf.b - mathConf.a)) * svgConf.graphW;
+        const mapY = (y) => (svgConf.viewH - svgConf.padY) - (y / svgConf.yMax) * svgConf.graphH;
+        const mapW = (dx) => (dx / (mathConf.b - mathConf.a)) * svgConf.graphW;
+        const mapH = (y) => (y / svgConf.yMax) * svgConf.graphH;
+        const baseLineY = mapY(0);
+
+        function init() {
+            // Setup static exact area value
+            DOM.valExactArea.textContent = mathConf.exactArea.toFixed(3);
+
+            // Pre-draw the continuous curve and shaded exact area
+            drawStaticCurve();
+
+            // Event Listeners
+            DOM.sliderN.addEventListener('input', (e) => {
+                cancelLimitAnimation();
+                state.N = parseInt(e.target.value);
+                DOM.valN.textContent = state.N;
+                if (state.step === 4) setStep(3); // Drop out of infinity state if user scrubs manually
+                updateGeometry();
+            });
+
+            DOM.selMethod.addEventListener('change', (e) => {
+                state.method = e.target.value;
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation(); cancelLimitAnimation();
+                state.N = 12; state.method = 'mid';
+                DOM.sliderN.value = 12; DOM.valN.textContent = 12;
+                DOM.selMethod.value = 'mid';
+                setStep(0);
+            });
+
+            // Initial render
+            setStep(0);
+        }
+
+        function drawStaticCurve() {
+            let pathD = `M ${mapX(mathConf.a)} ${mapY(mathConf.f(mathConf.a))} `;
+            let areaD = `M ${mapX(mathConf.a)} ${baseLineY} L ${mapX(mathConf.a)} ${mapY(mathConf.f(mathConf.a))} `;
+
+            // 100 resolution points for the smooth curve
+            const steps = 100;
+            const dx = (mathConf.b - mathConf.a) / steps;
+            
+            for (let i = 1; i <= steps; i++) {
+                const cx = mathConf.a + i * dx;
+                const cy = mathConf.f(cx);
+                const sx = mapX(cx);
+                const sy = mapY(cy);
+                pathD += `L ${sx} ${sy} `;
+                areaD += `L ${sx} ${sy} `;
+            }
+            
+            areaD += `L ${mapX(mathConf.b)} ${baseLineY} Z`;
+            
+            DOM.svg.curve.setAttribute('d', pathD);
+            DOM.svg.exactArea.setAttribute('d', areaD);
+        }
+
+        function updateGeometry() {
+            const { N, method, step } = state;
+            const dx = (mathConf.b - mathConf.a) / N;
+            
+            let rectsHtml = '';
+            let partsHtml = '';
+            let estArea = 0;
+
+            const svgDx = mapW(dx);
+
+            for (let i = 0; i < N; i++) {
+                const x0 = mathConf.a + i * dx;
+                const x1 = x0 + dx;
+                
+                // Determine sample point based on method
+                let x_star;
+                if (method === 'left') x_star = x0;
+                else if (method === 'right') x_star = x1;
+                else x_star = (x0 + x1) / 2; // mid
+
+                const y_val = mathConf.f(x_star);
+                estArea += y_val * dx;
+
+                // SVG coordinates
+                const sx = mapX(x0);
+                const sy = mapY(y_val);
+                const sh = mapH(y_val);
+
+                // Styling logic based on steps
+                let fillOpacity = 0;
+                let strokeOp = 0;
+                let fillCol = '#f59e0b'; // Amber
+
+                if (step === 2) {
+                    // Only show sample points (top of where rect would be)
+                    rectsHtml += `<circle cx="${mapX(x_star)}" cy="${sy}" r="4" fill="#d97706" />`;
+                    strokeOp = 0.2; // faint outline
+                } else if (step === 3) {
+                    fillOpacity = 0.4;
+                    strokeOp = 0.8;
+                } else if (step === 4) {
+                    // Limit step - dense coloring
+                    fillOpacity = 0.6;
+                    strokeOp = (N > 40) ? 0 : 0.4; // remove borders when very dense
+                    fillCol = '#8b5cf6'; // Violet to show morphing to true integral
+                }
+
+                if (step >= 2) {
+                    rectsHtml += `<rect x="${sx}" y="${sy}" width="${svgDx}" height="${sh}" fill="${fillCol}" fill-opacity="${fillOpacity}" stroke="#b45309" stroke-width="1.5" stroke-opacity="${strokeOp}" class="geom-rect" />`;
+                }
+
+                // Partition Lines (Step 1+)
+                if (step >= 1 && i > 0) {
+                    partsHtml += `<line x1="${sx}" y1="${baseLineY}" x2="${sx}" y2="${baseLineY - svgConf.graphH}" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,4" />`;
+                }
+            }
+
+            DOM.svg.rectsGrp.innerHTML = rectsHtml;
+            DOM.svg.partsGrp.innerHTML = partsHtml;
+            
+            DOM.valEstArea.textContent = estArea.toFixed(3);
+            
+            // Opacity states for SVG main groups
+            DOM.svg.partsGrp.style.opacity = step >= 1 ? '1' : '0';
+            DOM.svg.rectsGrp.style.opacity = step >= 2 ? '1' : '0';
+            DOM.svg.exactArea.style.opacity = step === 4 ? '1' : '0'; // Show exact shade underneath at infinity limit
+        }
+
+        // Limit Animation (Step 4)
+        function triggerLimitAnimation() {
+            cancelLimitAnimation();
+            DOM.sliderN.disabled = true;
+            DOM.selMethod.disabled = true;
+
+            // Animate N rapidly to 60 to simulate infinity
+            state.limitAnimInterval = setInterval(() => {
+                if (state.N < 60) {
+                    state.N += Math.ceil(state.N * 0.1); // exponential acceleration
+                    if (state.N > 60) state.N = 60;
+                    DOM.sliderN.value = state.N;
+                    DOM.valN.textContent = "∞"; // Visually represent infinity
+                    updateGeometry();
+                } else {
+                    cancelLimitAnimation();
+                    // Final snap to exact representation
+                    DOM.valEstArea.textContent = mathConf.exactArea.toFixed(3);
+                }
+            }, 60);
+        }
+
+        function cancelLimitAnimation() {
+            if (state.limitAnimInterval) clearInterval(state.limitAnimInterval);
+            DOM.sliderN.disabled = false;
+            DOM.selMethod.disabled = false;
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger highlights
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            // Logic Hooks
+            if (stepVal !== 4) {
+                cancelLimitAnimation();
+                if (DOM.valN.textContent === "∞") {
+                    state.N = parseInt(DOM.sliderN.value);
+                    DOM.valN.textContent = state.N;
+                }
+            }
+
+            updateGeometry();
+
+            if (stepVal === 4) {
+                triggerLimitAnimation();
+            }
+
+            // Text Updates
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 500);
+                
+                state.animReq = setInterval(() => {
+                    stepForward();
+                    if (state.step === state.maxSteps) pauseAnimation();
+                }, 3000); // 3 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animReq);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        // Boot
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Sine Addition Formula from Projections</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-poly { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-line { transition: all 0.5s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+        
+        /* Text Halo for legibility over lines */
+        .text-halo {
+            paint-order: stroke fill;
+            stroke: rgba(255, 255, 255, 0.95);
+            stroke-width: 4px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-ruler-triangle text-indigo-600 text-2xl"></i> Visual Proof: Sine Addition Formula
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Resolving a unit direction into components relative to $\alpha$, then projecting those rectangular components vertically.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ \sin(\alpha+\beta) = \sin\alpha\cos\beta + \cos\alpha\sin\beta $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-2xl">
+                <!-- Angle A Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[180px] bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Angle <span class="math-font text-sm normal-case text-indigo-600">α</span></span>
+                        <span id="valA" class="text-indigo-600 font-mono text-sm font-bold">30°</span>
+                    </div>
+                    <input type="range" id="sliderA" value="30" min="15" max="50" step="1" class="w-full">
+                </div>
+
+                <!-- Angle B Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[180px] bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Angle <span class="math-font text-sm normal-case text-emerald-600">β</span></span>
+                        <span id="valB" class="text-emerald-600 font-mono text-sm font-bold">25°</span>
+                    </div>
+                    <input type="range" id="sliderB" value="25" min="15" max="40" step="1" class="w-full">
+                </div>
+
+                <!-- Calculated Values -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex flex-col items-center justify-center min-w-[120px]">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Angle <span class="math-font normal-case">α+β</span></span>
+                    <span class="font-mono text-lg font-bold text-slate-800" id="valTotal">55°</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Grid pattern for background -->
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" stroke-width="1.5"/>
+                        </pattern>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+                    
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+
+                    <!-- Axis Lines -->
+                    <g id="axes">
+                        <line x1="50" y1="500" x2="750" y2="500" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        
+                        <line x1="100" y1="550" x2="100" y2="50" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        
+                        <text x="80" y="520" class="math-font font-bold text-slate-500 text-halo" font-size="16">O</text>
+                    </g>
+
+                    <g id="dynamic-layers">
+                        <!-- Angle Arcs -->
+                        <g id="angle-arcs">
+                            <path id="arc-A" fill="rgba(79, 70, 229, 0.15)" stroke="#4f46e5" stroke-width="1.5" />
+                            <text id="lbl-arc-A" class="geom-text math-font font-bold text-indigo-700 text-halo" text-anchor="middle" dominant-baseline="middle">α</text>
+
+                            <path id="arc-B" fill="rgba(16, 185, 129, 0.15)" stroke="#059669" stroke-width="1.5" class="fade" opacity="0" />
+                            <text id="lbl-arc-B" class="geom-text math-font font-bold text-emerald-700 text-halo fade" text-anchor="middle" dominant-baseline="middle" opacity="0">β</text>
+                            
+                            <!-- Top internal angle alpha -->
+                            <path id="arc-top-A" fill="rgba(79, 70, 229, 0.15)" stroke="#4f46e5" stroke-width="1.5" class="fade" opacity="0" />
+                            <text id="lbl-top-A" class="geom-text math-font font-bold text-indigo-700 text-halo fade" text-anchor="middle" dominant-baseline="middle" opacity="0">α</text>
+                        </g>
+
+                        <!-- Main Geometry Polygons -->
+                        <!-- Triangle OPQ (Bottom) -->
+                        <polygon id="poly-opq" class="geom-poly fade" fill="rgba(79, 70, 229, 0.08)" stroke="none" opacity="0" />
+                        <!-- Triangle OPR (Top) -->
+                        <polygon id="poly-opr" class="geom-poly fade" fill="rgba(16, 185, 129, 0.08)" stroke="none" opacity="0" />
+                        <!-- Triangle PTR (Small Top) -->
+                        <polygon id="poly-ptr" class="geom-poly fade" fill="rgba(245, 158, 11, 0.08)" stroke="none" opacity="0" />
+                        <!-- Rectangle QSTP -->
+                        <polygon id="poly-qstp" class="geom-poly fade" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6,4" opacity="0" />
+
+                        <!-- Right Angle Indicators -->
+                        <path id="ra-oq" fill="none" stroke="#64748b" stroke-width="1.5" class="fade geom-line" opacity="0" />
+                        <path id="ra-op" fill="none" stroke="#64748b" stroke-width="1.5" class="fade geom-line" opacity="0" />
+                        <path id="ra-pt" fill="none" stroke="#64748b" stroke-width="1.5" class="fade geom-line" opacity="0" />
+                        <path id="ra-rs" fill="none" stroke="#64748b" stroke-width="1.5" class="fade geom-line" opacity="0" />
+
+                        <!-- Main Segments -->
+                        <!-- Full Hypotenuse OR -->
+                        <line id="seg-or" class="geom-line" stroke="#1e293b" stroke-width="3" />
+                        <!-- Total Projection RS -->
+                        <line id="seg-rs" class="geom-line fade" stroke="#0ea5e9" stroke-width="3" opacity="0" />
+                        
+                        <!-- Internal Components OP, PR -->
+                        <line id="seg-op" class="geom-line fade" stroke="#334155" stroke-width="2.5" stroke-dasharray="4,3" opacity="0" />
+                        <line id="seg-pr" class="geom-line fade" stroke="#334155" stroke-width="2.5" stroke-dasharray="4,3" opacity="0" />
+                        
+                        <!-- Vertical Projections PQ, TS, RT -->
+                        <line id="seg-pq" class="geom-line fade" stroke="#10b981" stroke-width="3" opacity="0" />
+                        <line id="seg-oq" class="geom-line fade" stroke="#64748b" stroke-width="1.5" opacity="0" />
+                        <line id="seg-pt" class="geom-line fade" stroke="#64748b" stroke-width="1.5" stroke-dasharray="6,4" opacity="0" />
+                        <line id="seg-ts" class="geom-line fade" stroke="#10b981" stroke-width="3" opacity="0" />
+                        <line id="seg-rt" class="geom-line fade" stroke="#f59e0b" stroke-width="3" opacity="0" />
+
+                        <!-- Vertex Nodes -->
+                        <circle id="node-o" cx="100" cy="500" r="4" fill="#334155" />
+                        <circle id="node-r" r="5" fill="#e11d48" />
+                        <circle id="node-s" r="4" fill="#64748b" class="fade" opacity="0" />
+                        <circle id="node-p" r="4" fill="#64748b" class="fade" opacity="0" />
+                        <circle id="node-q" r="4" fill="#64748b" class="fade" opacity="0" />
+                        <circle id="node-t" r="4" fill="#64748b" class="fade" opacity="0" />
+
+                        <!-- Vertex Labels -->
+                        <text id="lbl-r" class="geom-text math-font font-bold text-lg text-slate-800 text-halo">R</text>
+                        <text id="lbl-s" class="geom-text math-font text-slate-600 text-halo fade" opacity="0">S</text>
+                        <text id="lbl-p" class="geom-text math-font text-slate-600 text-halo fade" opacity="0">P</text>
+                        <text id="lbl-q" class="geom-text math-font text-slate-600 text-halo fade" opacity="0">Q</text>
+                        <text id="lbl-t" class="geom-text math-font text-slate-600 text-halo fade" opacity="0">T</text>
+                        
+                        <!-- Math Length Labels (with text halos) -->
+                        <text id="lbl-len-or" class="geom-text math-font font-bold text-slate-800 text-halo" text-anchor="middle" dominant-baseline="middle">1</text>
+                        
+                        <text id="lbl-len-rs" class="geom-text math-font font-bold text-sky-600 text-halo fade" opacity="0" dominant-baseline="middle">sin(α+β)</text>
+                        <text id="lbl-len-op" class="geom-text math-font font-bold text-slate-600 text-halo fade" opacity="0" text-anchor="middle" dominant-baseline="middle">cos β</text>
+                        <text id="lbl-len-pr" class="geom-text math-font font-bold text-slate-600 text-halo fade" opacity="0" text-anchor="middle" dominant-baseline="middle">sin β</text>
+                        
+                        <text id="lbl-len-pq" class="geom-text math-font font-bold text-emerald-600 text-halo fade" opacity="0" dominant-baseline="middle">sin α cos β</text>
+                        <text id="lbl-len-rt" class="geom-text math-font font-bold text-amber-600 text-halo fade" opacity="0" dominant-baseline="middle">cos α sin β</text>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Target Height</span>
+                            <span class="text-xs text-slate-600">Take a hypotenuse $OR$ of length 1 rotated by $(\alpha+\beta)$. Dropping a perpendicular to the x-axis yields $RS$, whose exact vertical height is $\sin(\alpha+\beta)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. Resolving the Components</span>
+                            <span class="text-xs text-slate-600">Resolve the length-1 direction first into components relative to angle $\alpha$. Drop a perpendicular from $R$ to the ray of angle $\alpha$ to find $P$. Now $OP = \cos \beta$ and $PR = \sin \beta$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-700 block mb-1">3. Projecting the Base Component</span>
+                            <span class="text-xs text-slate-600">Project the $OP$ component vertically. Drop a perpendicular from $P$ to the x-axis ($Q$). Since $OP$ is at angle $\alpha$ and has length $\cos \beta$, its vertical projection is $PQ = \sin \alpha \cos \beta$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Projecting the Orthogonal Component</span>
+                            <span class="text-xs text-slate-600">Project the $PR$ component vertically. Draw a horizontal from $P$ to intersect $RS$ at $T$. Because $PR \perp OP$, the angle $\angle PRT = \alpha$. Thus, the vertical projection $RT$ is $\cos \alpha \sin \beta$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-indigo-700 block mb-1">5. Recombining the Projections</span>
+                            <span class="text-xs text-slate-600">The total vertical height $RS$ is exactly the sum of its two vertical projection contributions: $RT + TS$. Since $TS = PQ$, we get the full addition formula!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust angles $\alpha$ and $\beta$. Press <strong>Play</strong> to step through the geometric derivation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Trigonometric Projections Explained</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Angle Analysis -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Resolving the Angle</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The key to unlocking this proof is identifying that the angle $\angle PRT$ at the very top is exactly equal to angle $\alpha$. How do we know this geometrically?
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2 mb-4">
+                        <li>The line $PT$ is completely horizontal, and line $RS$ is completely vertical, meaning $\angle PTR = 90^\circ$.</li>
+                        <li>The ray $OP$ is angled at $\alpha$ from the horizontal. Thus, the angle of $OP$ to the vertical is $90^\circ - \alpha$.</li>
+                        <li>Since $PR \perp OP$ ($\angle OPR = 90^\circ$), the segment $PR$ is tilted exactly angle $\alpha$ away from the vertical line segment $TR$. Therefore, in the right triangle $\triangle PTR$, the top angle $\angle PRT$ must be $\alpha$.</li>
+                    </ul>
+                </div>
+
+                <!-- Right: Component Addition -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Summing Vertical Projections</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Once we resolve the unit direction into components relative to $\alpha$ ($OP$ and $PR$), the total height is simply the sum of their individual vertical projections onto the y-axis.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ RS = RT + TS $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Substituting the values derived from our reference triangles:
+                        <br><br>
+                        $RS = \sin(\alpha+\beta)$ (from the large triangle $ORS$)<br>
+                        $RT = \cos\alpha \sin\beta$ (vertical projection of component $PR$)<br>
+                        $TS = PQ = \sin\alpha \cos\beta$ (vertical projection of component $OP$)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            a_deg: 30, // alpha
+            b_deg: 25, // beta
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        const OX = 100;
+        const OY = 500;
+        const SCALE = 360; // Length of hypotenuse OR
+
+        // DOM Elements
+        const DOM = {
+            sliders: { a: document.getElementById('sliderA'), b: document.getElementById('sliderB') },
+            vals: { a: document.getElementById('valA'), b: document.getElementById('valB'), total: document.getElementById('valTotal') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                arcA: document.getElementById('arc-A'), lblArcA: document.getElementById('lbl-arc-A'),
+                arcB: document.getElementById('arc-B'), lblArcB: document.getElementById('lbl-arc-B'),
+                arcTopA: document.getElementById('arc-top-A'), lblTopA: document.getElementById('lbl-top-A'),
+                
+                polyOPQ: document.getElementById('poly-opq'), polyOPR: document.getElementById('poly-opr'),
+                polyPTR: document.getElementById('poly-ptr'), polyQSTP: document.getElementById('poly-qstp'),
+                
+                raOQ: document.getElementById('ra-oq'), raOP: document.getElementById('ra-op'),
+                raPT: document.getElementById('ra-pt'), raRS: document.getElementById('ra-rs'),
+
+                segOR: document.getElementById('seg-or'), segRS: document.getElementById('seg-rs'),
+                segOP: document.getElementById('seg-op'), segPR: document.getElementById('seg-pr'),
+                segPQ: document.getElementById('seg-pq'), segOQ: document.getElementById('seg-oq'),
+                segPT: document.getElementById('seg-pt'), segTS: document.getElementById('seg-ts'), segRT: document.getElementById('seg-rt'),
+
+                nodeR: document.getElementById('node-r'), nodeS: document.getElementById('node-s'),
+                nodeP: document.getElementById('node-p'), nodeQ: document.getElementById('node-q'), nodeT: document.getElementById('node-t'),
+                
+                lblR: document.getElementById('lbl-r'), lblS: document.getElementById('lbl-s'),
+                lblP: document.getElementById('lbl-p'), lblQ: document.getElementById('lbl-q'), lblT: document.getElementById('lbl-t'),
+                
+                lblLenOR: document.getElementById('lbl-len-or'),
+                lblLenRS: document.getElementById('lbl-len-rs'),
+                lblLenOP: document.getElementById('lbl-len-op'),
+                lblLenPR: document.getElementById('lbl-len-pr'),
+                lblLenPQ: document.getElementById('lbl-len-pq'),
+                lblLenRT: document.getElementById('lbl-len-rt')
+            }
+        };
+
+        const descriptions = [
+            "Take a unit segment rotated by $(\\alpha+\\beta)$. Dropping a perpendicular to the x-axis yields $RS$, whose exact vertical height is $\\sin(\\alpha+\\beta)$.",
+            "Resolve the length-1 direction first into components relative to angle $\\alpha$. Drop a perpendicular from $R$ to the ray of angle $\\alpha$ to find $P$. Now $OP = \\cos \\beta$ and $PR = \\sin \\beta$.",
+            "Project the $OP$ component vertically. Drop a perpendicular from $P$ to the x-axis ($Q$). Since $OP$ is at angle $\\alpha$ and has length $\\cos \\beta$, its vertical projection is $PQ = \\sin \\alpha \\cos \\beta$.",
+            "Project the $PR$ component vertically. Draw a horizontal from $P$ to intersect $RS$ at $T$. Because $PR \\perp OP$, the angle $\\angle PRT = \\alpha$. Thus, the vertical projection $RT$ is $\\cos \\alpha \\sin \\beta$.",
+            "The total vertical height $RS$ is exactly the sum of its two vertical projection contributions: $RT + TS$. Since $TS = PQ$, we get the full addition formula!"
+        ];
+
+        function init() {
+            // Slider events
+            DOM.sliders.a.addEventListener('input', (e) => { pauseAnimation(); state.a_deg = parseInt(e.target.value); updateGeometry(); });
+            DOM.sliders.b.addEventListener('input', (e) => { pauseAnimation(); state.b_deg = parseInt(e.target.value); updateGeometry(); });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.a_deg = 30; state.b_deg = 25;
+                DOM.sliders.a.value = 30; DOM.sliders.b.value = 25;
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        // SVG Path Helpers
+        const describeArc = (x, y, radius, startAngle, endAngle) => {
+            const start = polarToCartesian(x, y, radius, endAngle);
+            const end = polarToCartesian(x, y, radius, startAngle);
+            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+            return ["M", x, y, "L", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 1, end.x, end.y, "Z"].join(" ");
+        }
+
+        const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
+            const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
+            return {
+                x: centerX + (radius * Math.cos(angleInRadians)),
+                y: centerY - (radius * Math.sin(angleInRadians)) // Subtract because SVG Y goes down
+            };
+        }
+
+        const getRightAngleBox = (pt, v1, v2, size) => {
+            const len1 = Math.hypot(v1.x - pt.x, v1.y - pt.y);
+            const len2 = Math.hypot(v2.x - pt.x, v2.y - pt.y);
+            const dx1 = ((v1.x - pt.x) / len1) * size;
+            const dy1 = ((v1.y - pt.y) / len1) * size;
+            const dx2 = ((v2.x - pt.x) / len2) * size;
+            const dy2 = ((v2.y - pt.y) / len2) * size;
+
+            const pt1 = { x: pt.x + dx1, y: pt.y + dy1 };
+            const pt2 = { x: pt.x + dx1 + dx2, y: pt.y + dy1 + dy2 };
+            const pt3 = { x: pt.x + dx2, y: pt.y + dy2 };
+
+            return `M ${pt1.x} ${pt1.y} L ${pt2.x} ${pt2.y} L ${pt3.x} ${pt3.y}`;
+        }
+
+        function updateGeometry() {
+            const { a_deg, b_deg, step } = state;
+            const tot_deg = a_deg + b_deg;
+            
+            // UI Texts
+            DOM.vals.a.textContent = a_deg + '°';
+            DOM.vals.b.textContent = b_deg + '°';
+            DOM.vals.total.textContent = tot_deg + '°';
+
+            // Angles in Radians
+            const A = a_deg * Math.PI / 180;
+            const B = b_deg * Math.PI / 180;
+            const AB = tot_deg * Math.PI / 180;
+
+            // Coordinates
+            const ptO = { x: OX, y: OY };
+            const ptR = { x: OX + SCALE * Math.cos(AB), y: OY - SCALE * Math.sin(AB) };
+            const ptS = { x: ptR.x, y: OY };
+            
+            // OP length is cos(B)
+            const lenOP = SCALE * Math.cos(B);
+            const ptP = { x: OX + lenOP * Math.cos(A), y: OY - lenOP * Math.sin(A) };
+            
+            const ptQ = { x: ptP.x, y: OY };
+            const ptT = { x: ptR.x, y: ptP.y };
+
+            // Draw Lines
+            const setLine = (el, p1, p2) => {
+                el.setAttribute('x1', p1.x); el.setAttribute('y1', p1.y);
+                el.setAttribute('x2', p2.x); el.setAttribute('y2', p2.y);
+            };
+
+            setLine(DOM.svg.segOR, ptO, ptR);
+            setLine(DOM.svg.segRS, ptR, ptS);
+            setLine(DOM.svg.segOP, ptO, ptP);
+            setLine(DOM.svg.segPR, ptP, ptR);
+            setLine(DOM.svg.segPQ, ptP, ptQ);
+            setLine(DOM.svg.segOQ, ptO, ptQ);
+            setLine(DOM.svg.segPT, ptP, ptT);
+            setLine(DOM.svg.segTS, ptT, ptS);
+            setLine(DOM.svg.segRT, ptR, ptT);
+
+            const pts = (...points) => points.map(p => `${p.x},${p.y}`).join(' ');
+            DOM.svg.polyOPQ.setAttribute('points', pts(ptO, ptP, ptQ));
+            DOM.svg.polyOPR.setAttribute('points', pts(ptO, ptP, ptR));
+            DOM.svg.polyPTR.setAttribute('points', pts(ptP, ptT, ptR));
+            DOM.svg.polyQSTP.setAttribute('points', pts(ptQ, ptS, ptT, ptP));
+
+            // Right Angles
+            DOM.svg.raOQ.setAttribute('d', getRightAngleBox(ptQ, ptO, ptP, 12));
+            DOM.svg.raRS.setAttribute('d', getRightAngleBox(ptS, ptO, ptR, 12));
+            DOM.svg.raOP.setAttribute('d', getRightAngleBox(ptP, ptO, ptR, 12));
+            DOM.svg.raPT.setAttribute('d', getRightAngleBox(ptT, ptP, ptR, 12));
+
+            // Vertex Nodes & basic labels
+            const setNode = (el, lbl, pt, ox, oy) => {
+                el.setAttribute('cx', pt.x); el.setAttribute('cy', pt.y);
+                lbl.setAttribute('x', pt.x + ox); lbl.setAttribute('y', pt.y + oy);
+            };
+            setNode(DOM.svg.nodeR, DOM.svg.lblR, ptR, 8, -15);
+            setNode(DOM.svg.nodeS, DOM.svg.lblS, ptS, 8, 20);
+            setNode(DOM.svg.nodeP, DOM.svg.lblP, ptP, -15, -15);
+            setNode(DOM.svg.nodeQ, DOM.svg.lblQ, ptQ, -8, 20);
+            setNode(DOM.svg.nodeT, DOM.svg.lblT, ptT, 15, 8);
+
+            // Angle Arcs
+            DOM.svg.arcA.setAttribute('d', describeArc(ptO.x, ptO.y, 60, 0, a_deg));
+            const arcA_mid = polarToCartesian(ptO.x, ptO.y, 75, a_deg/2);
+            DOM.svg.lblArcA.setAttribute('x', arcA_mid.x); DOM.svg.lblArcA.setAttribute('y', arcA_mid.y);
+
+            DOM.svg.arcB.setAttribute('d', describeArc(ptO.x, ptO.y, 90, a_deg, tot_deg));
+            const arcB_mid = polarToCartesian(ptO.x, ptO.y, 105, a_deg + b_deg/2);
+            DOM.svg.lblArcB.setAttribute('x', arcB_mid.x); DOM.svg.lblArcB.setAttribute('y', arcB_mid.y);
+
+            // Angle alpha at the top corner (in PRT)
+            DOM.svg.arcTopA.setAttribute('d', describeArc(ptR.x, ptR.y, 45, 270 - a_deg, 270));
+            const topA_mid = polarToCartesian(ptR.x, ptR.y, 60, 270 - a_deg/2);
+            DOM.svg.lblTopA.setAttribute('x', topA_mid.x); DOM.svg.lblTopA.setAttribute('y', topA_mid.y);
+
+            // Math Length Labels
+            // OR (1)
+            const midOR = { x: (ptO.x + ptR.x)/2, y: (ptO.y + ptR.y)/2 };
+            DOM.svg.lblLenOR.setAttribute('x', midOR.x - 15); DOM.svg.lblLenOR.setAttribute('y', midOR.y - 12);
+
+            // RS (sin(A+B))
+            DOM.svg.lblLenRS.setAttribute('x', ptR.x + 10); DOM.svg.lblLenRS.setAttribute('y', (ptR.y + ptS.y)/2);
+
+            // OP (cos B)
+            const midOP = { x: (ptO.x + ptP.x)/2, y: (ptO.y + ptP.y)/2 };
+            DOM.svg.lblLenOP.setAttribute('x', midOP.x + 5); DOM.svg.lblLenOP.setAttribute('y', midOP.y + 20);
+
+            // PR (sin B)
+            const midPR = { x: (ptP.x + ptR.x)/2, y: (ptP.y + ptR.y)/2 };
+            DOM.svg.lblLenPR.setAttribute('x', midPR.x - 25); DOM.svg.lblLenPR.setAttribute('y', midPR.y - 15);
+
+            // PQ (sin A cos B)
+            DOM.svg.lblLenPQ.setAttribute('x', ptQ.x + 10); DOM.svg.lblLenPQ.setAttribute('y', (ptP.y + ptQ.y)/2);
+
+            // RT (cos A sin B)
+            DOM.svg.lblLenRT.setAttribute('x', ptR.x + 10); DOM.svg.lblLenRT.setAttribute('y', (ptR.y + ptT.y)/2);
+
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            // Step 0: Total Height RS
+            op(DOM.svg.segRS, 1); op(DOM.svg.nodeS, 1); op(DOM.svg.lblS, 1);
+            op(DOM.svg.raRS, 1); op(DOM.svg.lblLenRS, step === 0 ? 1 : 0);
+
+            // Step 1: Intermediate Triangle OPR
+            op(DOM.svg.arcB, step >= 1 ? 1 : 0); op(DOM.svg.lblArcB, step >= 1 ? 1 : 0);
+            op(DOM.svg.polyOPR, step >= 1 ? 1 : 0);
+            op(DOM.svg.segOP, step >= 1 ? 1 : 0); op(DOM.svg.segPR, step >= 1 ? 1 : 0);
+            op(DOM.svg.nodeP, step >= 1 ? 1 : 0); op(DOM.svg.lblP, step >= 1 ? 1 : 0);
+            op(DOM.svg.raOP, step >= 1 ? 1 : 0);
+            op(DOM.svg.lblLenOP, step >= 1 ? 1 : 0); op(DOM.svg.lblLenPR, step >= 1 ? 1 : 0);
+
+            // Step 2: Lower Rectangle / Projection PQ
+            op(DOM.svg.polyOPQ, step >= 2 ? 1 : 0);
+            op(DOM.svg.segPQ, step >= 2 ? 1 : 0); op(DOM.svg.segOQ, step >= 2 ? 1 : 0);
+            op(DOM.svg.nodeQ, step >= 2 ? 1 : 0); op(DOM.svg.lblQ, step >= 2 ? 1 : 0);
+            op(DOM.svg.raOQ, step >= 2 ? 1 : 0);
+            op(DOM.svg.lblLenPQ, step >= 2 ? 1 : 0);
+            
+            // Show TS projection mapping in step 2
+            op(DOM.svg.polyQSTP, step >= 2 ? 1 : 0);
+            op(DOM.svg.segPT, step >= 2 ? 1 : 0); op(DOM.svg.segTS, step >= 2 ? 1 : 0);
+            op(DOM.svg.nodeT, step >= 2 ? 1 : 0); op(DOM.svg.lblT, step >= 2 ? 1 : 0);
+            op(DOM.svg.raPT, step >= 2 ? 1 : 0);
+
+            // Step 3: Upper Triangle PTR
+            op(DOM.svg.polyPTR, step >= 3 ? 1 : 0);
+            op(DOM.svg.segRT, step >= 3 ? 1 : 0);
+            op(DOM.svg.arcTopA, step >= 3 ? 1 : 0); op(DOM.svg.lblTopA, step >= 3 ? 1 : 0);
+            op(DOM.svg.lblLenRT, step >= 3 ? 1 : 0);
+
+            // Formatting for step 4 (combine)
+            if (step === 4) {
+                DOM.svg.segTS.style.strokeWidth = "5";
+                DOM.svg.segRT.style.strokeWidth = "5";
+            } else {
+                DOM.svg.segTS.style.strokeWidth = "3";
+                DOM.svg.segRT.style.strokeWidth = "3";
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger highlights
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            applyStepOpacities(stepVal);
+
+            // Text Update
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        // Boot
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

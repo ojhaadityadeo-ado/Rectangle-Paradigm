@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: The Babylonian Method</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .geom-line { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .geom-text { user-select: none; transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-compress text-indigo-600 text-2xl"></i> The Babylonian Method for $\sqrt{S}$
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            A beautiful geometric iteration: transforming a rectangle of area $S$ into a perfect square by successively averaging its side lengths.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ x_{n+1} = \frac{x_n + y_n}{2} \quad \text{where} \quad y_n = \frac{S}{x_n} $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-3xl">
+                <!-- S Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex-1 min-w-[150px]">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Target Area <span class="math-font text-sm normal-case text-indigo-600">S</span></span>
+                        <span id="valS" class="text-indigo-600 font-mono text-sm font-bold">100</span>
+                    </div>
+                    <input type="range" id="sliderS" value="100" min="16" max="225" step="1" class="w-full">
+                </div>
+
+                <!-- Initial Guess Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex-1 min-w-[150px]">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Initial Guess <span class="math-font text-sm normal-case text-emerald-600">x₀</span></span>
+                        <span id="valX0" class="text-emerald-600 font-mono text-sm font-bold">4.0</span>
+                    </div>
+                    <input type="range" id="sliderX0" value="4.0" min="2.0" max="50.0" step="0.5" class="w-full">
+                </div>
+
+                <!-- Live Dimensions -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center justify-center min-w-[280px]">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Width <span class="math-font normal-case">x_n</span></span>
+                        <span class="font-mono text-sm font-bold text-indigo-600" id="stat-x">4.000</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Height <span class="math-font normal-case">y_n</span></span>
+                        <span class="font-mono text-sm font-bold text-emerald-600" id="stat-y">25.000</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Target <span class="math-font normal-case">√S</span></span>
+                        <span class="font-mono text-sm font-bold text-slate-800" id="stat-sqrt">10.000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Iter:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Auto</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1.5"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Background Grid -->
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+
+                    <!-- Axis Lines -->
+                    <g id="axes">
+                        <line x1="50" y1="550" x2="570" y2="550" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <line x1="60" y1="560" x2="60" y2="40" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <text x="45" y="565" class="math-font text-sm" fill="#64748b" text-anchor="end">0</text>
+                    </g>
+
+                    <g id="dynamic-layers">
+                        <!-- Target Ideal Square (Dashed Outline) -->
+                        <rect id="target-sq" class="geom-rect fade" fill="rgba(16, 185, 129, 0.05)" stroke="#10b981" stroke-width="2" stroke-dasharray="6,4" />
+                        <text id="lbl-target" class="geom-text math-font font-bold text-emerald-600/50" text-anchor="end" dominant-baseline="bottom">Target √S</text>
+
+                        <!-- Main Current Rectangle -->
+                        <rect id="main-rect" class="geom-rect" fill="rgba(79, 70, 229, 0.2)" stroke="#4f46e5" stroke-width="3" />
+
+                        <!-- Dimension Lines -->
+                        <g id="dims-layer" class="fade">
+                            <!-- Width -->
+                            <line id="dim-w" class="geom-line" stroke="#4f46e5" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />
+                            <text id="lbl-w" class="geom-text math-font font-bold text-indigo-700" text-anchor="middle" dominant-baseline="top">x_n</text>
+                            
+                            <!-- Height -->
+                            <line id="dim-h" class="geom-line" stroke="#059669" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />
+                            <text id="lbl-h" class="geom-text math-font font-bold text-emerald-700" text-anchor="end" dominant-baseline="middle">y_n</text>
+                        </g>
+
+                        <!-- Central Area Label -->
+                        <text id="lbl-area" class="geom-text math-font font-bold text-2xl text-slate-800" text-anchor="middle" dominant-baseline="middle">Area = S</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Iteration Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">Iteration 0: The Initial Guess</span>
+                            <span class="text-xs text-slate-600">We want a square of area $S$. We start with a guess width $x_0$. To keep the area strictly equal to $S$, the height must be $y_0 = S / x_0$. The true root $\sqrt{S}$ lies between them.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">Iteration 1: The First Average</span>
+                            <span class="text-xs text-slate-600">We average the sides to form a better approximation: $x_1 = (x_0 + y_0)/2$. The new height adjusts to $y_1 = S / x_1$ to conserve the exact area $S$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-700 block mb-1">Iteration 2: Halving the Error</span>
+                            <span class="text-xs text-slate-600">We repeat the process, taking $x_2 = (x_1 + y_1)/2$. Notice how rapidly the rectangle squishes towards a perfect square. This is "quadratic convergence".</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">Iteration 3: Near Perfection</span>
+                            <span class="text-xs text-slate-600">After just three averages, the width and height are nearly indistinguishable from one another. The gap between $x_n$ and $y_n$ closes exponentially fast.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">Iteration 4: The Square Limit</span>
+                            <span class="text-xs text-slate-600">The rectangle has functionally transformed into a perfect square. The width and height are mathematically equal to $\sqrt{S}$ within the bounds of standard precision.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust target Area $S$ and initial guess $x_0$. Press <strong>Auto</strong> to visualize the convergence.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Mathematical Foundation: Heron's Method</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: The Algorithm -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. The Geometric Algorithm</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The goal is to find a number $x$ such that $x^2 = S$. If our current guess $x_n$ is too small ($x_n < \sqrt{S}$), then forcing an area of $S$ means the corresponding height $y_n = \frac{S}{x_n}$ will be strictly too large ($y_n > \sqrt{S}$).
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Because the true root $\sqrt{S}$ is always trapped directly between $x_n$ and $y_n$, taking their arithmetic mean yields an extremely accurate new guess:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ x_{n+1} = \frac{x_n + y_n}{2} = \frac{1}{2}\left(x_n + \frac{S}{x_n}\right) $$
+                    </div>
+                </div>
+
+                <!-- Right: Quadratic Convergence -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Quadratic Convergence</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        This method (also known as Heron's Method or Newton's Method applied to $f(x) = x^2 - S$) is famous for its <strong>quadratic convergence</strong>. 
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        This means that the number of correct decimal places approximately <em>doubles</em> with each iteration! If we define the relative error $\epsilon_n = \frac{x_n - \sqrt{S}}{\sqrt{S}}$, the math shows:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0">
+                        $$ \epsilon_{n+1} = \frac{\epsilon_n^2}{2(1 + \epsilon_n)} \approx \frac{1}{2}\epsilon_n^2 $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm mt-3">
+                        Squaring a small error (like $0.01^2 = 0.0001$) guarantees the rapid morphing into a perfect square seen in the visualizer.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            S: 100,
+            x0: 4.0,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animReq: null,
+            iterations: [] // Will hold {x, y} for each step
+        };
+
+        const SVG_W = 600;
+        const SVG_H = 600;
+        const OX = 60;
+        const OY = 550;
+        
+        // Dynamic Scaling
+        // We need to fit max(x0, y0, sqrt(S)).
+        // Since S goes up to 225 (sqrt=15) and x0 goes up to 50, y0 could be up to 225/2 = 112.5.
+        // Let's calculate the max dimension across all steps to lock the scale.
+        let currentScale = 10;
+
+        // DOM Elements
+        const DOM = {
+            sliders: { s: document.getElementById('sliderS'), x0: document.getElementById('sliderX0') },
+            vals: { s: document.getElementById('valS'), x0: document.getElementById('valX0') },
+            stats: { x: document.getElementById('stat-x'), y: document.getElementById('stat-y'), sqrt: document.getElementById('stat-sqrt') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: {
+                mainRect: document.getElementById('main-rect'),
+                targetSq: document.getElementById('target-sq'), lblTarget: document.getElementById('lbl-target'),
+                dimW: document.getElementById('dim-w'), lblW: document.getElementById('lbl-w'),
+                dimH: document.getElementById('dim-h'), lblH: document.getElementById('lbl-h'),
+                lblArea: document.getElementById('lbl-area')
+            }
+        };
+
+        const descriptions = [
+            "We want a square of area $S$. Start with a guess width $x_0$. Height must be $y_0 = S / x_0$.",
+            "The true root $\\sqrt{S}$ lies between them. Average the sides: $x_1 = (x_0 + y_0)/2$. Adjust height to keep area $S$.",
+            "Repeat the process: $x_2 = (x_1 + y_1)/2$. Notice how rapidly it approaches a perfect square.",
+            "After just three averages, the width and height are nearly indistinguishable.",
+            "The rectangle has functionally transformed into a perfect square. The dimensions converge to $\\sqrt{S}$."
+        ];
+
+        function computeIterations() {
+            state.iterations = [];
+            let currX = state.x0;
+            let currY = state.S / currX;
+            
+            state.iterations.push({ x: currX, y: currY });
+            
+            for (let i = 1; i <= state.maxSteps; i++) {
+                currX = (currX + currY) / 2;
+                currY = state.S / currX;
+                state.iterations.push({ x: currX, y: currY });
+            }
+
+            // Determine scale to fit the largest dimension gracefully
+            let maxDim = Math.sqrt(state.S); // At least fit the target square
+            maxDim = Math.max(maxDim, state.iterations[0].x, state.iterations[0].y);
+            
+            // Available space: W=500, H=500
+            currentScale = 480 / maxDim;
+        }
+
+        function init() {
+            // Slider events
+            DOM.sliders.s.addEventListener('input', (e) => {
+                cancelAuto();
+                state.S = parseInt(e.target.value);
+                
+                // Adjust x0 limits so y0 doesn't go literally to infinity if x0 is tiny
+                DOM.sliders.x0.max = Math.max(state.S, 50); 
+                
+                updateMath();
+                setStep(0);
+            });
+
+            DOM.sliders.x0.addEventListener('input', (e) => {
+                cancelAuto();
+                state.x0 = parseFloat(e.target.value);
+                updateMath();
+                setStep(0);
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                cancelAuto();
+                state.S = 100; state.x0 = 4.0;
+                DOM.sliders.s.value = 100; DOM.sliders.x0.value = 4.0;
+                DOM.sliders.x0.max = 100;
+                updateMath();
+                setStep(0);
+            });
+
+            updateMath();
+            setStep(0);
+        }
+
+        function updateMath() {
+            DOM.vals.s.textContent = state.S;
+            DOM.vals.x0.textContent = state.x0.toFixed(1);
+            DOM.stats.sqrt.textContent = Math.sqrt(state.S).toFixed(4);
+            computeIterations();
+        }
+
+        function updateGeometry() {
+            const { step, S } = state;
+            const iter = state.iterations[step];
+            const sqrtS = Math.sqrt(S);
+            
+            // Pixels
+            const pxW = iter.x * currentScale;
+            const pxH = iter.y * currentScale;
+            const pxSq = sqrtS * currentScale;
+
+            // UI Texts
+            DOM.stats.x.textContent = iter.x.toFixed(4);
+            DOM.stats.y.textContent = iter.y.toFixed(4);
+
+            // Target Square (Fixed)
+            DOM.svg.targetSq.setAttribute('x', OX);
+            DOM.svg.targetSq.setAttribute('y', OY - pxSq);
+            DOM.svg.targetSq.setAttribute('width', pxSq);
+            DOM.svg.targetSq.setAttribute('height', pxSq);
+            
+            DOM.svg.lblTarget.setAttribute('x', OX + pxSq - 5);
+            DOM.svg.lblTarget.setAttribute('y', OY - pxSq - 5);
+
+            // Main Rectangle
+            DOM.svg.mainRect.setAttribute('x', OX);
+            DOM.svg.mainRect.setAttribute('y', OY - pxH);
+            DOM.svg.mainRect.setAttribute('width', pxW);
+            DOM.svg.mainRect.setAttribute('height', pxH);
+
+            // Dimensions
+            const off = 20;
+            // Width
+            DOM.svg.dimW.setAttribute('x1', OX); DOM.svg.dimW.setAttribute('x2', OX + pxW);
+            DOM.svg.dimW.setAttribute('y1', OY + off); DOM.svg.dimW.setAttribute('y2', OY + off);
+            DOM.svg.lblW.setAttribute('x', OX + pxW/2); DOM.svg.lblW.setAttribute('y', OY + off + 10);
+            DOM.svg.lblW.textContent = `x_${step} = ${iter.x.toFixed(2)}`;
+
+            // Height
+            DOM.svg.dimH.setAttribute('x1', OX - off); DOM.svg.dimH.setAttribute('x2', OX - off);
+            DOM.svg.dimH.setAttribute('y1', OY); DOM.svg.dimH.setAttribute('y2', OY - pxH);
+            DOM.svg.lblH.setAttribute('x', OX - off - 10); DOM.svg.lblH.setAttribute('y', OY - pxH/2);
+            DOM.svg.lblH.textContent = `y_${step} = ${iter.y.toFixed(2)}`;
+
+            // Area Label
+            DOM.svg.lblArea.setAttribute('x', OX + pxW/2);
+            DOM.svg.lblArea.setAttribute('y', OY - pxH/2);
+            
+            // Equation string update
+            let eqHtml = "";
+            if (step === 0) {
+                eqHtml = `x_0 = ${iter.x.toFixed(2)} \\quad \\implies \\quad y_0 = \\frac{${S}}{x_0} = ${iter.y.toFixed(2)}`;
+            } else {
+                const prev = state.iterations[step - 1];
+                eqHtml = `x_{${step}} = \\frac{${prev.x.toFixed(2)} + ${prev.y.toFixed(2)}}{2} = ${iter.x.toFixed(4)}`;
+            }
+            DOM.ui.eq.innerHTML = `$$ ${eqHtml} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 100);
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            updateGeometry();
+
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                cancelAuto();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                cancelAuto();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animReq = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s step time to allow smooth morphing
+            }
+        }
+
+        function cancelAuto() {
+            state.isPlaying = false;
+            clearInterval(state.animReq);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Auto';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

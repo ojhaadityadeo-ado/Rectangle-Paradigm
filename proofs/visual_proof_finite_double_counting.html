@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Finite Double Counting</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-cell { transition: all 0.4s ease-out; }
+        .geom-highlight { transition: opacity 0.5s ease, transform 0.5s ease; }
+        .fade { transition: opacity 0.4s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-border-all text-indigo-600 text-2xl"></i> Finite Double Counting
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Visualizing how swapping the order of summations perfectly preserves the total. This is the discrete foundation for Fubini's Theorem in calculus.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                $$ \sum_{i=1}^{m} \left( \sum_{j=1}^{n} a_{ij} \right) = \sum_{j=1}^{n} \left( \sum_{i=1}^{m} a_{ij} \right) $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-2xl">
+                <!-- Rows Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[180px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Rows <span class="math-font text-sm normal-case text-indigo-600">m</span></span>
+                        <span id="valM" class="text-indigo-600 font-mono text-sm font-bold">5</span>
+                    </div>
+                    <input type="range" id="sliderM" value="5" min="2" max="6" step="1" class="w-full accent-indigo-600">
+                </div>
+
+                <!-- Cols Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[180px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Cols <span class="math-font text-sm normal-case text-emerald-600">n</span></span>
+                        <span id="valN" class="text-emerald-600 font-mono text-sm font-bold">6</span>
+                    </div>
+                    <input type="range" id="sliderN" value="6" min="2" max="8" step="1" class="w-full accent-emerald-600">
+                </div>
+
+                <!-- Live Total Stats -->
+                <div class="bg-white px-5 py-2 rounded-lg border border-slate-200 shadow-sm flex flex-col items-center justify-center min-w-[120px]">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Grand Total</span>
+                    <span class="font-mono text-lg font-bold text-slate-800" id="stat-total">0</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                    <!-- Dynamic Grid Groups -->
+                    
+                    <!-- Base Cells -->
+                    <g id="grid-cells"></g>
+                    
+                    <!-- Row Highlights & Sums -->
+                    <g id="row-layer" class="fade" opacity="0"></g>
+                    
+                    <!-- Col Highlights & Sums -->
+                    <g id="col-layer" class="fade" opacity="0"></g>
+
+                    <!-- Grand Total Box -->
+                    <g id="total-layer" class="fade" opacity="0">
+                        <rect id="total-box" class="geom-highlight" fill="#f8fafc" stroke="#1e293b" stroke-width="3" rx="8" />
+                        <text id="total-text" class="math-font font-bold text-3xl fill-slate-800" text-anchor="middle" dominant-baseline="middle"></text>
+                        <text id="total-label" class="font-sans font-bold text-sm fill-slate-500 uppercase tracking-widest" text-anchor="middle">Total</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The 2D Array</span>
+                            <span class="text-xs text-slate-600">Consider an $m \times n$ matrix of values $a_{ij}$. We want to find the grand total of all the elements in this grid.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Grouping by Rows</span>
+                            <span class="text-xs text-slate-600">First, we calculate the inner sum across each row horizontally. This gives us a row total $R_i = \sum_{j=1}^n a_{ij}$ for every row $i$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-indigo-900 block mb-1">3. Totaling the Rows</span>
+                            <span class="text-xs text-slate-600">By adding all the row totals vertically, we obtain the grand total: $\text{Total} = \sum_{i=1}^m R_i$. This is the Left-Hand Side of our equation.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-700 block mb-1">4. Grouping by Columns</span>
+                            <span class="text-xs text-slate-600">Alternatively, calculate the inner sum down each column vertically. This gives us a column total $C_j = \sum_{i=1}^m a_{ij}$ for every column $j$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-emerald-900 block mb-1">5. Totaling the Columns</span>
+                            <span class="text-xs text-slate-600">By adding all the column totals horizontally, we obtain the grand total: $\text{Total} = \sum_{j=1}^n C_j$. This is the Right-Hand Side.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-amber-700 block mb-1">6. The Equivalence</span>
+                            <span class="text-xs text-slate-600">Because both methods sum exactly the same set of finite elements, the results are identical. The order of summation can be safely swapped!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust grid size $m$ and $n$. Press <strong>Play</strong> to visualize the row and column sweeps.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Mathematical Context
+            </h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- New: Area of a Rectangle -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">1. Area of a Rectangle</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        If we set every cell value to $a_{ij} = 1$, the double sum simply counts the total number of $1 \times 1$ unit squares in the grid.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \sum_{i=1}^{m} \sum_{j=1}^{n} 1 = m \times n $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Counting by rows yields $m \times n$, while counting by columns yields $n \times m$. This double-counting principle is the fundamental proof that the area of a rectangle is commutative.
+                    </p>
+                </div>
+
+                <!-- Middle: Application -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. General Applications</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The ability to interchange summation signs is a powerful tool used across many fields of mathematics:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2 mb-4">
+                        <li><strong>Combinatorics:</strong> Counting sets in two different ways to prove identities (like combinations and permutations).</li>
+                        <li><strong>Probability:</strong> Marginalizing joint probability tables $P(X,Y)$ to find $P(X)$ or $P(Y)$.</li>
+                        <li><strong>Matrix Algebra:</strong> Proving properties like $\text{Tr}(AB) = \text{Tr}(BA)$.</li>
+                    </ul>
+                </div>
+
+                <!-- Right: Continuous Equivalent -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">3. Fubini's Theorem</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Finite double counting is the discrete analog of Fubini's Theorem in multivariable calculus. Just as we can swap the order of finite sums:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_a^b \left( \int_c^d f(x,y) \,dy \right) dx = \int_c^d \left( \int_a^b f(x,y) \,dx \right) dy $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Integrating over $y$ first is akin to summing a column. Integrating over $x$ first is akin to summing a row.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            m: 5, // rows
+            n: 6, // cols
+            step: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null,
+            matrix: [] // Data store
+        };
+
+        // Static pleasant matrix to ensure repeatable, readable sums
+        const dataMaster = [
+            [3, 1, 4, 1, 5, 2, 4, 1],
+            [2, 5, 1, 3, 2, 4, 1, 3],
+            [4, 2, 3, 5, 1, 3, 2, 4],
+            [1, 4, 2, 1, 4, 5, 3, 2],
+            [5, 3, 1, 4, 2, 1, 5, 1],
+            [2, 1, 5, 2, 3, 4, 1, 5]
+        ];
+
+        // Canvas Config
+        const SVG_W = 800;
+        const SVG_H = 600;
+        const CELL_SIZE = 50;
+        const GAP = 8;
+        const SUM_GAP = 30;
+
+        // DOM Map
+        const DOM = {
+            sliders: { m: document.getElementById('sliderM'), n: document.getElementById('sliderN') },
+            vals: { m: document.getElementById('valM'), n: document.getElementById('valN'), total: document.getElementById('stat-total') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: {
+                cells: document.getElementById('grid-cells'),
+                rowLayer: document.getElementById('row-layer'),
+                colLayer: document.getElementById('col-layer'),
+                totalLayer: document.getElementById('total-layer'),
+                totalBox: document.getElementById('total-box'),
+                totalText: document.getElementById('total-text'),
+                totalLabel: document.getElementById('total-label')
+            }
+        };
+
+        const descriptions = [
+            "Consider an $m \\times n$ matrix of values. We want to find the grand total of all the elements in this grid.",
+            "First, we calculate the inner sum across each row horizontally. This gives us a row total $R_i$.",
+            "By adding all the row totals vertically, we obtain the grand total. This represents the Left-Hand Side.",
+            "Alternatively, calculate the inner sum down each column vertically. This gives us a column total $C_j$.",
+            "By adding all the column totals horizontally, we obtain the grand total. This represents the Right-Hand Side.",
+            "Because both methods sum exactly the same set of elements, the results are identically equal."
+        ];
+
+        function init() {
+            // Slider Listeners
+            DOM.sliders.m.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.m = parseInt(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.sliders.n.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.n = parseInt(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.m = 5; state.n = 6;
+                DOM.sliders.m.value = 5; DOM.sliders.n.value = 6;
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { m, n, step } = state;
+            
+            DOM.vals.m.textContent = m;
+            DOM.vals.n.textContent = n;
+
+            // Load Data Submatrix
+            state.matrix = [];
+            let grandTotal = 0;
+            const rowSums = new Array(m).fill(0);
+            const colSums = new Array(n).fill(0);
+
+            for(let i = 0; i < m; i++) {
+                state.matrix[i] = [];
+                for(let j = 0; j < n; j++) {
+                    const val = dataMaster[i][j];
+                    state.matrix[i][j] = val;
+                    rowSums[i] += val;
+                    colSums[j] += val;
+                    grandTotal += val;
+                }
+            }
+            
+            DOM.vals.total.textContent = grandTotal;
+
+            // Compute Grid Layout Center
+            // Width = n * CELL_SIZE + (n-1)*GAP
+            const gridW = n * CELL_SIZE + (n - 1) * GAP;
+            const gridH = m * CELL_SIZE + (m - 1) * GAP;
+
+            // Base Origin (Offset slightly left/up to make room for sums)
+            const OX = (SVG_W - gridW) / 2 - 30;
+            const OY = (SVG_H - gridH) / 2 - 30;
+
+            // 1. Generate Base Cells
+            let cellsHtml = '';
+            for(let i = 0; i < m; i++) {
+                for(let j = 0; j < n; j++) {
+                    const cx = OX + j * (CELL_SIZE + GAP);
+                    const cy = OY + i * (CELL_SIZE + GAP);
+                    const val = state.matrix[i][j];
+                    
+                    cellsHtml += `
+                        <g class="geom-cell" transform="translate(${cx}, ${cy})">
+                            <rect width="${CELL_SIZE}" height="${CELL_SIZE}" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" />
+                            <text x="${CELL_SIZE/2}" y="${CELL_SIZE/2 + 2}" class="math-font font-semibold text-lg fill-slate-600" text-anchor="middle" dominant-baseline="middle">${val}</text>
+                        </g>
+                    `;
+                }
+            }
+            DOM.svg.cells.innerHTML = cellsHtml;
+
+            // 2. Generate Row Layer (Highlights & Sums)
+            let rowHtml = '';
+            const sumX = OX + gridW + SUM_GAP;
+            for(let i = 0; i < m; i++) {
+                const cy = OY + i * (CELL_SIZE + GAP);
+                
+                // Row Highlight Box
+                rowHtml += `<rect x="${OX - 4}" y="${cy - 4}" width="${gridW + 8}" height="${CELL_SIZE + 8}" rx="8" fill="rgba(79, 70, 229, 0.15)" stroke="#6366f1" stroke-width="2" class="geom-highlight" />`;
+                
+                // Row Sum Equation
+                rowHtml += `<text x="${sumX}" y="${cy + CELL_SIZE/2 + 2}" class="math-font font-bold text-xl fill-indigo-700 geom-highlight" dominant-baseline="middle">= ${rowSums[i]}</text>`;
+            }
+            DOM.svg.rowLayer.innerHTML = rowHtml;
+
+            // 3. Generate Col Layer (Highlights & Sums)
+            let colHtml = '';
+            const sumY = OY + gridH + SUM_GAP;
+            for(let j = 0; j < n; j++) {
+                const cx = OX + j * (CELL_SIZE + GAP);
+                
+                // Col Highlight Box
+                colHtml += `<rect x="${cx - 4}" y="${OY - 4}" width="${CELL_SIZE + 8}" height="${gridH + 8}" rx="8" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" stroke-width="2" class="geom-highlight" />`;
+                
+                // Col Sum Equation
+                colHtml += `<text x="${cx + CELL_SIZE/2}" y="${sumY + 15}" class="math-font font-bold text-xl fill-emerald-700 geom-highlight" text-anchor="middle" dominant-baseline="middle">= ${colSums[j]}</text>`;
+            }
+            DOM.svg.colLayer.innerHTML = colHtml;
+
+            // 4. Update Grand Total Box
+            const totBoxW = 100;
+            const totBoxH = 60;
+            DOM.svg.totalBox.setAttribute('x', sumX + 20);
+            DOM.svg.totalBox.setAttribute('y', sumY - 10);
+            DOM.svg.totalBox.setAttribute('width', totBoxW);
+            DOM.svg.totalBox.setAttribute('height', totBoxH);
+
+            DOM.svg.totalText.setAttribute('x', sumX + 20 + totBoxW/2);
+            DOM.svg.totalText.setAttribute('y', sumY - 10 + totBoxH/2 + 5);
+            DOM.svg.totalText.textContent = grandTotal;
+
+            DOM.svg.totalLabel.setAttribute('x', sumX + 20 + totBoxW/2);
+            DOM.svg.totalLabel.setAttribute('y', sumY - 20);
+
+            applyStepLogic(step);
+        }
+
+        function applyStepLogic(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            // Visibility Toggles
+            op(DOM.svg.rowLayer, (step === 1 || step === 2) ? 1 : 0);
+            op(DOM.svg.colLayer, (step === 3 || step === 4) ? 1 : 0);
+            op(DOM.svg.totalLayer, (step === 2 || step === 4 || step === 5) ? 1 : 0);
+
+            // Styling adjustments for equivalence state
+            if (step === 5) {
+                // Show both layers faint, show total strongly
+                DOM.svg.rowLayer.style.opacity = 0.5;
+                DOM.svg.colLayer.style.opacity = 0.5;
+                DOM.svg.totalBox.setAttribute('stroke', '#8b5cf6'); // Purple
+                DOM.svg.totalBox.setAttribute('fill', '#f3e8ff');
+                DOM.svg.totalText.setAttribute('fill', '#6d28d9');
+                DOM.svg.totalLabel.setAttribute('fill', '#8b5cf6');
+            } else if (step === 2) {
+                // Row total styling
+                DOM.svg.totalBox.setAttribute('stroke', '#4f46e5');
+                DOM.svg.totalBox.setAttribute('fill', '#e0e7ff');
+                DOM.svg.totalText.setAttribute('fill', '#3730a3');
+                DOM.svg.totalLabel.setAttribute('fill', '#4f46e5');
+            } else if (step === 4) {
+                // Col total styling
+                DOM.svg.totalBox.setAttribute('stroke', '#059669');
+                DOM.svg.totalBox.setAttribute('fill', '#d1fae5');
+                DOM.svg.totalText.setAttribute('fill', '#064e3b');
+                DOM.svg.totalLabel.setAttribute('fill', '#059669');
+            }
+
+            // Math Equation Update
+            let eqLatex = "";
+            if (step === 0) {
+                eqLatex = `\\text{Find } \\sum_{\\text{all } i,j} a_{ij}`;
+            } else if (step === 1) {
+                eqLatex = `\\text{Inner Row Sum: } R_i = \\sum_{j=1}^{n} a_{ij}`;
+            } else if (step === 2) {
+                eqLatex = `\\text{Total} = \\sum_{i=1}^{m} R_i = \\sum_{i=1}^{m} \\left( \\sum_{j=1}^{n} a_{ij} \\right)`;
+            } else if (step === 3) {
+                eqLatex = `\\text{Inner Col Sum: } C_j = \\sum_{i=1}^{m} a_{ij}`;
+            } else if (step === 4) {
+                eqLatex = `\\text{Total} = \\sum_{j=1}^{n} C_j = \\sum_{j=1}^{n} \\left( \\sum_{i=1}^{m} a_{ij} \\right)`;
+            } else if (step === 5) {
+                eqLatex = `\\sum_{i=1}^{m} \\sum_{j=1}^{n} a_{ij} = \\sum_{j=1}^{n} \\sum_{i=1}^{m} a_{ij}`;
+            }
+
+            DOM.ui.eq.innerHTML = `$$ ${eqLatex} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 80);
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            // Ledger highlights
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            applyStepLogic(stepVal);
+
+            // Status text
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

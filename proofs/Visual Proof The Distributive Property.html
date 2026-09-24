@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: The Distributive Property</title>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --bg-light: #f8f9fa;
+            --text-dark: #2d3748;
+            --a-color: #8e44ad; /* Purple for height */
+            --ab-color: #3498db; /* Blue for ab */
+            --ac-color: #2ecc71; /* Green for ac */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            background: #f1f3f5;
+            padding: 20px;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        input[type="range"] { margin-top: 10px; cursor: pointer; }
+
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            min-height: 350px;
+            padding: 20px;
+        }
+
+        .rectangle-wrapper {
+            display: flex;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+
+        .region {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: 2px solid #2c3e50;
+            transition: width 0.3s ease, height 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .region-ab { background-color: var(--ab-color); border-right: 1px dashed rgba(255,255,255,0.7); }
+        .region-ac { background-color: var(--ac-color); border-left: none; }
+
+        .region span { font-size: 0.95rem; opacity: 0.9; font-weight: normal; margin-top: 5px; }
+
+        .label-top {
+            position: absolute;
+            top: -30px;
+            font-weight: bold;
+            color: var(--text-dark);
+            width: 100%;
+            text-align: center;
+            transition: width 0.3s ease;
+        }
+        
+        .label-left {
+            position: absolute;
+            left: -35px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: var(--a-color);
+        }
+
+        .live-equation {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 8px;
+        }
+
+        .explanation {
+            background: #fff;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .explanation h3 { margin-bottom: 10px; color: var(--primary); }
+        .explanation p { margin-bottom: 15px; font-size: 1.05rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Visual Proof: The Distributive Property</h1>
+
+        <!-- Sliders for interactivity -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="sliderA" style="color: var(--a-color);">Height ($a$): <span id="valA">5</span></label>
+                <input type="range" id="sliderA" min="2" max="10" value="5">
+            </div>
+            <div class="control-group">
+                <label for="sliderB" style="color: var(--ab-color);">Width 1 ($b$): <span id="valB">6</span></label>
+                <input type="range" id="sliderB" min="2" max="10" value="6">
+            </div>
+            <div class="control-group">
+                <label for="sliderC" style="color: var(--ac-color);">Width 2 ($c$): <span id="valC">4</span></label>
+                <input type="range" id="sliderC" min="2" max="10" value="4">
+            </div>
+        </div>
+
+        <!-- Live updating math text -->
+        <div class="live-equation" id="liveEq">
+            5 &times; (6 + 4) = (5 &times; 6) + (5 &times; 4) &nbsp;&nbsp;&rarr;&nbsp;&nbsp; 50 = 30 + 20
+        </div>
+
+        <div class="visualization-area">
+            <div class="rectangle-wrapper" id="mainRect">
+                <!-- Label for height -->
+                <div class="label-left" id="labelA">a=5</div>
+                
+                <!-- Box for ab -->
+                <div class="region region-ab" id="boxAB">
+                    <div class="label-top" id="labelB" style="color: var(--ab-color);">b=6</div>
+                    $ab$ <span id="textAB">= 30</span>
+                </div>
+                
+                <!-- Box for ac -->
+                <div class="region region-ac" id="boxAC">
+                    <div class="label-top" id="labelC" style="color: var(--ac-color);">c=4</div>
+                    $ac$ <span id="textAC">= 20</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h3>How to understand this proof:</h3>
+            <p>
+                Imagine a large rectangle. The height of this rectangle is $a$, and its total width is made up of two pieces: $b$ and $c$. Because the total width is $(b + c)$, the total area of the large rectangle is calculated as <strong>$a \times (b + c)$</strong>.
+            </p>
+            <p>
+                Now, look at the visual above. We can easily split this large rectangle into two smaller distinct rectangles:
+            </p>
+            <ul>
+                <li><strong>The Blue Rectangle:</strong> Its height is $a$ and its width is $b$. Therefore, its area is $ab$.</li>
+                <li><strong>The Green Rectangle:</strong> Its height is $a$ and its width is $c$. Therefore, its area is $ac$.</li>
+            </ul>
+            <p style="margin-top: 15px;">
+                Since these two smaller rectangles combine perfectly to form the large rectangle, the area of the large rectangle must be exactly equal to the sum of the areas of the two smaller rectangles. Therefore, we arrive at the distributive property:
+            </p>
+            <p style="text-align: center; font-size: 1.2rem; margin-top: 10px;">
+                $$a(b + c) = ab + ac$$
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const sliderA = document.getElementById('sliderA');
+        const sliderB = document.getElementById('sliderB');
+        const sliderC = document.getElementById('sliderC');
+        
+        const valA = document.getElementById('valA');
+        const valB = document.getElementById('valB');
+        const valC = document.getElementById('valC');
+        
+        const mainRect = document.getElementById('mainRect');
+        const boxAB = document.getElementById('boxAB');
+        const boxAC = document.getElementById('boxAC');
+        
+        const textAB = document.getElementById('textAB');
+        const textAC = document.getElementById('textAC');
+        
+        const labelA = document.getElementById('labelA');
+        const labelB = document.getElementById('labelB');
+        const labelC = document.getElementById('labelC');
+        
+        const liveEq = document.getElementById('liveEq');
+
+        const SCALE = 25; // 1 unit = 25 pixels
+
+        function drawProof() {
+            // Get current values as numbers
+            const a = parseInt(sliderA.value);
+            const b = parseInt(sliderB.value);
+            const c = parseInt(sliderC.value);
+            
+            // Update slider text labels
+            valA.innerText = a;
+            valB.innerText = b;
+            valC.innerText = c;
+
+            // Calculate pixel dimensions
+            const aPx = a * SCALE;
+            const bPx = b * SCALE;
+            const cPx = c * SCALE;
+            
+            // Apply dimensions to the boxes
+            mainRect.style.height = aPx + 'px';
+            
+            boxAB.style.width = bPx + 'px';
+            boxAB.style.height = aPx + 'px';
+            
+            boxAC.style.width = cPx + 'px';
+            boxAC.style.height = aPx + 'px';
+
+            // Update text inside boxes
+            textAB.innerText = '= ' + (a * b);
+            textAC.innerText = '= ' + (a * c);
+            
+            // Update labels outside boxes
+            labelA.innerText = 'a=' + a;
+            labelB.innerText = 'b=' + b;
+            labelC.innerText = 'c=' + c;
+
+            // Update the live equation text
+            const totalArea = a * (b + c);
+            const areaAB = a * b;
+            const areaAC = a * c;
+            
+            liveEq.innerHTML = `${a}(${b} + ${c}) = (${a} &times; ${b}) + (${a} &times; ${c}) &nbsp;&nbsp;&rarr;&nbsp;&nbsp; ${a}(${b + c}) = ${areaAB} + ${areaAC} &nbsp;&nbsp;&rarr;&nbsp;&nbsp; ${totalArea} = ${totalArea}`;
+        }
+
+        // Attach event listeners to sliders
+        sliderA.addEventListener('input', drawProof);
+        sliderB.addEventListener('input', drawProof);
+        sliderC.addEventListener('input', drawProof);
+
+        // Draw initially when page loads
+        drawProof();
+    </script>
+</body>
+</html>

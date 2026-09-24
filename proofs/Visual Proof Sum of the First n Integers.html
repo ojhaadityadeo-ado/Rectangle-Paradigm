@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Sum of the First n Integers</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            --c-orig-fill: #bfdbfe; /* blue-200 */
+            --c-orig-stroke: #3b82f6; /* blue-500 */
+            --c-dup-fill: #bbf7d0; /* green-200 */
+            --c-dup-stroke: #22c55e; /* green-500 */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 700px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* SVG Element Styles */
+        .block-orig {
+            fill: var(--c-orig-fill);
+            stroke: var(--c-orig-stroke);
+            stroke-width: 2;
+        }
+        
+        .block-dup {
+            fill: var(--c-dup-fill);
+            stroke: var(--c-dup-stroke);
+            stroke-width: 2;
+        }
+
+        .anim-group {
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease;
+        }
+
+        .dim-line {
+            stroke: #475569;
+            stroke-width: 2;
+            fill: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .dim-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            fill: #334155;
+            text-anchor: middle;
+            dominant-baseline: central;
+            transition: opacity 0.5s ease;
+        }
+
+        .axis-label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            fill: #64748b;
+            text-anchor: middle;
+        }
+
+        /* Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #0284c7;
+            color: white;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #0369a1; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        input[type=range] {
+            accent-color: #0284c7;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Sum of the First $n$ Integers
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-sky-50 text-sky-950 rounded-lg mb-6 shadow-sm border border-sky-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$S = 1 + 2 + 3 + \dots + n$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            
+            <div class="flex items-center gap-6">
+                <!-- N Slider -->
+                <div class="flex flex-col gap-1.5 w-48">
+                    <div class="flex justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Number of terms (<span class="italic text-sm">n</span>)</span>
+                        <span id="n-val" class="text-sky-700 font-bold text-sm">6</span>
+                    </div>
+                    <input type="range" id="inputN" value="6" min="2" max="10" step="1" class="w-full cursor-pointer">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-sky-700 font-bold text-lg bg-sky-100 px-3 py-1 rounded-md border border-sky-200">0 / 4</span>
+                </div>
+                <button id="prevBtn" class="btn-action btn-secondary" disabled>← Prev</button>
+                <button id="nextBtn" class="btn-action btn-play">Next Step →</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- SVG Visualization Window -->
+            <div class="lg:col-span-2 visualization-area mb-0">
+                <div class="svg-container">
+                    <svg id="proofSvg" viewBox="0 0 800 500">
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 2 L 10 5 L 0 8 z" fill="#475569" />
+                            </marker>
+                        </defs>
+                        <!-- Dynamic content rendered via JS -->
+                        <g id="svgContent"></g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Explanation Box Sidebar -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
+                <h3 class="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3 mb-4" id="stepTitle">The Staircase</h3>
+                <p class="text-slate-600 text-lg leading-relaxed min-h-[140px]" id="stepDesc">
+                    Consider a staircase built from $1, 2, 3, \dots, n$ unit blocks. Its total area represents the exact sum we want to calculate.
+                </p>
+                <div class="mt-4 p-4 bg-sky-50 rounded-lg border border-sky-100 text-center font-bold text-sky-900 shadow-inner">
+                    <span id="numericCheck">Sum = 21</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Insight</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        To find the sum of the first $n$ positive integers ($1 + 2 + 3 + \dots + n$), we can represent each number as a stack of square blocks. Stacking them side-by-side creates a geometric "staircase" shape.
+                    </p>
+                    <p class="mb-4">
+                        Instead of counting the blocks one by one, we use a clever spatial trick: we take a <strong>second, identical copy</strong> of the staircase.
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">Interlocking to form a Rectangle</h3>
+                    <p class="text-sm mb-3">
+                        By turning the second staircase upside down ($180^\circ$ rotation), the "steps" of the two shapes match perfectly. Sliding them together forms a solid, gapless rectangle.
+                    </p>
+                    <ul class="list-disc list-inside space-y-2 text-sm">
+                        <li>The width of this rectangle is simply the number of columns: <strong>$n$</strong>.</li>
+                        <li>The height combines the tallest column ($n$) with the shortest ($1$), making the total height <strong>$n + 1$</strong>.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-sky-200 bg-sky-50 rounded-xl mt-6">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">The Final Formula</h3>
+                <p class="text-sm text-slate-700 max-w-2xl mx-auto mb-4">
+                    The area of the entire rectangle is $n \times (n+1)$. Since this rectangle is made of exactly <em>two</em> identical staircases, the area of our original single staircase (the sum) is exactly half of that.
+                </p>
+                <p class="text-2xl font-bold text-sky-800">
+                    $$ \sum_{i=1}^{n} i = \frac{n(n+1)}{2} $$
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svgContent = document.getElementById('svgContent');
+            const inputN = document.getElementById('inputN');
+            const nValLabel = document.getElementById('n-val');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const stepIndicator = document.getElementById('stepIndicator');
+            const liveEq = document.getElementById('liveEq');
+            const stepTitle = document.getElementById('stepTitle');
+            const stepDesc = document.getElementById('stepDesc');
+            const numericCheck = document.getElementById('numericCheck');
+
+            let n = parseInt(inputN.value);
+            let currentStep = 0;
+            const maxSteps = 4;
+
+            // SVG Canvas configuration
+            const SVG_W = 800;
+            const SVG_H = 500;
+
+            const stepData = [
+                {
+                    title: "The Staircase",
+                    desc: "Consider a staircase built from $1, 2, 3, \\dots, n$ unit blocks. Its total area represents the exact sum we want to calculate.",
+                    eq: "$$S = 1 + 2 + 3 + \\dots + n$$"
+                },
+                {
+                    title: "Duplicate the Shape",
+                    desc: "To find this area, we take a second identical staircase. It has the exact same area, $S$.",
+                    eq: "$$\\text{Total Area} = 2S$$"
+                },
+                {
+                    title: "Rotate 180°",
+                    desc: "Rotate the second staircase completely upside down.",
+                    eq: "$$\\text{Total Area} = 2S$$"
+                },
+                {
+                    title: "Interlock the Staircases",
+                    desc: "Slide the upside-down staircase into the original one. They interlock perfectly to form a solid rectangle!",
+                    eq: "$$\\text{Total Area} = 2S = \\text{Rectangle Area}$$"
+                },
+                {
+                    title: "Calculate the Area",
+                    desc: "The resulting rectangle has a width of $n$ and a height of $n+1$. Its area is $n(n+1)$. Since this is twice our original sum, we simply divide by 2.",
+                    eq: "$$S = \\frac{n(n+1)}{2}$$"
+                }
+            ];
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            function drawGeometry() {
+                // Calculate dimensions based on n
+                // Max n = 10. Max width = 10 * C. Max height = 11 * C.
+                // We want to center the final interlocked rectangle in the middle of the screen.
+                
+                const maxN = 10;
+                // Leave some padding for labels and sliding
+                // Need space on right for sliding: Width + Slide Gap
+                // Max target width = 10 * 30 = 300. Slide gap = 300 + 40 = 340. Total required = 640. Fits in 800.
+                const C = 30; 
+                
+                const rectW = n * C;
+                const rectH = (n + 1) * C;
+                
+                const cx = SVG_W / 2 - 80; // Offset slightly left to make room for slide animation
+                const cy = SVG_H / 2;
+
+                // Base coordinates for the target rectangle (bottom-left corner)
+                const bx = cx - rectW / 2;
+                const by = cy + rectH / 2;
+
+                // Rotation center for the bounding box of a single staircase
+                const bb_cx = bx + (n * C) / 2;
+                const bb_cy = by - (n * C) / 2;
+
+                // Animation Slide Distance
+                const slideDist = rectW + 60;
+
+                let svgHTML = '';
+
+                // Group 1: Original Staircase (Blue)
+                svgHTML += `<g id="group-orig">`;
+                for (let i = 0; i < n; i++) {
+                    const blockH = (i + 1) * C;
+                    const x = bx + i * C;
+                    const y = by - blockH;
+                    svgHTML += `<rect x="${x}" y="${y}" width="${C}" height="${blockH}" class="block-orig" />`;
+                    
+                    // Column labels (1, 2, 3...)
+                    svgHTML += `<text x="${x + C/2}" y="${by + 20}" class="axis-label">${i + 1}</text>`;
+                }
+                svgHTML += `</g>`;
+
+                // Group 2: Duplicate Staircase (Green)
+                // Start it completely overlapping the original, hidden.
+                let dupOpacity = currentStep >= 1 ? 1 : 0;
+                let dupTransform = `translate(0px, 0px) rotate(0deg)`;
+                
+                if (currentStep === 1) {
+                    dupTransform = `translate(${slideDist}px, 0px) rotate(0deg)`;
+                } else if (currentStep === 2) {
+                    dupTransform = `translate(${slideDist}px, 0px) rotate(180deg)`;
+                } else if (currentStep >= 3) {
+                    // Snap into place: To interlock, it rotates 180 and shifts UP by C
+                    dupTransform = `translate(0px, ${-C}px) rotate(180deg)`;
+                }
+
+                svgHTML += `
+                    <g id="group-dup" class="anim-group" style="opacity: ${dupOpacity}; transform: ${dupTransform}; transform-origin: ${bb_cx}px ${bb_cy}px;">
+                `;
+                for (let i = 0; i < n; i++) {
+                    const blockH = (i + 1) * C;
+                    const x = bx + i * C;
+                    const y = by - blockH;
+                    svgHTML += `<rect x="${x}" y="${y}" width="${C}" height="${blockH}" class="block-dup" />`;
+                }
+                svgHTML += `</g>`;
+
+                // Dimension Brackets (Appears in Step 4)
+                const dimsOpacity = currentStep >= 4 ? 1 : 0;
+                svgHTML += `
+                    <g id="group-dims" style="opacity: ${dimsOpacity}; transition: opacity 0.5s ease 0.5s;">
+                        <!-- Bottom Width Bracket -->
+                        <path d="M ${bx} ${by + 35} L ${bx} ${by + 45} L ${bx + rectW} ${by + 45} L ${bx + rectW} ${by + 35}" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="${bx + rectW/2}" y="${by + 65}" class="dim-text">Width = n</text>
+
+                        <!-- Left Height Bracket -->
+                        <path d="M ${bx - 15} ${by} L ${bx - 25} ${by} L ${bx - 25} ${by - rectH} L ${bx - 15} ${by - rectH}" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="${bx - 70}" y="${by - rectH/2}" class="dim-text">n + 1</text>
+                    </g>
+                `;
+
+                svgContent.innerHTML = svgHTML;
+            }
+
+            function updateUI() {
+                stepIndicator.textContent = `${currentStep} / ${maxSteps}`;
+
+                // Update text content
+                stepTitle.innerHTML = stepData[currentStep].title;
+                stepDesc.innerHTML = stepData[currentStep].desc;
+                liveEq.innerHTML = stepData[currentStep].eq;
+                
+                const sum = (n * (n + 1)) / 2;
+                if (currentStep < 4) {
+                    numericCheck.innerHTML = `Area $S$ = ${sum}`;
+                } else {
+                    numericCheck.innerHTML = `Rectangle Area = $${n} \\times ${n+1} = ${n*(n+1)}$<br><span class="font-normal text-sm block mt-1">$\\implies S = ${n*(n+1)} / 2 = ${sum}$</span>`;
+                }
+
+                updateMathJax();
+
+                // Button states
+                prevBtn.disabled = currentStep === 0;
+                if (currentStep < maxSteps) {
+                    nextBtn.innerHTML = "Next Step →";
+                    nextBtn.classList.replace('btn-secondary', 'btn-play');
+                } else {
+                    nextBtn.innerHTML = "Finish";
+                    nextBtn.classList.replace('btn-play', 'btn-secondary');
+                    nextBtn.disabled = true;
+                }
+                
+                if (currentStep < maxSteps) {
+                    nextBtn.disabled = false;
+                }
+
+                drawGeometry();
+            }
+
+            // Event Listeners
+            inputN.addEventListener('input', (e) => {
+                n = parseInt(e.target.value);
+                nValLabel.textContent = n;
+                currentStep = 0; // Reset to start to avoid breaking animation flow
+                updateUI();
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < maxSteps) {
+                    currentStep++;
+                    updateUI();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateUI();
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                currentStep = 0;
+                updateUI();
+            });
+
+            // Initial load
+            updateUI();
+        });
+    </script>
+</body>
+</html>

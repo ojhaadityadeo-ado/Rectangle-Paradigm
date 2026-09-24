@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: x + 1/x ≥ 2</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        canvas {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; }
+        
+        .highlight-box { transition: all 0.3s ease; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Inequality $x + \frac{1}{x} \ge 2$
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$\left(x + \frac{1}{x}\right)^2 = 4 + \left(x - \frac{1}{x}\right)^2 \ge 4$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            <div class="flex items-center gap-6">
+                <div class="flex flex-col gap-2">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Value of <span class="math-font text-sm normal-case">x</span></span>
+                    <div class="flex items-center gap-3">
+                        <span id="xValueDisplay" class="text-indigo-600 font-bold text-sm w-8">2.00</span>
+                        <input type="range" id="inputX" value="2.0" min="0.5" max="3.5" step="0.05" class="w-48 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play Auto</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset x=1</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- Canvas Viewport -->
+            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-0 overflow-hidden flex items-center justify-center h-[450px]">
+                <canvas id="mathCanvas" class="w-full h-full"></canvas>
+            </div>
+
+            <!-- Sidebar Explainer -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h2 class="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3 mb-4">Area Breakdown</h2>
+                    
+                    <div class="space-y-4 text-sm">
+                        <!-- Step 1 -->
+                        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                            <h3 class="font-bold text-slate-800 mb-1">1. Four Rectangles</h3>
+                            <p class="text-slate-600 mb-2">Each rectangle has sides $x$ and $1/x$. Their individual area is exactly $1$.</p>
+                            <div class="text-center font-mono bg-white p-2 rounded border border-slate-200 text-sm font-semibold text-slate-700">
+                                4 × (x · 1/x) = 4.00
+                            </div>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="p-4 rounded-xl border border-red-100 bg-red-50/50 transition-colors" id="gapContainer">
+                            <h3 class="font-bold text-red-800 mb-1">2. Central Gap</h3>
+                            <p class="text-red-700/80 mb-2">The empty space forms a perfect square with side length $|x - 1/x|$.</p>
+                            <div class="text-center font-mono bg-white p-2 rounded border border-red-200 text-sm font-semibold text-red-600">
+                                (x - 1/x)² = <span id="gapAreaVal">2.25</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conclusion -->
+                <div class="mt-6 pt-4 border-t border-slate-200">
+                    <p class="text-center font-semibold text-slate-600 mb-2">Total Area of Large Square:</p>
+                    <div class="flex justify-between items-center text-sm font-mono font-bold px-2 mb-3">
+                        <span class="text-slate-500">Rectangles + Gap</span>
+                        <span class="text-indigo-700 text-lg">
+                            4.00 + <span id="gapDisplayVal">2.25</span> = <span id="totalDisplayVal">6.25</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Insight</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        For any positive number $x$, we can build a square whose side length is exactly $x + \frac{1}{x}$. By partitioning this large square into a pinwheel pattern, we can geometrically prove that $x + \frac{1}{x} \ge 2$.
+                    </p>
+                    <p class="mb-4">
+                        The total area of the large square is simply its side length squared: $\left(x + \frac{1}{x}\right)^2$.
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">Measuring the Inner Pieces</h3>
+                    <p class="text-sm mb-2">The area is also the sum of the four identical rectangles (each with area $x \cdot \frac{1}{x} = 1$) plus the area of the central square hole:</p>
+                    <p class="text-sm text-center font-semibold text-indigo-700 my-3">$$ \text{Total Area} = 4 + \left(x - \frac{1}{x}\right)^2 $$</p>
+                    <p class="text-sm">Since the square of any real number can never be negative, the gap area must be $\ge 0$. This guarantees that the total area is strictly bounded $\ge 4$.</p>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-indigo-200 bg-indigo-50 rounded-xl mt-6">
+                <p class="text-sm mt-2 max-w-2xl mx-auto mb-3 text-slate-700">
+                    Because we assumed $x$ is positive, $x + \frac{1}{x}$ is also positive. We can safely take the square root of both sides of the inequality $\left(x + \frac{1}{x}\right)^2 \ge 4$ without flipping the sign:
+                </p>
+                <p class="text-2xl font-bold text-indigo-800 mt-4 overflow-x-auto">
+                    $$ x + \frac{1}{x} \ge 2 $$
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            x: 2.0,
+            isPlaying: false,
+            animationDir: 1,
+            lastTime: 0
+        };
+
+        const canvas = document.getElementById('mathCanvas');
+        const ctx = canvas.getContext('2d');
+        const inputX = document.getElementById('inputX');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        
+        // UI Elements
+        const xValueDisplay = document.getElementById('xValueDisplay');
+        const gapAreaVal = document.getElementById('gapAreaVal');
+        const gapDisplayVal = document.getElementById('gapDisplayVal');
+        const totalDisplayVal = document.getElementById('totalDisplayVal');
+        const gapContainer = document.getElementById('gapContainer');
+        const playIcon = document.getElementById('playIcon');
+
+        function init() {
+            inputX.addEventListener('input', (e) => { 
+                state.x = parseFloat(e.target.value); 
+                pauseAnimation(); 
+                updateAndDraw(); 
+            });
+            
+            document.getElementById('playPauseBtn').addEventListener('click', togglePlay);
+            
+            document.getElementById('resetBtn').addEventListener('click', () => { 
+                pauseAnimation(); 
+                state.x = 1.0; 
+                inputX.value = 1.0; 
+                updateAndDraw(); 
+            });
+            
+            window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+            
+            resizeCanvas(); 
+            updateAndDraw(); 
+            requestAnimationFrame(renderLoop);
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+        }
+
+        function updateAndDraw() {
+            const x = state.x;
+            const invX = 1 / x;
+            
+            // Fast DOM updates without triggering heavy reflows
+            xValueDisplay.textContent = x.toFixed(2);
+            inputX.value = x;
+            
+            const totalArea = Math.pow(x + invX, 2);
+            const gapArea = Math.pow(x - invX, 2);
+            
+            gapAreaVal.textContent = gapArea.toFixed(3);
+            gapDisplayVal.textContent = gapArea.toFixed(3);
+            totalDisplayVal.textContent = totalArea.toFixed(3);
+            
+            // Visual fade if gap is essentially 0
+            if (gapArea < 0.005) {
+                gapContainer.classList.add('opacity-40');
+            } else {
+                gapContainer.classList.remove('opacity-40');
+            }
+
+            draw();
+        }
+
+        function drawDimLine(x1, y1, x2, y2, label, isVertical) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#64748b'; // slate-500
+            ctx.lineWidth = 1.5;
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            const tick = 5;
+            ctx.beginPath();
+            if (isVertical) {
+                ctx.moveTo(x1 - tick, y1); ctx.lineTo(x1 + tick, y1);
+                ctx.moveTo(x2 - tick, y2); ctx.lineTo(x2 + tick, y2);
+            } else {
+                ctx.moveTo(x1, y1 - tick); ctx.lineTo(x1, y1 + tick);
+                ctx.moveTo(x2, y2 - tick); ctx.lineTo(x2, y2 + tick);
+            }
+            ctx.stroke();
+            
+            const mx = (x1 + x2) / 2;
+            const my = (y1 + y2) / 2;
+            
+            // Background clearing block for text
+            ctx.fillStyle = '#ffffff';
+            if (isVertical) ctx.fillRect(mx - 12, my - 12, 24, 24);
+            else ctx.fillRect(mx - 15, my - 10, 30, 20);
+            
+            ctx.fillStyle = '#1e293b'; // slate-800
+            ctx.font = 'italic 16px "Times New Roman", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, mx, my);
+        }
+
+        function draw() {
+            const canvasW = canvas.width / (window.devicePixelRatio || 1);
+            const canvasH = canvas.height / (window.devicePixelRatio || 1);
+            ctx.clearRect(0, 0, canvasW, canvasH);
+            
+            const x = state.x;
+            const invX = 1 / x;
+            const totalSide = x + invX;
+            
+            // Scaling logic. Max total side is around ~3.8 when x=3.5
+            const maxSide = 4.0; 
+            const padding = 70;
+            const scale = Math.min(canvasW - padding*2, canvasH - padding*2) / maxSide;
+            
+            const scaledTotal = totalSide * scale;
+            const offsetX = (canvasW - scaledTotal) / 2 + 15;
+            const offsetY = (canvasH - scaledTotal) / 2 - 15;
+            
+            const tX = (val) => offsetX + val * scale;
+            const tY = (val) => offsetY + val * scale;
+            const s = (val) => val * scale;
+            
+            // 1. Draw the Central Hole (Gap)
+            const holePos = Math.min(x, invX);
+            const holeSize = Math.abs(x - invX);
+            
+            if (holeSize > 0.01) {
+                ctx.fillStyle = '#fef2f2'; // red-50
+                ctx.fillRect(tX(holePos), tY(holePos), s(holeSize), s(holeSize));
+                
+                if (s(holeSize) > 40) {
+                    ctx.fillStyle = '#dc2626'; // red-600
+                    ctx.font = 'italic 14px "Times New Roman", serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('(x - 1/x)²', tX(holePos + holeSize/2), tY(holePos + holeSize/2));
+                }
+            }
+            
+            // 2. Draw the 4 Pinwheel Rectangles
+            const rects = [
+                { x: 0, y: 0, w: invX, h: x, c: '#e0e7ff', s: '#4f46e5' }, // indigo-100/600
+                { x: 0, y: x, w: x, h: invX, c: '#e0e7ff', s: '#4f46e5' },
+                { x: x, y: invX, w: invX, h: x, c: '#e0e7ff', s: '#4f46e5' },
+                { x: invX, y: 0, w: x, h: invX, c: '#e0e7ff', s: '#4f46e5' }
+            ];
+            
+            rects.forEach(r => {
+                ctx.fillStyle = r.c;
+                ctx.strokeStyle = r.s;
+                ctx.lineWidth = 1.5;
+                
+                ctx.fillRect(tX(r.x), tY(r.y), s(r.w), s(r.h));
+                ctx.strokeRect(tX(r.x), tY(r.y), s(r.w), s(r.h));
+                
+                // Area label "1" inside circle
+                const cx = tX(r.x + r.w/2);
+                const cy = tY(r.y + r.h/2);
+                
+                ctx.beginPath();
+                ctx.arc(cx, cy, 14, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.strokeStyle = '#94a3b8'; // slate-400
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 15px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('1', cx, cy + 1);
+            });
+            
+            // 3. Draw External Dimension Brackets
+            drawDimLine(offsetX - 25, offsetY, offsetX - 25, offsetY + s(x), 'x', true);
+            drawDimLine(offsetX - 25, offsetY + s(x), offsetX - 25, offsetY + scaledTotal, '1/x', true);
+            
+            drawDimLine(offsetX, offsetY + scaledTotal + 25, offsetX + s(x), offsetY + scaledTotal + 25, 'x', false);
+            drawDimLine(offsetX + s(x), offsetY + scaledTotal + 25, offsetX + scaledTotal, offsetY + scaledTotal + 25, '1/x', false);
+        }
+
+        // Animation Controls
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            if (state.isPlaying) {
+                state.lastTime = performance.now();
+                playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause Auto';
+                playPauseBtn.classList.replace('btn-play', 'btn-secondary');
+            } else {
+                playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Play Auto';
+                playPauseBtn.classList.replace('btn-secondary', 'btn-play');
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Play Auto';
+            playPauseBtn.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        function renderLoop(currentTime) {
+            if (state.isPlaying) {
+                const dt = currentTime - state.lastTime;
+                state.lastTime = currentTime;
+                
+                const speed = 0.001; // Oscillation speed
+                state.x += speed * dt * state.animationDir;
+                
+                if (state.x >= 3.5) {
+                    state.x = 3.5;
+                    state.animationDir = -1;
+                } else if (state.x <= 0.5) {
+                    state.x = 0.5;
+                    state.animationDir = 1;
+                }
+                
+                updateAndDraw();
+            }
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Boot up
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Sum of Cubes</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .canvas-container {
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: high-quality;
+        }
+
+        /* Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        input[type=range] {
+            accent-color: #4f46e5;
+        }
+        
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Sum of Cubes
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$ 1^3 + 2^3 + \dots + n^3 = (1 + 2 + \dots + n)^2 $$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            
+            <div class="flex items-center gap-6">
+                <!-- N Slider -->
+                <div class="flex flex-col gap-1.5 w-48">
+                    <div class="flex justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Max Number (<span class="math-font text-sm">n</span>)</span>
+                        <span id="n-val" class="text-indigo-700 font-bold text-sm">4</span>
+                    </div>
+                    <input type="range" id="inputN" value="4" min="1" max="6" step="1" class="w-full cursor-pointer">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button id="playBtn" class="btn-action btn-play">▶ Play Auto</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- Canvas Visualization Window -->
+            <div class="lg:col-span-2 visualization-area mb-0">
+                <div class="canvas-container">
+                    <canvas id="cubesCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Explanation Box Sidebar -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3 mb-4">Geometric Analysis</h3>
+                    
+                    <div class="space-y-4 text-sm">
+                        <!-- Step 1 -->
+                        <div class="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                            <p class="font-medium text-slate-700 mb-1">1. Outer Square Side</p>
+                            <p class="text-slate-600">The side length of the outer square is the $n$-th Triangular Number:</p>
+                            <div class="mt-2 text-center font-mono bg-white p-2 rounded border border-slate-200 text-sm">
+                                Side = $1 + 2 + \dots +$ <span class="font-bold text-indigo-600" id="side-n">4</span> = <b id="side-total" class="text-indigo-600">10</b>
+                            </div>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                            <p class="font-medium text-slate-700 mb-1">2. Dissection Into Gnomons</p>
+                            <p class="text-slate-600 mb-2">Each layer $k$ forms an L-shaped shell consisting of:</p>
+                            <ul class="list-disc ml-5 text-xs text-slate-600 space-y-1">
+                                <li>One corner square of size $k \times k$</li>
+                                <li>Two sets of $(k-1)$ rectangles of size $j \times k$ and $k \times j$</li>
+                            </ul>
+                            <div class="mt-2 text-center font-mono bg-white p-1.5 rounded border border-slate-200 text-[10.5px]">
+                                Area = $k^2 + 2k(1 + \dots + k-1) = k^3$
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conclusion -->
+                <div class="mt-4 p-4 bg-indigo-50 text-indigo-900 rounded-lg border border-indigo-200">
+                    <p class="text-center font-medium mb-1 text-sm">Nicomachus's Identity Verified:</p>
+                    <div class="flex justify-between items-center text-xs mt-3 text-slate-600 font-semibold px-2">
+                        <span>Sum of Cubes:</span>
+                        <span>Square Area:</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm font-mono mt-1 px-2">
+                        <span id="cubesSumList" class="text-slate-700 font-bold">1³ + ... + 4³</span>
+                        <span id="squareAreaCalc" class="text-slate-700 font-bold">(10)²</span>
+                    </div>
+                    <hr class="border-indigo-200 my-2">
+                    <p class="font-bold text-center text-xl mt-1 font-mono text-indigo-700">
+                        <span id="final-sum">100</span> &nbsp;=&nbsp; <span id="final-square">100</span>
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Proof</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        Let $T_k = 1 + 2 + \dots + k = \frac{k(k+1)}{2}$ be the $k$-th triangular number. We build a square of side length $T_n$ one L-shaped "gnomon" at a time, and show that the $k$-th gnomon always has an area of exactly $k^3$.
+                    </p>
+                    <p class="mb-4">
+                        Suppose we already have a square of side $T_{k-1}$. Adding gnomon $k$ means attaching a $k \times k$ corner square plus two arms, each $T_{k-1} \times k$, along the top and side.
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">The Gnomon's Area is a Perfect Cube</h3>
+                    <p class="text-sm mb-2">The geometry tells us the area of the $k$-th gnomon is:</p>
+                    <p class="text-sm text-center">$$ \text{Area} = k^2 + 2 \cdot k \cdot T_{k-1} $$</p>
+                    <p class="text-sm mt-3 mb-2">Substituting the formula for $T_{k-1}$:</p>
+                    <p class="text-sm text-center">$$ = k^2 + 2k \cdot \frac{(k-1)k}{2} $$</p>
+                    <p class="text-sm text-center">$$ = k^2 + k^2(k-1) = k^2 \cdot k = k^3 $$</p>
+                    <p class="text-sm mt-3">So each colored layer in the diagram has an area of exactly $k^3$.</p>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-indigo-200 bg-indigo-50 rounded-xl mt-6">
+                <p class="text-sm mt-2 max-w-2xl mx-auto mb-3 text-slate-700">
+                    Stacking gnomons $1$ through $n$ builds up, layer by layer, one full square of side $T_n$. Since the gnomons' areas sum to $\sum k^3$ and the square's area is $T_n^2$, those two quantities must be equal:
+                </p>
+                <p class="text-2xl font-bold text-indigo-800">
+                    $$ 1^3 + 2^3 + \dots + n^3 = (1+2+\dots+n)^2 $$
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let state = { N: 4, isPlaying: false, animationDir: 1, lastTime: 0, animationSpeed: 1500 };
+            
+            const canvas = document.getElementById('cubesCanvas'); 
+            const ctx = canvas.getContext('2d');
+            const inputN = document.getElementById('inputN'); 
+            const nValLabel = document.getElementById('n-val');
+            
+            const playBtn = document.getElementById('playBtn'); 
+            const resetBtn = document.getElementById('resetBtn');
+            
+            const sideN = document.getElementById('side-n');
+            const sideTotal = document.getElementById('side-total');
+            const cubesSumList = document.getElementById('cubesSumList');
+            const squareAreaCalc = document.getElementById('squareAreaCalc');
+            const finalSum = document.getElementById('final-sum');
+            const finalSquare = document.getElementById('final-square');
+
+            const colors = [
+                { bg: 'rgba(244, 63, 94, 0.25)', border: '#e11d48', text: '#4c0519' },    // 1: Rose
+                { bg: 'rgba(14, 165, 233, 0.25)', border: '#0284c7', text: '#082f49' },   // 2: Sky
+                { bg: 'rgba(245, 158, 11, 0.25)', border: '#d97706', text: '#451a03' },   // 3: Amber
+                { bg: 'rgba(139, 92, 246, 0.25)', border: '#7c3aed', text: '#2e1065' },   // 4: Purple
+                { bg: 'rgba(16, 185, 129, 0.25)', border: '#059669', text: '#022c22' },   // 5: Emerald
+                { bg: 'rgba(236, 72, 153, 0.25)', border: '#db2777', text: '#500724' },   // 6: Pink
+            ];
+
+            function init() {
+                inputN.addEventListener('input', (e) => { 
+                    state.N = parseInt(e.target.value); 
+                    stopPlaying(); 
+                    updateAndDraw(); 
+                });
+                
+                playBtn.addEventListener('click', togglePlay);
+                
+                resetBtn.addEventListener('click', () => { 
+                    stopPlaying(); 
+                    state.N = 1; 
+                    inputN.value = 1; 
+                    updateAndDraw(); 
+                });
+                
+                window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+                
+                resizeCanvas(); 
+                updateAndDraw(); 
+                requestAnimationFrame(renderLoop);
+            }
+
+            function resizeCanvas() {
+                const container = canvas.parentElement; 
+                const dpr = window.devicePixelRatio || 1; 
+                const rect = container.getBoundingClientRect();
+                canvas.width = rect.width * dpr; 
+                canvas.height = rect.height * dpr; 
+                ctx.scale(dpr, dpr);
+            }
+
+            function getTriangularNumber(n) {
+                return (n * (n + 1)) / 2;
+            }
+
+            function updateAndDraw() {
+                const N = state.N;
+                nValLabel.textContent = N;
+                inputN.value = N;
+                sideN.textContent = N;
+                
+                const currentSide = getTriangularNumber(N);
+                sideTotal.textContent = currentSide;
+
+                let cubesStr = "";
+                let cubesSum = 0;
+                for(let i=1; i<=N; i++) {
+                    cubesStr += `${i}³` + (i === N ? "" : " + ");
+                    cubesSum += Math.pow(i, 3);
+                }
+                
+                // Update UI panels
+                cubesSumList.innerHTML = cubesStr;
+                squareAreaCalc.innerHTML = `(${currentSide})²`;
+                
+                finalSum.textContent = cubesSum;
+                finalSquare.textContent = currentSide * currentSide;
+
+                draw();
+            }
+
+            function drawTopBracket(x1, x2, y, label, color) {
+                ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+                ctx.moveTo(x1 + 1, y + 4); ctx.lineTo(x1 + 1, y); ctx.lineTo(x2 - 1, y); ctx.lineTo(x2 - 1, y + 4); ctx.stroke();
+                ctx.fillStyle = color; ctx.font = '600 12px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                ctx.fillText(label, (x1 + x2)/2, y - 3);
+            }
+
+            function drawLeftBracket(x, y1, y2, label, color) {
+                ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+                ctx.moveTo(x + 4, y1 + 1); ctx.lineTo(x, y1 + 1); ctx.lineTo(x, y2 - 1); ctx.lineTo(x + 4, y2 - 1); ctx.stroke();
+                ctx.fillStyle = color; ctx.font = '600 12px Inter, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+                ctx.fillText(label, x - 5, (y1 + y2)/2);
+            }
+
+            function draw() {
+                const canvasW = canvas.width / (window.devicePixelRatio || 1); 
+                const canvasH = canvas.height / (window.devicePixelRatio || 1); 
+                ctx.clearRect(0, 0, canvasW, canvasH);
+                
+                const N = state.N;
+                const totalUnits = getTriangularNumber(N);
+                
+                const padding = 45;
+                const availableW = canvasW - padding * 2;
+                const availableH = canvasH - padding * 2;
+                const scale = Math.min(availableW / totalUnits, availableH / totalUnits);
+                
+                const size = totalUnits * scale;
+                const offsetX = (canvasW - size) / 2 + 10;
+                const offsetY = (canvasH - size) / 2 + 10;
+                
+                const t = (u) => u * scale;
+                
+                ctx.fillStyle = '#f8fafc'; ctx.fillRect(offsetX, offsetY, size, size);
+                ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5; ctx.strokeRect(offsetX, offsetY, size, size);
+
+                for (let k = 1; k <= N; k++) {
+                    const color = colors[(k - 1) % colors.length];
+                    const t_k_minus_1 = getTriangularNumber(k - 1);
+                    const t_k = getTriangularNumber(k);
+                    
+                    ctx.strokeStyle = color.border;
+                    ctx.lineWidth = 1.5;
+                    
+                    // 1. Draw corner square: size k x k at (t_k_minus_1, t_k_minus_1)
+                    const cx = offsetX + t(t_k_minus_1);
+                    const cy = offsetY + t(t_k_minus_1);
+                    const cs = t(k);
+                    
+                    ctx.fillStyle = color.bg;
+                    ctx.fillRect(cx, cy, cs, cs);
+                    ctx.strokeRect(cx, cy, cs, cs);
+                    
+                    if (cs > 22) {
+                        ctx.fillStyle = color.text; ctx.font = '600 12px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(`${k}×${k}`, cx + cs/2, cy + cs/2);
+                    }
+                    
+                    // 2. Draw horizontal strip rectangles of size j x k
+                    for (let j = 1; j < k; j++) {
+                        const t_j_minus_1 = getTriangularNumber(j - 1);
+                        const rx = offsetX + t(t_j_minus_1);
+                        const ry = offsetY + t(t_k_minus_1);
+                        const rw = t(j);
+                        const rh = t(k);
+                        
+                        ctx.fillStyle = color.bg;
+                        ctx.fillRect(rx, ry, rw, rh);
+                        ctx.strokeRect(rx, ry, rw, rh);
+                        
+                        if (rw > 18 && rh > 18) {
+                            ctx.fillStyle = color.text; ctx.font = '500 11px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            ctx.fillText(`${j}×${k}`, rx + rw/2, ry + rh/2);
+                        }
+                    }
+                    
+                    // 3. Draw vertical strip rectangles of size k x j
+                    for (let j = 1; j < k; j++) {
+                        const t_j_minus_1 = getTriangularNumber(j - 1);
+                        const rx = offsetX + t(t_k_minus_1);
+                        const ry = offsetY + t(t_j_minus_1);
+                        const rw = t(k);
+                        const rh = t(j);
+                        
+                        ctx.fillStyle = color.bg;
+                        ctx.fillRect(rx, ry, rw, rh);
+                        ctx.strokeRect(rx, ry, rw, rh);
+                        
+                        if (rw > 18 && rh > 18) {
+                            ctx.fillStyle = color.text; ctx.font = '500 11px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            ctx.fillText(`${k}×${j}`, rx + rw/2, ry + rh/2);
+                        }
+                    }
+                }
+
+                // Draw Top and Left brackets
+                for (let i = 1; i <= N; i++) {
+                    const start = getTriangularNumber(i - 1);
+                    const end = getTriangularNumber(i);
+                    const color = colors[(i - 1) % colors.length];
+                    
+                    drawTopBracket(offsetX + t(start), offsetX + t(end), offsetY - 12, `${i}`, color.border);
+                    drawLeftBracket(offsetX - 12, offsetY + t(start), offsetY + t(end), `${i}`, color.border);
+                }
+            }
+
+            function stopPlaying() {
+                state.isPlaying = false;
+                playBtn.innerHTML = '▶ Play Auto';
+                playBtn.classList.replace('btn-secondary', 'btn-play');
+            }
+
+            function togglePlay() {
+                if (state.isPlaying) {
+                    stopPlaying();
+                } else {
+                    state.isPlaying = true;
+                    state.lastTime = performance.now(); 
+                    playBtn.innerHTML = '⏸ Pause';
+                    playBtn.classList.replace('btn-play', 'btn-secondary');
+                }
+            }
+
+            function renderLoop(currentTime) {
+                if (state.isPlaying) {
+                    const dt = currentTime - state.lastTime;
+                    if (dt >= state.animationSpeed) {
+                        state.lastTime = currentTime; 
+                        state.N += state.animationDir;
+                        if (state.N >= 6) { state.N = 6; state.animationDir = -1; } 
+                        else if (state.N <= 1) { state.N = 1; state.animationDir = 1; }
+                        updateAndDraw();
+                    }
+                }
+                requestAnimationFrame(renderLoop);
+            }
+
+            window.onload = init;
+        });
+    </script>
+</body>
+</html>

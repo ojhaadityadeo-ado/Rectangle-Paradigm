@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: The Product Rule</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-line { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-text { user-select: none; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-expand text-indigo-600 text-2xl"></i> Visual Proof: The Product Rule
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Viewing the derivative of a product as the change in the area of an expanding rectangle.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                <span class="text-slate-800">$\frac{d}{dx}(u \cdot v) =$</span>
+                <span class="text-emerald-700">$u \frac{dv}{dx}$</span>
+                <span class="text-slate-800">$+$</span>
+                <span class="text-amber-600">$v \frac{du}{dx}$</span>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow">
+                <!-- Base Dimensions -->
+                <div class="flex flex-col gap-2 w-full max-w-[140px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Width <span class="math-font text-sm normal-case text-indigo-600">u</span></span>
+                        <span id="val-u" class="text-indigo-600 text-lg font-mono">5.0</span>
+                    </div>
+                    <input type="range" id="slider-u" value="5" min="2" max="7" step="0.5" class="w-full">
+                </div>
+                <div class="flex flex-col gap-2 w-full max-w-[140px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Height <span class="math-font text-sm normal-case text-indigo-600">v</span></span>
+                        <span id="val-v" class="text-indigo-600 text-lg font-mono">4.0</span>
+                    </div>
+                    <input type="range" id="slider-v" value="4" min="2" max="7" step="0.5" class="w-full">
+                </div>
+
+                <!-- Changes -->
+                <div class="flex flex-col gap-2 w-full max-w-[140px] bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                        <span>Change <span class="math-font text-sm normal-case text-amber-600">du</span></span>
+                        <span id="val-du" class="text-amber-600 text-lg font-mono">1.5</span>
+                    </div>
+                    <input type="range" id="slider-du" value="1.5" min="0.5" max="3" step="0.1" class="w-full">
+                </div>
+                <div class="flex flex-col gap-2 w-full max-w-[140px] bg-white p-3 rounded-lg border border-emerald-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-emerald-700 uppercase tracking-wider">
+                        <span>Change <span class="math-font text-sm normal-case text-emerald-600">dv</span></span>
+                        <span id="val-dv" class="text-emerald-600 text-lg font-mono">1.2</span>
+                    </div>
+                    <input type="range" id="slider-dv" value="1.2" min="0.5" max="3" step="0.1" class="w-full">
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 600 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes -->
+                    <g id="axes">
+                        <line x1="60" y1="420" x2="550" y2="420" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="80" y1="440" x2="80" y2="30" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    </g>
+
+                    <g id="dynamic-rects">
+                        <!-- Main UV Rect -->
+                        <rect id="rect-uv" class="geom-rect" fill="rgba(79, 70, 229, 0.15)" stroke="#4338ca" stroke-width="2" />
+                        <text id="lbl-uv" class="geom-text math-font font-bold text-2xl" fill="#4338ca" text-anchor="middle" dominant-baseline="middle">u · v</text>
+
+                        <!-- Expansion Lines (Shown in Step 1) -->
+                        <g id="expansion-guides" class="fade" opacity="0">
+                            <line id="guide-top" class="geom-line" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
+                            <line id="guide-right" class="geom-line" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
+                        </g>
+
+                        <!-- Right Strip: v * du -->
+                        <rect id="rect-vdu" class="geom-rect fade" fill="rgba(245, 158, 11, 0.2)" stroke="#d97706" stroke-width="2" opacity="0" />
+                        <text id="lbl-vdu" class="geom-text math-font font-bold text-xl fade" fill="#b45309" text-anchor="middle" dominant-baseline="middle" opacity="0">v · du</text>
+
+                        <!-- Top Strip: u * dv -->
+                        <rect id="rect-udv" class="geom-rect fade" fill="rgba(16, 185, 129, 0.2)" stroke="#059669" stroke-width="2" opacity="0" />
+                        <text id="lbl-udv" class="geom-text math-font font-bold text-xl fade" fill="#047857" text-anchor="middle" dominant-baseline="middle" opacity="0">u · dv</text>
+
+                        <!-- Corner Square: du * dv -->
+                        <rect id="rect-dudv" class="geom-rect fade" fill="rgba(244, 63, 94, 0.2)" stroke="#e11d48" stroke-width="2" opacity="0" />
+                        <text id="lbl-dudv" class="geom-text math-font font-bold text-sm fade" fill="#be123c" text-anchor="middle" dominant-baseline="middle" opacity="0">du·dv</text>
+                    </g>
+                    
+                    <g id="dynamic-annotations">
+                        <!-- Bottom Widths -->
+                        <line id="dim-u" class="geom-line" stroke="#4338ca" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                        <text id="dim-lbl-u" class="geom-text math-font font-bold" fill="#4338ca" font-size="18" text-anchor="middle">u</text>
+                        
+                        <line id="dim-du" class="geom-line fade" stroke="#d97706" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="dim-lbl-du" class="geom-text math-font font-bold fade" fill="#d97706" font-size="16" text-anchor="middle" opacity="0">du</text>
+
+                        <!-- Left Heights -->
+                        <line id="dim-v" class="geom-line" stroke="#4338ca" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                        <text id="dim-lbl-v" class="geom-text math-font font-bold" fill="#4338ca" font-size="18" text-anchor="end" dominant-baseline="middle">v</text>
+                        
+                        <line id="dim-dv" class="geom-line fade" stroke="#059669" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="dim-lbl-dv" class="geom-text math-font font-bold fade" fill="#059669" font-size="16" text-anchor="end" dominant-baseline="middle" opacity="0">dv</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Setup (Initial Area)</span>
+                            <span class="text-xs text-slate-600">Imagine a rectangle representing a function $A = u \cdot v$. Its initial area is simply width $\times$ height.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. The Perturbation</span>
+                            <span class="text-xs text-slate-600">We increase the input variable $x$ by $dx$, causing the sides to grow by tiny amounts $du$ and $dv$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-amber-700 block mb-1">3. The First Strip</span>
+                            <span class="text-xs text-slate-600">The area grows by a vertical strip on the right. Its area is the old height $v$ times the new width change $du$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-700 block mb-1">4. The Second Strip</span>
+                            <span class="text-xs text-slate-600">The area also grows by a horizontal strip on the top. Its area is the old width $u$ times the new height change $dv$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-rose-700 block mb-1">5. The Corner Square</span>
+                            <span class="text-xs text-slate-600">This leaves a tiny corner piece of area $du \cdot dv$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-indigo-700 block mb-1">6. The Limit as $dx \to 0$</span>
+                            <span class="text-xs text-slate-600">As the changes become infinitesimally small, the corner piece $du \cdot dv$ vanishes much faster than the strips, leaving only the two main rectangles.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the dimensions $u, v$ and their changes $du, dv$. Press <strong>Play</strong> to visualize the area growth.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Algebraic Identity</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Algebraic Expansion -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. The Change in Area</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        When both functions $u$ and $v$ increase by a tiny amount, the new total area of the expanded rectangle is:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ A_{\text{new}} = (u + \Delta u)(v + \Delta v) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Expanding this algebraic product perfectly matches our geometric visual:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0">
+                        $$ A_{\text{new}} = u \cdot v + u \cdot \Delta v + v \cdot \Delta u + \Delta u \cdot \Delta v $$
+                    </div>
+                </div>
+
+                <!-- Right: The Derivative -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Applying the Limit</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The <em>change</em> in area $\Delta A$ is the new area minus the original $u \cdot v$:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \Delta A = u \cdot \Delta v + v \cdot \Delta u + \Delta u \cdot \Delta v $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-2">
+                        To find the derivative, we divide the change in area by the change in our independent variable $x$, and take the limit as $\Delta x \to 0$:
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0">
+                        $$ \frac{dA}{dx} = \lim_{\Delta x \to 0} \left( u \frac{\Delta v}{\Delta x} + v \frac{\Delta u}{\Delta x} + \Delta u \frac{\Delta v}{\Delta x} \right) $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: The Vanishing Corner</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    As $\Delta x$ approaches zero, $\frac{\Delta u}{\Delta x}$ and $\frac{\Delta v}{\Delta x}$ converge to finite derivatives $\frac{du}{dx}$ and $\frac{dv}{dx}$. However, the standalone $\Delta u$ term shrinks to exactly $0$. Geometrically, this means the red corner square shrinks much faster than the two rectangular strips.
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ \frac{d}{dx}(u \cdot v) = u \frac{dv}{dx} + v \frac{du}{dx} $$
+                </div>
+                <p class="text-slate-700 leading-relaxed">
+                    This leaves us with the fundamental Product Rule of calculus, beautifully derived from the changing geometry of a simple rectangle.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            u: 5.0,
+            v: 4.0,
+            du: 1.5,
+            dv: 1.2,
+            step: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null,
+            isLimitState: false
+        };
+
+        // Constants for SVG
+        const OX = 80;      // Origin X 
+        const OY = 420;     // Origin Y (Bottom Left)
+        const SCALE = 40;   // 1 unit = 40 pixels
+
+        // DOM Elements
+        const DOM = {
+            sliders: { 
+                u: document.getElementById('slider-u'), 
+                v: document.getElementById('slider-v'),
+                du: document.getElementById('slider-du'),
+                dv: document.getElementById('slider-dv')
+            },
+            vals: { 
+                u: document.getElementById('val-u'), 
+                v: document.getElementById('val-v'), 
+                du: document.getElementById('val-du'),
+                dv: document.getElementById('val-dv')
+            },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                rectUV: document.getElementById('rect-uv'), lblUV: document.getElementById('lbl-uv'),
+                rectVDU: document.getElementById('rect-vdu'), lblVDU: document.getElementById('lbl-vdu'),
+                rectUDV: document.getElementById('rect-udv'), lblUDV: document.getElementById('lbl-udv'),
+                rectDUDV: document.getElementById('rect-dudv'), lblDUDV: document.getElementById('lbl-dudv'),
+                
+                expGuides: document.getElementById('expansion-guides'),
+                guideTop: document.getElementById('guide-top'), guideRight: document.getElementById('guide-right'),
+
+                dimU: document.getElementById('dim-u'), lblDimU: document.getElementById('dim-lbl-u'),
+                dimDU: document.getElementById('dim-du'), lblDimDU: document.getElementById('dim-lbl-du'),
+                dimV: document.getElementById('dim-v'), lblDimV: document.getElementById('dim-lbl-v'),
+                dimDV: document.getElementById('dim-dv'), lblDimDV: document.getElementById('dim-lbl-dv')
+            }
+        };
+
+        const descriptions = [
+            "Imagine a rectangle representing a function $A = u \\cdot v$. Its initial area is simply width $\\times$ height.",
+            "We increase the input variable $x$ by $dx$, causing the sides to grow by tiny amounts $du$ and $dv$.",
+            "The area grows by a vertical strip on the right. Its area is the old height $v$ times the new width change $du$.",
+            "The area also grows by a horizontal strip on the top. Its area is the old width $u$ times the new height change $dv$.",
+            "This leaves a tiny corner piece of area $du \\cdot dv$. The total new area is $uv + v(du) + u(dv) + du(dv)$.",
+            "As $dx \\to 0$, $du$ and $dv$ become infinitesimally small. The corner piece shrinks much faster than the strips, leaving only $v(du) + u(dv)$."
+        ];
+
+        function init() {
+            // Slider events
+            ['u', 'v', 'du', 'dv'].forEach(key => {
+                DOM.sliders[key].addEventListener('input', (e) => {
+                    pauseAnimation();
+                    state[key] = parseFloat(e.target.value);
+                    if(state.isLimitState) {
+                        setStep(4); // Exit limit state if user manually adjusts
+                    } else {
+                        updateGeometry();
+                    }
+                });
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.u = 5.0; state.v = 4.0; state.du = 1.5; state.dv = 1.2;
+                DOM.sliders.u.value = 5.0; DOM.sliders.v.value = 4.0;
+                DOM.sliders.du.value = 1.5; DOM.sliders.dv.value = 1.2;
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { u, v, step, isLimitState } = state;
+            
+            // If in limit state, render du and dv as extremely small values, otherwise use actual state values
+            const render_du = isLimitState ? 0.15 : state.du;
+            const render_dv = isLimitState ? 0.15 : state.dv;
+
+            // UI texts
+            DOM.vals.u.textContent = u.toFixed(1);
+            DOM.vals.v.textContent = v.toFixed(1);
+            DOM.vals.du.textContent = state.du.toFixed(1);
+            DOM.vals.dv.textContent = state.dv.toFixed(1);
+
+            const pxU = u * SCALE;
+            const pxV = v * SCALE;
+            const pxDU = render_du * SCALE;
+            const pxDV = render_dv * SCALE;
+
+            // Helper to set rect easily
+            const setRect = (el, xPos, yPos, w, h) => {
+                el.setAttribute('x', xPos);
+                el.setAttribute('y', yPos);
+                el.setAttribute('width', Math.max(0, w));
+                el.setAttribute('height', Math.max(0, h));
+            };
+
+            // Main Base Rect (u * v)
+            setRect(DOM.svg.rectUV, OX, OY - pxV, pxU, pxV);
+            DOM.svg.lblUV.setAttribute('x', OX + pxU/2); DOM.svg.lblUV.setAttribute('y', OY - pxV/2);
+
+            // Right Strip (v * du)
+            setRect(DOM.svg.rectVDU, OX + pxU, OY - pxV, pxDU, pxV);
+            DOM.svg.lblVDU.setAttribute('x', OX + pxU + pxDU/2); DOM.svg.lblVDU.setAttribute('y', OY - pxV/2);
+
+            // Top Strip (u * dv)
+            setRect(DOM.svg.rectUDV, OX, OY - pxV - pxDV, pxU, pxDV);
+            DOM.svg.lblUDV.setAttribute('x', OX + pxU/2); DOM.svg.lblUDV.setAttribute('y', OY - pxV - pxDV/2);
+
+            // Corner Square (du * dv)
+            setRect(DOM.svg.rectDUDV, OX + pxU, OY - pxV - pxDV, pxDU, pxDV);
+            DOM.svg.lblDUDV.setAttribute('x', OX + pxU + pxDU/2); DOM.svg.lblDUDV.setAttribute('y', OY - pxV - pxDV/2);
+
+            // Hide labels if area is too small (e.g. during limit state)
+            const hideSmallLabel = (el, w, h) => el.style.opacity = (w < 20 || h < 20) ? '0' : '1';
+            
+            if (step >= 2) hideSmallLabel(DOM.svg.lblVDU, pxDU, pxV);
+            if (step >= 3) hideSmallLabel(DOM.svg.lblUDV, pxU, pxDV);
+            if (step >= 4) hideSmallLabel(DOM.svg.lblDUDV, pxDU, pxDV);
+
+            // Expansion Guides (Dashed Lines)
+            DOM.svg.guideTop.setAttribute('x1', OX); DOM.svg.guideTop.setAttribute('y1', OY - pxV - pxDV);
+            DOM.svg.guideTop.setAttribute('x2', OX + pxU + pxDU); DOM.svg.guideTop.setAttribute('y2', OY - pxV - pxDV);
+            
+            DOM.svg.guideRight.setAttribute('x1', OX + pxU + pxDU); DOM.svg.guideRight.setAttribute('y1', OY);
+            DOM.svg.guideRight.setAttribute('x2', OX + pxU + pxDU); DOM.svg.guideRight.setAttribute('y2', OY - pxV - pxDV);
+
+            // Dimensions - Widths
+            const dimY = OY + 25;
+            DOM.svg.dimU.setAttribute('x1', OX); DOM.svg.dimU.setAttribute('x2', OX + pxU);
+            DOM.svg.dimU.setAttribute('y1', dimY); DOM.svg.dimU.setAttribute('y2', dimY);
+            DOM.svg.lblDimU.setAttribute('x', OX + pxU/2); DOM.svg.lblDimU.setAttribute('y', dimY + 20);
+
+            DOM.svg.dimDU.setAttribute('x1', OX + pxU); DOM.svg.dimDU.setAttribute('x2', OX + pxU + pxDU);
+            DOM.svg.dimDU.setAttribute('y1', dimY); DOM.svg.dimDU.setAttribute('y2', dimY);
+            DOM.svg.lblDimDU.setAttribute('x', OX + pxU + pxDU/2); DOM.svg.lblDimDU.setAttribute('y', dimY + 20);
+
+            // Dimensions - Heights
+            const dimX = OX - 25;
+            DOM.svg.dimV.setAttribute('x1', dimX); DOM.svg.dimV.setAttribute('x2', dimX);
+            DOM.svg.dimV.setAttribute('y1', OY); DOM.svg.dimV.setAttribute('y2', OY - pxV);
+            DOM.svg.lblDimV.setAttribute('x', dimX - 10); DOM.svg.lblDimV.setAttribute('y', OY - pxV/2);
+
+            DOM.svg.dimDV.setAttribute('x1', dimX); DOM.svg.dimDV.setAttribute('x2', dimX);
+            DOM.svg.dimDV.setAttribute('y1', OY - pxV); DOM.svg.dimDV.setAttribute('y2', OY - pxV - pxDV);
+            DOM.svg.lblDimDV.setAttribute('x', dimX - 10); DOM.svg.lblDimDV.setAttribute('y', OY - pxV - pxDV/2);
+
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => {
+                if (el) el.style.opacity = val;
+            };
+
+            // Step 1: Show guides and dimensions for du, dv
+            op(DOM.svg.expGuides, step >= 1 ? '1' : '0');
+            op(DOM.svg.dimDU, step >= 1 ? '1' : '0'); op(DOM.svg.lblDimDU, step >= 1 ? '1' : '0');
+            op(DOM.svg.dimDV, step >= 1 ? '1' : '0'); op(DOM.svg.lblDimDV, step >= 1 ? '1' : '0');
+
+            // Step 2: Show Right Strip (v * du)
+            op(DOM.svg.rectVDU, step >= 2 ? '1' : '0');
+            if (step >= 2 && !state.isLimitState) op(DOM.svg.lblVDU, '1'); else op(DOM.svg.lblVDU, '0');
+
+            // Step 3: Show Top Strip (u * dv)
+            op(DOM.svg.rectUDV, step >= 3 ? '1' : '0');
+            if (step >= 3 && !state.isLimitState) op(DOM.svg.lblUDV, '1'); else op(DOM.svg.lblUDV, '0');
+
+            // Step 4 & 5: Show Corner Square
+            op(DOM.svg.rectDUDV, step >= 4 ? '1' : '0');
+            if (step >= 4 && !state.isLimitState) op(DOM.svg.lblDUDV, '1'); else op(DOM.svg.lblDUDV, '0');
+
+            // Fade Main text if limits
+            op(DOM.svg.lblUV, state.isLimitState ? '0.5' : '1');
+        }
+
+        function setStep(step) {
+            state.step = step;
+            
+            if (step === 5) {
+                state.isLimitState = true;
+            } else {
+                state.isLimitState = false;
+            }
+
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            updateGeometry();
+
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); 
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

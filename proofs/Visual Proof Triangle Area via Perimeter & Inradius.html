@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Triangle Area via Perimeter & Inradius</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 980px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* SVG Visualization Area */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 800px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* SVG Geometric Shapes & Styles */
+        :root {
+            --c-a: #3b82f6; /* Blue */
+            --c-b: #f59e0b; /* Amber */
+            --c-c: #10b981; /* Emerald */
+            --transition-speed: 0.5s;
+        }
+
+        .tri-orig { fill-opacity: 0.85; stroke: rgba(0,0,0,0.15); stroke-width: 1.5; stroke-linejoin: round; }
+        .tri-copy { fill-opacity: 0; stroke: rgba(0,0,0,0.3); stroke-width: 1.5; stroke-dasharray: 4 3; stroke-linejoin: round; transition: fill-opacity 0.6s ease; }
+        .tri-copy.visible { fill-opacity: 0.25; }
+        
+        .c-a { fill: var(--c-a); }
+        .c-b { fill: var(--c-b); }
+        .c-c { fill: var(--c-c); }
+
+        .geom-line { stroke: #64748b; stroke-width: 1.5; fill: none; transition: opacity var(--transition-speed); }
+        .geom-line.dashed { stroke-dasharray: 5 4; }
+        
+        .dim-line { stroke: #334155; stroke-width: 1.5; marker-end: url(#arrow); marker-start: url(#arrow); transition: opacity var(--transition-speed); }
+        
+        .math-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            fill: #1e293b;
+            text-anchor: middle;
+            transition: opacity var(--transition-speed);
+        }
+        .math-label.bold { font-weight: 700; font-size: 18px; font-style: italic; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #0284c7;
+            color: white;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #0369a1; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Perimeter &times; Inradius = 2 &times; Area
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-sky-50 text-sky-950 rounded-lg mb-6 shadow-sm border border-sky-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$2 \times \text{Area} = r \times (a + b + c)$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="font-semibold text-slate-700">Step:</span>
+                <span id="stepIndicator" class="text-sky-700 font-bold text-lg bg-sky-100 px-3 py-1 rounded-md border border-sky-200">0 / 5</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="playBtn" class="btn-action btn-play">
+                    ▶ Play Auto
+                </button>
+                <button id="prevBtn" class="btn-action btn-secondary" disabled>
+                    ← Back
+                </button>
+                <button id="nextBtn" class="btn-action btn-secondary">
+                    Next →
+                </button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-4">
+                    ↺ Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Visualization Area -->
+        <div class="visualization-area">
+            <div class="svg-container">
+                <svg id="visual-svg" viewBox="0 0 700 400">
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 2 L 10 5 L 0 8 z" fill="#334155" />
+                        </marker>
+                    </defs>
+                    
+                    <g id="layer-guidelines">
+                        <!-- Incircles -->
+                        <circle id="incircle-1" cx="155" cy="140" r="60" class="geom-line" opacity="0" />
+                        <circle id="incircle-2" cx="475" cy="140" r="60" class="geom-line dashed" opacity="0" />
+                        
+                        <!-- Radii connecting to tangency points -->
+                        <g id="radii-lines" opacity="0">
+                            <line x1="155" y1="140" x2="155" y2="200" class="geom-line dashed" /> <!-- to side a -->
+                            <line x1="155" y1="140" x2="210.38" y2="116.92" class="geom-line dashed" /> <!-- to side b -->
+                            <line x1="155" y1="140" x2="107" y2="104" class="geom-line dashed" /> <!-- to side c -->
+                        </g>
+                    </g>
+
+                    <!-- Polygons will be injected here via JavaScript for interpolation -->
+                    <g id="layer-polygons"></g>
+                    
+                    <g id="layer-labels">
+                        <!-- Triangle Labels (State 0/1) -->
+                        <g id="lbls-tri" opacity="1">
+                            <text x="155" y="222" class="math-label bold">a</text>
+                            <text x="260" y="95" class="math-label bold">b</text>
+                            <text x="50" y="95" class="math-label bold">c</text>
+                        </g>
+                        
+                        <!-- Rectangle Dimension Labels (State 5) -->
+                        <g id="lbls-rect" opacity="0">
+                            <!-- Width Dimensions -->
+                            <line x1="35" y1="360" x2="245" y2="360" class="dim-line" />
+                            <text x="140" y="380" class="math-label bold">a</text>
+                            
+                            <line x1="245" y1="360" x2="440" y2="360" class="dim-line" />
+                            <text x="342" y="380" class="math-label bold">b</text>
+                            
+                            <line x1="440" y1="360" x2="665" y2="360" class="dim-line" />
+                            <text x="552" y="380" class="math-label bold">c</text>
+
+                            <!-- Height Dimension -->
+                            <line x1="20" y1="280" x2="20" y2="340" class="dim-line" />
+                            <text x="10" y="315" class="math-label bold">r</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Explanation Box -->
+        <div class="bg-sky-50 border-l-4 border-sky-600 p-5 rounded-r-lg shadow-sm mb-6 min-h-[90px] flex items-center">
+            <p class="text-slate-800 text-lg leading-relaxed w-full transition-opacity duration-300" id="statusText">
+                Consider a standard triangle with side lengths $a$, $b$, and $c$. Let its area be $A$.
+            </p>
+        </div>
+
+        <!-- Written Mathematical Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">Connecting Geometry to the Formula</h3>
+            <p class="text-slate-700 text-lg mb-4">
+                This geometric dissection provides a stunning visual intuition for the relationship between a triangle's area ($A$), its perimeter ($P$), and the radius of its inscribed circle ($r$).
+            </p>
+            <ol class="list-decimal list-inside space-y-3 text-slate-700 text-lg mb-6">
+                <li>
+                    <strong>Identify the Sub-Triangles:</strong> By drawing lines from the incenter to the vertices and dropping perpendiculars (the inradii, $r$) to the sides, the triangle splits into 6 smaller right-angled triangles.
+                </li>
+                <li>
+                    <strong>Duplication ($2A$):</strong> Because we want to solve for the Area elegantly, we duplicate the entire shape. We now have 12 right triangles representing a total area of $2A$.
+                </li>
+                <li>
+                    <strong>Tiling the Rectangle:</strong> Due to the properties of tangent lines to a circle, these 12 triangles consist of congruent pairs. We can perfectly unfold and interlock them to form a single continuous rectangle.
+                </li>
+                <li>
+                    <strong>Conclusion:</strong> The newly formed rectangle has a height exactly equal to the inradius $r$, and a width perfectly spanning the full perimeter $a + b + c$. Thus, the area of the rectangle is $r \times (a+b+c)$, which must equal $2A$.
+                </li>
+            </ol>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto mt-6">
+                $$A = \frac{1}{2}r(a + b + c)$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const totalSteps = 5;
+            let currentStep = 0;
+            let playing = false;
+            let playTimer = null;
+            let animFrameId = null;
+
+            // DOM Elements
+            const playBtn = document.getElementById('playBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const stepIndicator = document.getElementById('stepIndicator');
+            const statusText = document.getElementById('statusText');
+            const liveEq = document.getElementById('liveEq');
+            
+            const polyGroup = document.getElementById('layer-polygons');
+            const incircle1 = document.getElementById('incircle-1');
+            const incircle2 = document.getElementById('incircle-2');
+            const radiiLines = document.getElementById('radii-lines');
+            const lblsTri = document.getElementById('lbls-tri');
+            const lblsRect = document.getElementById('lbls-rect');
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            // --- MATHEMATICAL SETUP ---
+            // Offset to center the graphics beautifully
+            const dx = 35;
+            const dy = 20;
+
+            // Raw Triangle Coordinates (Before Offset)
+            // Base a=210, Side b=195, Side c=225. Inradius r=60.
+            // B(0, 180), C(210, 180), A(135, 0). I(120, 120).
+            const B = [0, 180], C = [210, 180], A = [135, 0], I = [120, 120];
+            const Ta = [120, 180];       // Tangency on a
+            const Tb = [175.385, 96.923]; // Tangency on b
+            const Tc = [72, 84];         // Tangency on c
+
+            // The 12 Triangles Data Structure
+            // Structure: { id, colorClass, isCopy, ptsState0, ptsStateRect }
+            const triData = [
+                // Originals (State 0: Assembled Triangle)
+                { id: 'o1', c: 'c-a', copy: false, 
+                  s0: [ B, Ta, I ], 
+                  sR: [ [0, 320], [120, 320], [120, 260] ] },
+                { id: 'o2', c: 'c-a', copy: false, 
+                  s0: [ Ta, C, I ], 
+                  sR: [ [120, 320], [210, 320], [120, 260] ] },
+                { id: 'o3', c: 'c-b', copy: false, 
+                  s0: [ C, Tb, I ], 
+                  sR: [ [300, 320], [210, 320], [210, 260] ] }, // Shifted right on rect base
+                { id: 'o4', c: 'c-b', copy: false, 
+                  s0: [ Tb, A, I ], 
+                  sR: [ [300, 320], [405, 320], [300, 260] ] },
+                { id: 'o5', c: 'c-c', copy: false, 
+                  s0: [ A, Tc, I ], 
+                  sR: [ [510, 320], [405, 320], [405, 260] ] },
+                { id: 'o6', c: 'c-c', copy: false, 
+                  s0: [ Tc, B, I ], 
+                  sR: [ [510, 320], [630, 320], [510, 260] ] },
+                
+                // Copies (State 0: Shifted Right by 320)
+                { id: 'c1', c: 'c-a', copy: true, 
+                  s0: [ [320, 180], [440, 180], [440, 120] ], 
+                  sR: [ [120, 260], [0, 260], [0, 320] ] },
+                { id: 'c2', c: 'c-a', copy: true, 
+                  s0: [ [440, 180], [530, 180], [440, 120] ], 
+                  sR: [ [210, 260], [120, 260], [210, 320] ] },
+                { id: 'c3', c: 'c-b', copy: true, 
+                  s0: [ [530, 180], [495.385, 96.923], [440, 120] ], 
+                  sR: [ [210, 260], [300, 260], [300, 320] ] },
+                { id: 'c4', c: 'c-b', copy: true, 
+                  s0: [ [495.385, 96.923], [455, 0], [440, 120] ], 
+                  sR: [ [405, 260], [300, 260], [405, 320] ] },
+                { id: 'c5', c: 'c-c', copy: true, 
+                  s0: [ [455, 0], [392, 84], [440, 120] ], 
+                  sR: [ [405, 260], [510, 260], [510, 320] ] },
+                { id: 'c6', c: 'c-c', copy: true, 
+                  s0: [ [392, 84], [320, 180], [440, 120] ], 
+                  sR: [ [630, 260], [510, 260], [630, 320] ] }
+            ];
+
+            // Apply global offset to all coordinates
+            triData.forEach(t => {
+                t.s0 = t.s0.map(pt => [pt[0] + dx, pt[1] + dy]);
+                t.sR = t.sR.map(pt => [pt[0] + dx, pt[1] + dy]);
+                
+                // Inject polygon into DOM
+                const p = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                p.setAttribute('id', t.id);
+                p.setAttribute('class', `${t.copy ? 'tri-copy' : 'tri-orig'} ${t.c}`);
+                p.setAttribute('points', t.s0.map(pt => pt.join(',')).join(' '));
+                polyGroup.appendChild(p);
+                t.el = p; // Keep reference
+            });
+
+            const narratives = [
+                { txt: "Consider a standard triangle with side lengths $a$, $b$, and $c$. Let its area be $A$.", eq: "$$\\text{Area} = A$$" },
+                
+                { txt: "The incenter is the center of the inscribed circle. Dropping perpendiculars (radii $r$) perfectly divides the shape into 6 smaller right triangles.", eq: "$$\\text{Area} = A$$" },
+                
+                { txt: "Because we want to find $2A$, we conceptually duplicate the entire triangle. We now have 12 right triangles to work with.", eq: "$$A + A = 2A$$" },
+                
+                { txt: "Watch closely. Because tangents to a circle from a point are equal in length, these 12 right triangles exist in congruent pairs. Let's unfold them...", eq: "$$\\text{Rearranging } 2A \\dots$$" },
+                
+                { txt: "...and perfectly tile them into a single, unified bounding rectangle! Notice how no gaps are left behind.", eq: "$$\\text{Rectangle Area} = 2A$$" },
+                
+                { txt: "The height of this new rectangle is the inradius ($r$). Its width perfectly spans the perimeter ($a + b + c$). Therefore, $2A = r(a+b+c)$.", eq: "$$2A = r \\times (a+b+c)$$" }
+            ];
+
+            // Easing function for smooth SVG morphing
+            function easeInOutCubic(x) {
+                return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+            }
+
+            // Animation Loop Variables
+            let morphProgress = 0; // 0 to 1
+            let morphTarget = 0;   // 0 or 1
+            let isMorphing = false;
+            let lastTime = 0;
+
+            function setOpacity(el, val) {
+                if (el) el.style.opacity = val;
+            }
+
+            function applyStep(step) {
+                currentStep = step;
+                
+                statusText.style.opacity = '0';
+                setTimeout(() => {
+                    statusText.innerHTML = narratives[step].txt;
+                    liveEq.innerHTML = narratives[step].eq;
+                    statusText.style.opacity = '1';
+                    updateMathJax();
+                }, 150);
+
+                stepIndicator.textContent = `${step} / ${totalSteps}`;
+                
+                // State logic overrides
+                if (step === 0) {
+                    setOpacity(incircle1, 0);
+                    setOpacity(radiiLines, 0);
+                    setOpacity(incircle2, 0);
+                    setOpacity(lblsTri, 1);
+                    setOpacity(lblsRect, 0);
+                    triData.forEach(t => { if(t.copy) t.el.classList.remove('visible'); });
+                    startMorph(0); // Ensure back at triangle form
+                } 
+                else if (step === 1) {
+                    setOpacity(incircle1, 1);
+                    setOpacity(radiiLines, 1);
+                    setOpacity(incircle2, 0);
+                    setOpacity(lblsTri, 1);
+                    setOpacity(lblsRect, 0);
+                    triData.forEach(t => { if(t.copy) t.el.classList.remove('visible'); });
+                    startMorph(0);
+                }
+                else if (step === 2) {
+                    setOpacity(incircle1, 1);
+                    setOpacity(radiiLines, 1);
+                    setOpacity(incircle2, 1);
+                    setOpacity(lblsRect, 0);
+                    triData.forEach(t => { if(t.copy) t.el.classList.add('visible'); });
+                    startMorph(0);
+                }
+                else if (step === 3) {
+                    setOpacity(incircle1, 0);
+                    setOpacity(incircle2, 0);
+                    setOpacity(radiiLines, 0);
+                    setOpacity(lblsTri, 0);
+                    setOpacity(lblsRect, 0);
+                    startMorph(0.15); // Start separating them slightly for effect
+                }
+                else if (step === 4) {
+                    setOpacity(lblsRect, 0);
+                    startMorph(1); // Full rectangle shape
+                }
+                else if (step === 5) {
+                    startMorph(1);
+                    setOpacity(lblsRect, 1);
+                }
+
+                updateButtonsState();
+            }
+
+            function startMorph(target) {
+                morphTarget = target;
+                if (!isMorphing) {
+                    isMorphing = true;
+                    lastTime = performance.now();
+                    animFrameId = requestAnimationFrame(renderMorph);
+                }
+            }
+
+            function renderMorph(time) {
+                const dt = Math.min(time - lastTime, 50); // cap delta
+                lastTime = time;
+                
+                // Move progress towards target
+                const speed = 0.0008; // Animation speed
+                let diff = morphTarget - morphProgress;
+                
+                if (Math.abs(diff) < 0.01) {
+                    morphProgress = morphTarget;
+                    isMorphing = false; // Stop loop
+                } else {
+                    morphProgress += Math.sign(diff) * speed * dt;
+                    animFrameId = requestAnimationFrame(renderMorph);
+                }
+
+                // Apply eased progress to points
+                const eased = easeInOutCubic(Math.max(0, Math.min(1, morphProgress)));
+                
+                triData.forEach(t => {
+                    const currentPts = t.s0.map((pt, i) => {
+                        const targetPt = t.sR[i];
+                        const x = pt[0] + (targetPt[0] - pt[0]) * eased;
+                        const y = pt[1] + (targetPt[1] - pt[1]) * eased;
+                        return `${x},${y}`;
+                    });
+                    t.el.setAttribute('points', currentPts.join(' '));
+                });
+            }
+
+            function updateButtonsState() {
+                prevBtn.disabled = currentStep === 0;
+                
+                if (currentStep >= totalSteps) {
+                    nextBtn.innerHTML = "Finish";
+                    nextBtn.classList.replace('btn-play', 'btn-secondary');
+                    nextBtn.disabled = true;
+                } else {
+                    nextBtn.innerHTML = "Next →";
+                    nextBtn.classList.replace('btn-secondary', 'btn-play');
+                    nextBtn.disabled = false;
+                }
+            }
+
+            function stepForward() {
+                if (currentStep < totalSteps) applyStep(currentStep + 1);
+                else stopPlaying();
+            }
+            function stepBackward() {
+                if (currentStep > 0) applyStep(currentStep - 1);
+            }
+
+            function stopPlaying() {
+                playing = false;
+                clearTimeout(playTimer);
+                playBtn.innerHTML = '▶ Play Auto';
+                playBtn.classList.replace('btn-secondary', 'btn-play');
+            }
+
+            function playLoop() {
+                if (!playing) return;
+                if (currentStep >= totalSteps) { stopPlaying(); return; }
+                
+                stepForward();
+                // Timing logic: Wait longer on the unfolding step
+                let delay = (currentStep === 4) ? 5500 : 3500;
+                playTimer = setTimeout(playLoop, delay);
+            }
+
+            // Event Listeners
+            playBtn.addEventListener('click', () => {
+                if (playing) {
+                    stopPlaying();
+                } else {
+                    if (currentStep >= totalSteps) applyStep(0);
+                    playing = true;
+                    playBtn.innerHTML = '⏸ Pause';
+                    playBtn.classList.replace('btn-play', 'btn-secondary');
+                    playLoop();
+                }
+            });
+
+            nextBtn.addEventListener('click', () => { stopPlaying(); stepForward(); });
+            prevBtn.addEventListener('click', () => { stopPlaying(); stepBackward(); });
+            resetBtn.addEventListener('click', () => { stopPlaying(); applyStep(0); });
+
+            // Startup Init
+            applyStep(0);
+            updateMathJax();
+        });
+    </script>
+</body>
+</html>
