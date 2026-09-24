@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Area of a Rhombus</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-poly { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.5s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.5s ease; }
+        .fade { transition: opacity 0.5s ease; }
+        
+        /* Rotational animation origin is set dynamically via JS */
+        .folding-tri { transition: opacity 0.3s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-gem text-indigo-600 text-2xl"></i> Visual Proof: Area of a Rhombus
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Bounding a rhombus inside a rectangle to geometrically prove that its area is exactly half the product of its diagonals.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap">
+                $$ \text{Area}_{\text{rhombus}} = \frac{1}{2} d_1 d_2 $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full xl:w-auto flex-grow max-w-xl">
+                <!-- d1 Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Width <span class="math-font text-sm normal-case text-indigo-600">d₁</span></span>
+                        <span id="valD1" class="text-indigo-600 font-mono text-sm">400</span>
+                    </div>
+                    <input type="range" id="sliderD1" value="400" min="200" max="600" step="10" class="w-full mt-1">
+                </div>
+                <!-- d2 Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Height <span class="math-font text-sm normal-case text-emerald-600">d₂</span></span>
+                        <span id="valD2" class="text-emerald-600 font-mono text-sm">300</span>
+                    </div>
+                    <input type="range" id="sliderD2" value="300" min="200" max="500" step="10" class="w-full mt-1">
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px] relative w-full">
+                <svg id="proofSvg" viewBox="0 0 800 600" class="w-full h-auto max-h-[600px] overflow-visible">
+                    <defs>
+                        <!-- Hatched patterns for outer triangles -->
+                        <pattern id="hatchTR" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#d97706" stroke-width="2" opacity="0.6" />
+                        </pattern>
+                        <pattern id="hatchTL" width="8" height="8" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#0284c7" stroke-width="2" opacity="0.6" />
+                        </pattern>
+                        <pattern id="hatchBL" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#e11d48" stroke-width="2" opacity="0.6" />
+                        </pattern>
+                        <pattern id="hatchBR" width="8" height="8" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#059669" stroke-width="2" opacity="0.6" />
+                        </pattern>
+                        
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 2 L 10 5 L 0 8 z" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Background Base Grid -->
+                    <g id="gridLayer" class="fade" opacity="0">
+                        <rect id="boundingRect" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
+                        <!-- Diagonals extended to rectangle edges -->
+                        <line id="gridV" stroke="#cbd5e1" stroke-width="1.5" />
+                        <line id="gridH" stroke="#cbd5e1" stroke-width="1.5" />
+                    </g>
+
+                    <!-- Inner Rhombus Triangles -->
+                    <g id="innerRhombus">
+                        <!-- Top Right -->
+                        <polygon id="inTR" class="geom-poly" fill="rgba(251, 191, 36, 0.4)" stroke="#d97706" stroke-width="2" />
+                        <!-- Top Left -->
+                        <polygon id="inTL" class="geom-poly" fill="rgba(56, 189, 248, 0.4)" stroke="#0284c7" stroke-width="2" />
+                        <!-- Bottom Left -->
+                        <polygon id="inBL" class="geom-poly" fill="rgba(251, 113, 133, 0.4)" stroke="#e11d48" stroke-width="2" />
+                        <!-- Bottom Right -->
+                        <polygon id="inBR" class="geom-poly" fill="rgba(52, 211, 153, 0.4)" stroke="#059669" stroke-width="2" />
+                    </g>
+
+                    <!-- Outer Triangles (These will fold inwards) -->
+                    <g id="outerTriangles" class="fade" opacity="0">
+                        <!-- Top Right -->
+                        <polygon id="outTR" class="folding-tri geom-poly" fill="url(#hatchTR)" stroke="#d97706" stroke-width="2" />
+                        <!-- Top Left -->
+                        <polygon id="outTL" class="folding-tri geom-poly" fill="url(#hatchTL)" stroke="#0284c7" stroke-width="2" />
+                        <!-- Bottom Left -->
+                        <polygon id="outBL" class="folding-tri geom-poly" fill="url(#hatchBL)" stroke="#e11d48" stroke-width="2" />
+                        <!-- Bottom Right -->
+                        <polygon id="outBR" class="folding-tri geom-poly" fill="url(#hatchBR)" stroke="#059669" stroke-width="2" />
+                    </g>
+
+                    <!-- Diagonals (Always visible inside) -->
+                    <g id="diagonalsLayer">
+                        <line id="diagH" stroke="#334155" stroke-width="2" />
+                        <line id="diagV" stroke="#334155" stroke-width="2" />
+                        <!-- Right angle square -->
+                        <rect id="rightAngle" width="12" height="12" fill="none" stroke="#64748b" stroke-width="1.5" />
+                    </g>
+
+                    <!-- Dimension Lines -->
+                    <g id="dimensionsLayer">
+                        <!-- Top d1 -->
+                        <line id="dimTopLine" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text id="dimTopText" class="geom-text math-font font-bold text-indigo-600" text-anchor="middle" dominant-baseline="bottom" font-size="20">d₁</text>
+                        
+                        <!-- Left d2 -->
+                        <line id="dimLeftLine" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text id="dimLeftText" class="geom-text math-font font-bold text-emerald-600" text-anchor="end" dominant-baseline="middle" font-size="20">d₂</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger & Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Rhombus</span>
+                            <span class="text-xs text-slate-600">A rhombus is defined by two diagonals $d_1$ and $d_2$ that <strong>bisect each other</strong> at a perfect right angle.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. The Bounding Rectangle</span>
+                            <span class="text-xs text-slate-600">Draw a bounding box tightly around the rhombus. This box is exactly a rectangle with width $d_1$ and height $d_2$. Its area is $d_1 \times d_2$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-slate-800 block mb-1">3. Four Quadrants</span>
+                            <span class="text-xs text-slate-600">The extended diagonals divide the rectangle into four smaller, identical sub-rectangles.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-indigo-700 block mb-1">4. Bisected Sub-rectangles</span>
+                            <span class="text-xs text-slate-600">Notice how the outer edges of the rhombus perfectly cut diagonally across each of the 4 sub-rectangles. This divides every sub-rectangle into two identical triangles (an inner and an outer).</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-emerald-700 block mb-1">5. The Geometric Fold</span>
+                            <span class="text-xs text-slate-600">If we fold the 4 outer corner triangles inward, they perfectly cover the rhombus! This proves the "outside" area is exactly equal to the "inside" area.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-slate-800 block mb-1">6. Conclusion</span>
+                            <span class="text-xs text-slate-600">Since the inner and outer areas are equal, the rhombus must take up exactly half of the total bounding rectangle.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Box -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the dimensions $d_1$ and $d_2$. Press <strong>Play</strong> to visualize the area relationship.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Algebraic Derivation -->
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Area Formula</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Rectangle Area -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Rectangle Area</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The bounding rectangle is constructed with its width parallel to the horizontal diagonal ($d_1$) and its height parallel to the vertical diagonal ($d_2$).
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area}_{\text{rect}} = \text{width} \times \text{height} = d_1 d_2 $$
+                    </div>
+                </div>
+
+                <!-- Right: Rhombus Area -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Rhombus as Half of Rectangle</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Because the edges of the rhombus act as diagonals to the 4 congruent sub-rectangles, the area inside the rhombus is identical to the area outside it. Thus, the rhombus fills exactly half the bounding box:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area}_{\text{rhombus}} = \frac{1}{2} \text{Area}_{\text{rect}} $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 min-w-0">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    Substituting the formula for the rectangle's area directly gives us the standard formula for the area of any rhombus (and by extension, any kite, of which a rhombus is a symmetric special case):
+                </p>
+                <div class="text-center text-2xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ \text{Area} = \frac{1}{2} d_1 d_2 $$
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            d1: 400,
+            d2: 300,
+            step: 0,
+            maxSteps: 5,
+            foldT: 0, // Folding animation progress (0 to 1)
+            isPlaying: false,
+            animReq: null
+        };
+
+        const CX = 400; // Center X of SVG
+        const CY = 300; // Center Y of SVG
+
+        // DOM Elements
+        const DOM = {
+            sliders: { 
+                d1: document.getElementById('sliderD1'), 
+                d2: document.getElementById('sliderD2')
+            },
+            vals: { 
+                d1: document.getElementById('valD1'), 
+                d2: document.getElementById('valD2') 
+            },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                gridLayer: document.getElementById('gridLayer'),
+                outerTris: document.getElementById('outerTriangles'),
+                boundingRect: document.getElementById('boundingRect'),
+                gridV: document.getElementById('gridV'),
+                gridH: document.getElementById('gridH'),
+                
+                // Inner
+                inTR: document.getElementById('inTR'), inTL: document.getElementById('inTL'),
+                inBL: document.getElementById('inBL'), inBR: document.getElementById('inBR'),
+                // Outer
+                outTR: document.getElementById('outTR'), outTL: document.getElementById('outTL'),
+                outBL: document.getElementById('outBL'), outBR: document.getElementById('outBR'),
+                
+                // Diags
+                diagH: document.getElementById('diagH'), diagV: document.getElementById('diagV'),
+                rightAngle: document.getElementById('rightAngle'),
+                
+                // Dimensions
+                dimTopLine: document.getElementById('dimTopLine'), dimTopText: document.getElementById('dimTopText'),
+                dimLeftLine: document.getElementById('dimLeftLine'), dimLeftText: document.getElementById('dimLeftText')
+            }
+        };
+
+        const descriptions = [
+            "A rhombus is defined by two diagonals $d_1$ and $d_2$ that mutually bisect each other at a perfect right angle.",
+            "Draw a bounding box tightly around the rhombus. This box is exactly a rectangle with width $d_1$ and height $d_2$.",
+            "The extended diagonals divide the rectangle into four smaller, identical sub-rectangles.",
+            "Notice how the outer edges of the rhombus perfectly cut diagonally across each of the 4 sub-rectangles.",
+            "If we fold the 4 outer corner triangles inward, they perfectly cover the rhombus! Inner Area = Outer Area.",
+            "Since the inner and outer areas are equal, the rhombus must take up exactly half of the total bounding rectangle."
+        ];
+
+        function init() {
+            // Slider events
+            DOM.sliders.d1.addEventListener('input', (e) => { pauseAnimation(); state.d1 = parseFloat(e.target.value); updateGeometry(); });
+            DOM.sliders.d2.addEventListener('input', (e) => { pauseAnimation(); state.d2 = parseFloat(e.target.value); updateGeometry(); });
+            
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', () => {
+                pauseAnimation();
+                if (state.step === 3 && state.foldT < 1) {
+                    // Trigger fold manually
+                    state.isPlaying = true; setStep(4);
+                    morphAnimation(1, () => { state.isPlaying = false; setStep(5); });
+                } else if (state.step < state.maxSteps) {
+                    let next = state.step + 1;
+                    if (next === 4) next = 5; // Skip fold state if manually clicking rapidly when folded
+                    setStep(next);
+                }
+            });
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.d1 = 400; state.d2 = 300; state.foldT = 0;
+                DOM.sliders.d1.value = 400; DOM.sliders.d2.value = 300;
+                updateGeometry(); setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        const pts = (coords) => coords.map(c => `${c[0]},${c[1]}`).join(' ');
+
+        // Math for 180 deg rotation around a point
+        function rotate180(pt, pivot) {
+            return [
+                pivot[0] - (pt[0] - pivot[0]),
+                pivot[1] - (pt[1] - pivot[1])
+            ];
+        }
+
+        // Interpolate between two points
+        function lerpPt(pA, pB, t) {
+            return [
+                pA[0] + (pB[0] - pA[0]) * t,
+                pA[1] + (pB[1] - pA[1]) * t
+            ];
+        }
+
+        // Morph a whole triangle (3 points) towards its 180 deg rotation
+        function foldTriangle(poly, pivot, t) {
+            return poly.map(pt => lerpPt(pt, rotate180(pt, pivot), t));
+        }
+
+        function updateGeometry() {
+            const { d1, d2, foldT, step } = state;
+            
+            // UI Text
+            DOM.vals.d1.textContent = d1.toFixed(0);
+            DOM.vals.d2.textContent = d2.toFixed(0);
+
+            // Vertices of Rhombus (Symmetric intersection at CY)
+            const topY = CY - d2 / 2;
+            const botY = CY + d2 / 2;
+            const leftX = CX - d1 / 2;
+            const rightX = CX + d1 / 2;
+
+            const vTop = [CX, topY];
+            const vRight = [rightX, CY];
+            const vBot = [CX, botY];
+            const vLeft = [leftX, CY];
+            const vCenter = [CX, CY];
+
+            // Rectangle Corners
+            const rTR = [rightX, topY];
+            const rTL = [leftX, topY];
+            const rBL = [leftX, botY];
+            const rBR = [rightX, botY];
+
+            // Inner Triangles
+            DOM.svg.inTR.setAttribute('points', pts([vCenter, vTop, vRight]));
+            DOM.svg.inTL.setAttribute('points', pts([vCenter, vLeft, vTop]));
+            DOM.svg.inBL.setAttribute('points', pts([vCenter, vBot, vLeft]));
+            DOM.svg.inBR.setAttribute('points', pts([vCenter, vRight, vBot]));
+
+            // Outer Triangles (Base coordinates before folding)
+            const polyTR = [rTR, vTop, vRight];
+            const polyTL = [rTL, vLeft, vTop];
+            const polyBL = [rBL, vBot, vLeft];
+            const polyBR = [rBR, vRight, vBot];
+
+            // Pivots (Midpoints of rhombus edges)
+            const pivotTR = [(CX + rightX)/2, (topY + CY)/2];
+            const pivotTL = [(leftX + CX)/2, (CY + topY)/2];
+            const pivotBL = [(leftX + CX)/2, (botY + CY)/2];
+            const pivotBR = [(CX + rightX)/2, (CY + botY)/2];
+
+            // Apply Fold Interpolation
+            DOM.svg.outTR.setAttribute('points', pts(foldTriangle(polyTR, pivotTR, foldT)));
+            DOM.svg.outTL.setAttribute('points', pts(foldTriangle(polyTL, pivotTL, foldT)));
+            DOM.svg.outBL.setAttribute('points', pts(foldTriangle(polyBL, pivotBL, foldT)));
+            DOM.svg.outBR.setAttribute('points', pts(foldTriangle(polyBR, pivotBR, foldT)));
+
+            // Bounding Rect
+            DOM.svg.boundingRect.setAttribute('x', leftX);
+            DOM.svg.boundingRect.setAttribute('y', topY);
+            DOM.svg.boundingRect.setAttribute('width', d1);
+            DOM.svg.boundingRect.setAttribute('height', d2);
+
+            // Grid Lines
+            DOM.svg.gridV.setAttribute('x1', CX); DOM.svg.gridV.setAttribute('y1', topY);
+            DOM.svg.gridV.setAttribute('x2', CX); DOM.svg.gridV.setAttribute('y2', botY);
+            
+            DOM.svg.gridH.setAttribute('x1', leftX); DOM.svg.gridH.setAttribute('y1', CY);
+            DOM.svg.gridH.setAttribute('x2', rightX); DOM.svg.gridH.setAttribute('y2', CY);
+
+            // Diagonals
+            DOM.svg.diagH.setAttribute('x1', leftX); DOM.svg.diagH.setAttribute('y1', CY);
+            DOM.svg.diagH.setAttribute('x2', rightX); DOM.svg.diagH.setAttribute('y2', CY);
+            
+            DOM.svg.diagV.setAttribute('x1', CX); DOM.svg.diagV.setAttribute('y1', topY);
+            DOM.svg.diagV.setAttribute('x2', CX); DOM.svg.diagV.setAttribute('y2', botY);
+
+            // Right Angle Square
+            DOM.svg.rightAngle.setAttribute('x', CX); DOM.svg.rightAngle.setAttribute('y', CY - 12);
+
+            // Dimensions
+            const offsetDist = 25;
+            DOM.svg.dimTopLine.setAttribute('x1', leftX); DOM.svg.dimTopLine.setAttribute('y1', topY - offsetDist);
+            DOM.svg.dimTopLine.setAttribute('x2', rightX); DOM.svg.dimTopLine.setAttribute('y2', topY - offsetDist);
+            DOM.svg.dimTopText.setAttribute('x', CX); DOM.svg.dimTopText.setAttribute('y', topY - offsetDist - 10);
+
+            DOM.svg.dimLeftLine.setAttribute('x1', leftX - offsetDist); DOM.svg.dimLeftLine.setAttribute('y1', topY);
+            DOM.svg.dimLeftLine.setAttribute('x2', leftX - offsetDist); DOM.svg.dimLeftLine.setAttribute('y2', botY);
+            DOM.svg.dimLeftText.setAttribute('x', leftX - offsetDist - 10); DOM.svg.dimLeftText.setAttribute('y', CY);
+
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => el.style.opacity = val;
+
+            op(DOM.svg.gridLayer, step >= 1 ? 1 : 0);
+            op(DOM.svg.outerTris, step >= 2 ? 1 : 0);
+            
+            // Fade out the center right-angle square when we start highlighting quadrants to avoid clutter
+            op(DOM.svg.rightAngle, step >= 2 ? 0 : 1);
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.stepInd.textContent = `${step} / ${state.maxSteps}`;
+
+            // Handle Ledger classes
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            // Handle instantaneous T transitions if not morphing naturally
+            if (!state.isPlaying) {
+                if (step <= 3) state.foldT = 0;
+                else if (step >= 4) state.foldT = 1;
+                updateGeometry();
+            } else {
+                applyStepOpacities(step);
+            }
+
+            // Text Updates
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function morphAnimation(targetT, onComplete) {
+            const speed = 0.02;
+            const animate = () => {
+                if (!state.isPlaying) return;
+                
+                if (Math.abs(state.foldT - targetT) < speed) {
+                    state.foldT = targetT;
+                    updateGeometry();
+                    if (onComplete) onComplete();
+                } else {
+                    state.foldT += (state.foldT < targetT) ? speed : -speed;
+                    updateGeometry();
+                    state.animReq = requestAnimationFrame(animate);
+                }
+            };
+            cancelAnimationFrame(state.animReq);
+            animate();
+        }
+
+        function stepLogic() {
+            if (state.step === 3) {
+                // Trigger morph fold
+                setStep(4);
+                morphAnimation(1, () => {
+                    setTimeout(() => { if(state.isPlaying) stepLogic(); }, 1500);
+                });
+            } else if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+                if (state.isPlaying) {
+                    setTimeout(stepLogic, 2500);
+                }
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) { state.foldT = 0; updateGeometry(); setStep(0); }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                stepLogic();
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            cancelAnimationFrame(state.animReq);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

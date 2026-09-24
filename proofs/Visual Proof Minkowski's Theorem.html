@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Minkowski's Theorem</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-cell { transition: fill 0.6s ease, opacity 0.6s ease, transform 0.6s ease; transform-origin: center; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+        
+        /* Piece Animation */
+        .piece-mover { transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .shape-fill { transition: r 0.3s ease; mix-blend-mode: multiply; }
+        
+        /* Lattice Pulse */
+        @keyframes pulse-lattice {
+            0%, 100% { r: 5px; fill: #ef4444; stroke-width: 2px; }
+            50% { r: 8px; fill: #f87171; stroke-width: 4px; }
+        }
+        .anim-lattice { animation: pulse-lattice 1.5s infinite; stroke: #b91c1c; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-shapes text-indigo-600 text-2xl"></i> Visual Proof: Minkowski's Theorem
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Using area manipulation and the Continuous Pigeonhole Principle to guarantee the existence of a lattice point inside a convex, symmetric shape.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="live-equation">
+                <!-- Dynamically injected via JS -->
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-3xl">
+                <!-- Size Slider -->
+                <div class="flex flex-col gap-1 bg-white p-3 rounded-lg border border-slate-200 shadow-sm min-w-[200px]">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Shape Radius (<span class="math-font text-xs normal-case text-indigo-600">R</span>)</span>
+                        <span id="val-r" class="text-indigo-600 font-mono text-sm font-bold">1.8</span>
+                    </div>
+                    <input type="range" id="slider-r" value="1.8" min="1.2" max="2.5" step="0.1" class="w-full mt-1">
+                </div>
+
+                <!-- Live Area Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-5 items-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Area</span>
+                        <div class="flex items-center gap-1.5"><span class="font-mono text-base font-bold text-indigo-700" id="stat-area">10.18</span></div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Square Area</span>
+                        <div class="flex items-center gap-1.5"><span class="font-mono text-base font-bold text-slate-700">4.00</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Arrowheads -->
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#1e293b" />
+                        </marker>
+                        <!-- Clip Paths will be injected here by JS -->
+                        <g id="clip-paths-group"></g>
+                    </defs>
+
+                    <!-- Background Coordinate Axes & Grid Dots -->
+                    <g id="axes-group"></g>
+                    <g id="dots-group"></g>
+
+                    <!-- Bold 2x2 Grid Lines -->
+                    <g id="grid-lines-group" class="fade" opacity="0"></g>
+
+                    <!-- Dynamic Clipped Shape Pieces -->
+                    <g id="pieces-group"></g>
+
+                    <!-- Annotations (Points and Vectors) -->
+                    <g id="annotations-group" class="fade" opacity="0">
+                        <!-- Step 3: P -->
+                        <circle id="pt-P" cx="0" cy="0" r="4" fill="#d97706" class="fade" opacity="0" />
+                        <text id="lbl-P" x="0" y="0" class="geom-text math-font font-bold text-amber-700 fade" font-size="16" opacity="0">P</text>
+
+                        <!-- Step 4: A, B and Vector -->
+                        <circle id="pt-A" cx="0" cy="0" r="4" fill="#0284c7" class="fade" opacity="0" />
+                        <text id="lbl-A" x="0" y="0" class="geom-text math-font font-bold text-sky-700 fade" font-size="16" opacity="0">A</text>
+                        
+                        <circle id="pt-B" cx="0" cy="0" r="4" fill="#0284c7" class="fade" opacity="0" />
+                        <text id="lbl-B" x="0" y="0" class="geom-text math-font font-bold text-sky-700 fade" font-size="16" opacity="0">B</text>
+
+                        <line id="vec-AB" x1="0" y1="0" x2="0" y2="0" stroke="#1e293b" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrowhead)" class="fade" opacity="0" />
+                        <text id="lbl-vec-AB" x="0" y="0" class="geom-text math-font font-bold text-slate-800 fade" font-size="14" text-anchor="middle" opacity="0">A - B = (2m, 2n)</text>
+
+                        <!-- Step 5: -B and Midpoint -->
+                        <circle id="pt-nB" cx="0" cy="0" r="4" fill="#e11d48" class="fade" opacity="0" />
+                        <text id="lbl-nB" x="0" y="0" class="geom-text math-font font-bold text-rose-700 fade" font-size="16" opacity="0">-B</text>
+
+                        <line id="vec-AnB" x1="0" y1="0" x2="0" y2="0" stroke="#475569" stroke-width="1.5" stroke-dasharray="2,2" class="fade" opacity="0" />
+                        
+                        <circle id="pt-M" cx="0" cy="0" r="6" fill="#10b981" class="fade anim-lattice" opacity="0" />
+                        <text id="lbl-M" x="0" y="0" class="geom-text math-font font-bold text-emerald-800 fade" font-size="16" text-anchor="middle" opacity="0">Lattice Point</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Convex Body</span>
+                            <span class="text-xs text-slate-600">Consider a convex shape $S$ that is symmetric about the origin $(0,0)$. We establish that its total Area is strictly $> 4$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. The $2 \times 2$ Grid</span>
+                            <span class="text-xs text-slate-600">Overlay a grid of $2 \times 2$ squares onto the plane. Note that each single square contains exactly an area of $4$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-rose-600 block mb-1">3. Cut and Translate</span>
+                            <span class="text-xs text-slate-600">Cut the shape along the grid lines. Translate all the resulting pieces by even integers so they stack into the central $2 \times 2$ square.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Pigeonhole Principle</span>
+                            <span class="text-xs text-slate-600">Because the sum of the pieces' areas is $>4$, but they are packed into a box of Area exactly $4$, the Continuous Pigeonhole Principle dictates they <strong>must overlap</strong> at some point $P$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-sky-700 block mb-1">5. Mapping Back</span>
+                            <span class="text-xs text-slate-600">Tracing $P$ back to its un-translated origins, we find two distinct points $A$ and $B$ inside $S$. Because they translated to the same spot, their difference is exactly an even integer vector: $A - B = (2m, 2n)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-emerald-700 block mb-1">6. Symmetry & Convexity</span>
+                            <span class="text-xs text-slate-600">Since $S$ is symmetric, if $B \in S$, then $-B \in S$. Because $S$ is convex, the midpoint of $A$ and $-B$ must also be in $S$. This midpoint is $(A - B)/2 = (m, n)$, which is a non-zero integer lattice point!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the shape's radius $R$. Press <strong>Play</strong> to visualize the area and overlap proof.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Continuous Pigeonhole & Convexity</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Mathematical Setup -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. The Pigeonhole Principle for Area</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The classic Pigeonhole Principle states that if you put $N+1$ pigeons into $N$ holes, at least one hole has multiple pigeons. This naturally extends to continuous area.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        If you take physical pieces of paper with a combined area strictly greater than $4$, and force them to lay flat entirely inside a $2 \times 2$ bounding box (which has area exactly $4$), it is physically impossible to do so without at least two pieces overlapping.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Total Area} > \text{Container Area} \implies \text{Overlap} $$
+                    </div>
+                </div>
+
+                <!-- Right: The Algebraic Geometry -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. The Midpoint Trick</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Once we establish the overlap exists, the theorem is purely algebraic geometry. We know $A \in S$ and $B \in S$, and $A - B = (2m, 2n)$.
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2 mb-4">
+                        <li><strong>Symmetry:</strong> If $B \in S$, then $-B \in S$.</li>
+                        <li><strong>Convexity:</strong> The line segment connecting any two points in $S$ is entirely inside $S$. Thus, the midpoint of $A$ and $-B$ is in $S$.</li>
+                    </ul>
+                    <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 text-center text-sm font-bold text-emerald-800 overflow-x-auto min-w-0">
+                        $$ \text{Midpoint} = \frac{A + (-B)}{2} = \frac{A - B}{2} = (m, n) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm mt-3">
+                        Because $m$ and $n$ are integers, $(m,n)$ is a lattice point. Because $A \neq B$, the point $(m,n) \neq (0,0)$.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            R: 1.8,
+            step: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        const VIEW_W = 800;
+        const VIEW_H = 600;
+        const OX = 400; // Origin X
+        const OY = 300; // Origin Y
+        const SCALE = 60; // 1 unit = 60 pixels
+
+        // Grid boundaries indices for clipping (a 5x5 grid of 2x2 cells is enough for R up to 2.5)
+        const GRID_MIN = -2;
+        const GRID_MAX = 2;
+
+        // DOM Elements
+        const DOM = {
+            sliderR: document.getElementById('slider-r'),
+            valR: document.getElementById('val-r'),
+            statArea: document.getElementById('stat-area'),
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('live-equation') },
+            svg: {
+                clipGroup: document.getElementById('clip-paths-group'),
+                axesGroup: document.getElementById('axes-group'),
+                dotsGroup: document.getElementById('dots-group'),
+                gridLinesGrp: document.getElementById('grid-lines-group'),
+                piecesGrp: document.getElementById('pieces-group'),
+                annGrp: document.getElementById('annotations-group'),
+                
+                ptP: document.getElementById('pt-P'), lblP: document.getElementById('lbl-P'),
+                ptA: document.getElementById('pt-A'), lblA: document.getElementById('lbl-A'),
+                ptB: document.getElementById('pt-B'), lblB: document.getElementById('lbl-B'),
+                vecAB: document.getElementById('vec-AB'), lblVecAB: document.getElementById('lbl-vec-AB'),
+                ptnB: document.getElementById('pt-nB'), lblnB: document.getElementById('lbl-nB'),
+                vecAnB: document.getElementById('vec-AnB'),
+                ptM: document.getElementById('pt-M'), lblM: document.getElementById('lbl-M')
+            }
+        };
+
+        const descriptions = [
+            "Consider a convex shape $S$ symmetric about the origin. We establish its total Area is strictly $> 4$.",
+            "Overlay a grid of $2 \\times 2$ squares onto the plane. Note that each single square contains exactly an area of $4$.",
+            "Cut the shape along the grid lines. Translate all the resulting pieces by even integers so they stack into the central $2 \\times 2$ square.",
+            "Because the sum of the pieces' areas is $>4$, but they are packed into a box of Area exactly $4$, they <strong>must overlap</strong> at some point $P$.",
+            "Tracing $P$ back to its un-translated origins, we find two distinct points $A$ and $B$ inside $S$. Their difference is exactly an even integer vector: $A - B = (2m, 2n)$.",
+            "Since $S$ is symmetric, $-B \\in S$. Since $S$ is convex, the midpoint of $A$ and $-B$ must also be in $S$. This midpoint is $(m, n)$, a non-zero lattice point!"
+        ];
+
+        function init() {
+            DOM.sliderR.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.R = parseFloat(e.target.value);
+                DOM.valR.textContent = state.R.toFixed(1);
+                updateShapeSizes();
+                if (state.step > 2) setStep(2); // Fallback to safe step if R changes during annotations
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.R = 1.8;
+                DOM.sliderR.value = 1.8;
+                DOM.valR.textContent = 1.8.toFixed(1);
+                updateShapeSizes();
+                setStep(0);
+            });
+
+            buildSVGStatic();
+            updateShapeSizes();
+            setStep(0);
+        }
+
+        // Build the SVG DOM elements once
+        function buildSVGStatic() {
+            let clipsHtml = '';
+            let piecesHtml = '';
+            let linesHtml = '';
+            let dotsHtml = '';
+            let axesHtml = '';
+
+            // Axes
+            axesHtml += `<line x1="0" y1="${OY}" x2="${VIEW_W}" y2="${OY}" stroke="#94a3b8" stroke-width="2"/>`;
+            axesHtml += `<line x1="${OX}" y1="0" x2="${OX}" y2="${VIEW_H}" stroke="#94a3b8" stroke-width="2"/>`;
+
+            // Lattice Dots (integer coordinates)
+            for (let i = -7; i <= 7; i++) {
+                for (let j = -5; j <= 5; j++) {
+                    dotsHtml += `<circle cx="${OX + i * SCALE}" cy="${OY + j * SCALE}" r="3" fill="#cbd5e1" />`;
+                }
+            }
+
+            // Grid Lines and Cells (2x2 squares)
+            for (let i = GRID_MIN; i <= GRID_MAX; i++) {
+                // Vertical lines at x = odd
+                let vx = OX + (2 * i - 1) * SCALE;
+                linesHtml += `<line x1="${vx}" y1="0" x2="${vx}" y2="${VIEW_H}" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,4"/>`;
+                
+                // Horizontal lines at y = odd
+                let hy = OY + (2 * i - 1) * SCALE;
+                linesHtml += `<line x1="0" y1="${hy}" x2="${VIEW_W}" y2="${hy}" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,4"/>`;
+
+                for (let j = GRID_MIN; j <= GRID_MAX; j++) {
+                    // Cell boundaries
+                    let cx = OX + (2 * i - 1) * SCALE;
+                    let cy = OY + (2 * j - 1) * SCALE;
+                    let cSize = 2 * SCALE;
+
+                    // Clip Path for this cell
+                    clipsHtml += `<clipPath id="clip_${i}_${j}">
+                                    <rect x="${cx}" y="${cy}" width="${cSize}" height="${cSize}" />
+                                  </clipPath>`;
+
+                    // The Shape Piece
+                    // Mix-blend-mode equivalent is handled by stacking rgba colors naturally darkening
+                    piecesHtml += `
+                        <g id="piece_${i}_${j}" class="piece-mover" style="transform: translate(0px, 0px);">
+                            <g clip-path="url(#clip_${i}_${j})">
+                                <circle id="circ_${i}_${j}" class="shape-fill" cx="${OX}" cy="${OY}" r="${1.8 * SCALE}" fill="rgba(79, 70, 229, 0.35)" stroke="#4338ca" stroke-width="2" />
+                            </g>
+                        </g>
+                    `;
+                }
+            }
+
+            DOM.svg.axesGroup.innerHTML = axesHtml;
+            DOM.svg.dotsGroup.innerHTML = dotsHtml;
+            DOM.svg.gridLinesGrp.innerHTML = linesHtml;
+            DOM.svg.clipGroup.innerHTML = clipsHtml;
+            DOM.svg.piecesGrp.innerHTML = piecesHtml;
+        }
+
+        // Update just the circle radii
+        function updateShapeSizes() {
+            const rPx = state.R * SCALE;
+            for (let i = GRID_MIN; i <= GRID_MAX; i++) {
+                for (let j = GRID_MIN; j <= GRID_MAX; j++) {
+                    const circ = document.getElementById(`circ_${i}_${j}`);
+                    if (circ) circ.setAttribute('r', rPx);
+                }
+            }
+            
+            const area = Math.PI * state.R * state.R;
+            DOM.statArea.textContent = area.toFixed(2);
+        }
+
+        function applyStepLogic(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            // Step 1: Grid Lines
+            op(DOM.svg.gridLinesGrp, step >= 1 ? 1 : 0);
+
+            // Step 2: Translation
+            for (let i = GRID_MIN; i <= GRID_MAX; i++) {
+                for (let j = GRID_MIN; j <= GRID_MAX; j++) {
+                    const piece = document.getElementById(`piece_${i}_${j}`);
+                    if (piece) {
+                        if (step >= 2 && step <= 3) {
+                            // Translate to center cell
+                            piece.style.transform = `translate(${-i * 2 * SCALE}px, ${-j * 2 * SCALE}px)`;
+                        } else {
+                            // Home position
+                            piece.style.transform = `translate(0px, 0px)`;
+                        }
+                    }
+                }
+            }
+
+            // Annotation Computations
+            // We use the overlap between C(0,0) and C(1,0). 
+            // Shape in C(0,0) ends at x = R. In translated space, C(1,0) piece starts at x = 1-2 = -1, ends at R-2.
+            // Overlap interval is [-1, min(1, R-2)].
+            const pxUnit = (-1 + Math.min(1, state.R - 2)) / 2;
+            const pyUnit = 0;
+
+            const pxP = OX + pxUnit * SCALE;
+            const pyP = OY + pyUnit * SCALE;
+            
+            const pxB = pxP;
+            const pyB = pyP;
+            
+            const pxA = pxP + 2 * SCALE;
+            const pyA = pyP;
+
+            const pxnB = OX - pxUnit * SCALE;
+            const pynB = OY - pyUnit * SCALE;
+
+            const pxM = OX + 1 * SCALE;
+            const pyM = OY;
+
+            // Step 3: Show Overlap Point P
+            op(DOM.svg.annGrp, step >= 3 ? 1 : 0);
+            
+            DOM.svg.ptP.setAttribute('cx', pxP); DOM.svg.ptP.setAttribute('cy', pyP);
+            DOM.svg.lblP.setAttribute('x', pxP - 15); DOM.svg.lblP.setAttribute('y', pyP + 20);
+            op(DOM.svg.ptP, step === 3 ? 1 : 0);
+            op(DOM.svg.lblP, step === 3 ? 1 : 0);
+
+            // Step 4: Show Original Points A and B
+            DOM.svg.ptA.setAttribute('cx', pxA); DOM.svg.ptA.setAttribute('cy', pyA);
+            DOM.svg.lblA.setAttribute('x', pxA + 10); DOM.svg.lblA.setAttribute('y', pyA - 15);
+            
+            DOM.svg.ptB.setAttribute('cx', pxB); DOM.svg.ptB.setAttribute('cy', pyB);
+            DOM.svg.lblB.setAttribute('x', pxB - 15); DOM.svg.lblB.setAttribute('y', pyB - 15);
+
+            DOM.svg.vecAB.setAttribute('x1', pxB); DOM.svg.vecAB.setAttribute('y1', pyB);
+            DOM.svg.vecAB.setAttribute('x2', pxA - 10); DOM.svg.vecAB.setAttribute('y2', pyA);
+            
+            DOM.svg.lblVecAB.setAttribute('x', (pxA + pxB)/2); DOM.svg.lblVecAB.setAttribute('y', pyA - 15);
+
+            const showAB = step >= 4 ? 1 : 0;
+            op(DOM.svg.ptA, showAB); op(DOM.svg.lblA, showAB);
+            op(DOM.svg.ptB, showAB); op(DOM.svg.lblB, showAB);
+            op(DOM.svg.vecAB, step === 4 ? 1 : 0); op(DOM.svg.lblVecAB, step === 4 ? 1 : 0);
+
+            // Step 5: Symmetry and Convexity
+            DOM.svg.ptnB.setAttribute('cx', pxnB); DOM.svg.ptnB.setAttribute('cy', pynB);
+            DOM.svg.lblnB.setAttribute('x', pxnB - 25); DOM.svg.lblnB.setAttribute('y', pynB + 20);
+
+            DOM.svg.vecAnB.setAttribute('x1', pxA); DOM.svg.vecAnB.setAttribute('y1', pyA);
+            DOM.svg.vecAnB.setAttribute('x2', pxnB); DOM.svg.vecAnB.setAttribute('y2', pynB);
+
+            DOM.svg.ptM.setAttribute('cx', pxM); DOM.svg.ptM.setAttribute('cy', pyM);
+            DOM.svg.lblM.setAttribute('x', pxM); DOM.svg.lblM.setAttribute('y', pyM + 25);
+
+            const showSym = step === 5 ? 1 : 0;
+            op(DOM.svg.ptnB, showSym); op(DOM.svg.lblnB, showSym);
+            op(DOM.svg.vecAnB, showSym);
+            op(DOM.svg.ptM, showSym); op(DOM.svg.lblM, showSym);
+
+            // Equation Headers
+            let eqHtml = "";
+            if (step <= 1) {
+                eqHtml = `<span class="text-slate-800">Area($S$) > 4</span>`;
+            } else if (step === 2) {
+                eqHtml = `<span class="text-slate-800">Translate to Center: Area($S$) > 4</span>`;
+            } else if (step === 3) {
+                eqHtml = `<span class="text-amber-600">Overlap Guaranteed (Pigeonhole)</span>`;
+            } else if (step === 4) {
+                eqHtml = `<span class="text-sky-700">A - B = (2m, 2n)</span>`;
+            } else if (step === 5) {
+                eqHtml = `<span class="text-emerald-700">Midpoint $\\frac{A + (-B)}{2} = (m, n)$</span>`;
+            }
+            DOM.ui.eq.innerHTML = eqHtml;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+            }
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            applyStepLogic(step);
+
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s step time
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

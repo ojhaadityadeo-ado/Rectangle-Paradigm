@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometric Proof: (a+b)² + (a-b)² = 2(a² + b²)</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            --c-a2: #ffffff;
+            --b-a2: #94a3b8;
+            --c-ab: #bae6fd;
+            --b-ab: #38bdf8;
+            --c-b2: #1e3a8a;
+            --b-b2: #1e40af;
+            --c-amb2: #e2e8f0;
+            --b-amb2: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .board-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 15px;
+        }
+
+        .visualization-area {
+            position: relative;
+            min-width: 820px; /* Forces original proportions to prevent smushing */
+            height: 480px;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: visible;
+        }
+
+        /* Geometric Pieces */
+        .piece {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-radius: 2px;
+        }
+
+        .p-a2 { background-color: var(--c-a2); border-color: var(--b-a2); color: #334155; }
+        .p-ab { background-color: var(--c-ab); border-color: var(--b-ab); color: #0284c7; }
+        .p-b2 { background-color: var(--c-b2); border-color: var(--b-b2); color: #ffffff; }
+        .p-amb2 { background-color: var(--c-amb2); border-color: var(--b-amb2); color: #475569; }
+
+        .piece span {
+            transition: transform 1.2s;
+            font-size: 0.95rem; /* slightly smaller to fit MathJax safely */
+        }
+
+        /* Labels */
+        .lbl-title {
+            position: absolute;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #475569;
+            transition: opacity 0.5s;
+            text-align: center;
+            width: 220px;
+        }
+
+        .lbl-result {
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #16a34a;
+            opacity: 0;
+            transition: opacity 0.8s;
+            white-space: nowrap;
+        }
+
+        /* Button styling */
+        .btn-action {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-play {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+        }
+        .btn-play:hover { background-color: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 10px rgba(59, 130, 246, 0.3); }
+        .btn-play:active { transform: translateY(1px); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Visual Proof: $(a + b)^2 + (a - b)^2 = 2(a^2 + b^2)$</h1>
+
+        <!-- Live Math Equation -->
+        <div class="text-center text-xl font-bold p-4 bg-blue-50 text-blue-900 rounded-lg mb-6 shadow-sm border border-blue-100 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$(a + b)^2 + (a - b)^2$$
+        </div>
+
+        <!-- Visualization Board -->
+        <div class="board-wrapper">
+            <div class="visualization-area" id="board">
+                <!-- Initial Group Labels -->
+                <div id="lbl-start-1" class="lbl-title" style="top: 20px; left: 40px; width: 220px;">$(a+b)^2$</div>
+                <div id="lbl-start-2" class="lbl-title" style="top: 80px; left: 300px; width: 100px;">$(a-b)^2$</div>
+
+                <!-- Final Group Labels -->
+                <div id="lbl-end-1" class="lbl-result" style="top: 110px; left: 690px;">$= a^2 + b^2$</div>
+                <div id="lbl-end-2" class="lbl-result" style="top: 330px; left: 690px;">$= a^2 + b^2$</div>
+
+                <!-- THE PIECES -->
+                <!-- Pieces of (a+b)^2 -->
+                <div class="piece p-a2" id="p-a2"><span>$a^2$</span></div>
+                <div class="piece p-ab" id="p-ab-v"><span id="txt-ab-v" style="transform: rotate(-90deg); white-space: nowrap;">$b(a-b)$</span></div>
+                <div class="piece p-ab" id="p-ab-h"><span>$b(a-b)$</span></div>
+                <div class="piece p-b2" id="p-b2-1"><span>$b^2$</span></div>
+                <div class="piece p-b2" id="p-b2-2"><span>$b^2$</span></div>
+                <div class="piece p-b2" id="p-b2-3"><span>$b^2$</span></div>
+                
+                <!-- Piece of (a-b)^2 -->
+                <div class="piece p-amb2" id="p-amb2"><span>$(a-b)^2$</span></div>
+            </div>
+        </div>
+
+        <!-- Interactive Controls -->
+        <div class="flex justify-center mb-6">
+            <button id="animBtn" class="btn-action btn-play px-8 py-3" onclick="nextStep()">
+                ▶ Form the First Shape
+            </button>
+        </div>
+
+        <!-- Explanation Box -->
+        <div class="bg-slate-50 border-l-4 border-slate-500 p-5 rounded-r-lg shadow-sm mb-6 min-h-[120px] flex items-center">
+            <p class="text-slate-700 text-lg leading-relaxed w-full transition-opacity duration-300" id="status-text">
+                <strong>1. Initial State:</strong> We start with two separate squares representing $(a+b)^2$ and $(a-b)^2$. <br><br>
+                Notice that the larger $(a+b)^2$ square has been intelligently partitioned into: one $a^2$ square (white), two $b(a-b)$ rectangles (light blue), and exactly three $b^2$ squares (dark blue).
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // Dimensions mapping
+        // a = 160, b = 60, a-b = 100, a+b = 220
+        
+        const pieces = {
+            'p-a2':   { w: 160, h: 160, s0: {x: 40, y: 60},  s1: {x: 460, y: 30},  s2: {x: 460, y: 30} },
+            'p-ab-v': { w: 60,  h: 100, s0: {x: 200, y: 60}, s1: {x: 200, y: 60},  s2: {x: 560, y: 250} },
+            'p-ab-h': { w: 100, h: 60,  s0: {x: 40, y: 220}, s1: {x: 40, y: 220},  s2: {x: 460, y: 350} },
+            'p-b2-1': { w: 60,  h: 60,  s0: {x: 200, y: 160},s1: {x: 620, y: 130}, s2: {x: 620, y: 130} },
+            'p-b2-2': { w: 60,  h: 60,  s0: {x: 140, y: 220},s1: {x: 140, y: 220}, s2: {x: 560, y: 350} },
+            'p-b2-3': { w: 60,  h: 60,  s0: {x: 200, y: 220},s1: {x: 200, y: 220}, s2: {x: 620, y: 350} },
+            'p-amb2': { w: 100, h: 100, s0: {x: 300, y: 120},s1: {x: 300, y: 120}, s2: {x: 460, y: 250} }
+        };
+
+        let currentStep = 0;
+
+        function applyState(state) {
+            Object.keys(pieces).forEach(id => {
+                const p = pieces[id];
+                const el = document.getElementById(id);
+                el.style.width = p.w + 'px';
+                el.style.height = p.h + 'px';
+                el.style.left = p[state].x + 'px';
+                el.style.top = p[state].y + 'px';
+            });
+        }
+
+        function updateMathJax() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // Clear and re-render the MathJax to ensure layout handles text updates
+                MathJax.texReset();
+                MathJax.typesetPromise().catch((err) => console.log(err.message));
+            }
+        }
+
+        function updateMsg(text) {
+            const el = document.getElementById('status-text');
+            el.style.opacity = '0';
+            setTimeout(() => { 
+                el.innerHTML = text; 
+                el.style.opacity = '1'; 
+                updateMathJax(); 
+            }, 300);
+        }
+
+        function nextStep() {
+            const btn = document.getElementById('animBtn');
+            const liveEq = document.getElementById('liveEq');
+            
+            if (currentStep === 0) {
+                // Execute Step 1
+                applyState('s1');
+                
+                document.getElementById('lbl-start-1').style.opacity = '0';
+                setTimeout(() => document.getElementById('lbl-end-1').style.opacity = '1', 800);
+
+                updateMsg(`<strong>2. Forming the First Shape:</strong><br><br>We take the large $a^2$ core (white) and attach exactly one of our $b^2$ squares (dark blue) to its corner. This physically creates our first figure with a total area of exactly $a^2 + b^2$.`);
+                
+                liveEq.innerHTML = `$$(a^2 + b^2) + \\text{ Remaining Pieces}$$`;
+                
+                btn.innerHTML = "▶ Form the Second Shape";
+                currentStep = 1;
+
+            } else if (currentStep === 1) {
+                // Execute Step 2
+                applyState('s2');
+                
+                document.getElementById('lbl-start-2').style.opacity = '0';
+                setTimeout(() => document.getElementById('lbl-end-2').style.opacity = '1', 800);
+
+                updateMsg(`<strong>3. Forming the Second Shape:</strong><br><br>We take the remaining pieces: the $(a-b)^2$ square, the two light blue rectangles, and the two remaining $b^2$ squares. <br><br>By wrapping the rectangles around the $(a-b)^2$ square and filling the gap with a $b^2$ square, we perfectly build a second $a^2$ square! Finally, attaching the last $b^2$ square produces an identical second figure with an area of $a^2 + b^2$.`);
+                
+                liveEq.innerHTML = `$$(a^2 + b^2) + (a^2 + b^2) = 2(a^2 + b^2)$$`;
+                
+                btn.innerHTML = "↺ Reset Proof";
+                currentStep = 2;
+
+            } else {
+                // Reset
+                applyState('s0');
+                
+                document.getElementById('lbl-start-1').style.opacity = '1';
+                document.getElementById('lbl-start-2').style.opacity = '1';
+                document.getElementById('lbl-end-1').style.opacity = '0';
+                document.getElementById('lbl-end-2').style.opacity = '0';
+
+                updateMsg(`<strong>1. Initial State:</strong> We start with two separate squares representing $(a+b)^2$ and $(a-b)^2$. <br><br>Notice that the larger $(a+b)^2$ square has been intelligently partitioned into: one $a^2$ square (white), two $b(a-b)$ rectangles (light blue), and exactly three $b^2$ squares (dark blue).`);
+                
+                liveEq.innerHTML = `$$(a + b)^2 + (a - b)^2$$`;
+                
+                btn.innerHTML = "▶ Form the First Shape";
+                currentStep = 0;
+            }
+        }
+
+        // Initialize board
+        window.onload = () => {
+            applyState('s0');
+            updateMathJax();
+        };
+    </script>
+</body>
+</html>

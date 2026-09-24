@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual proof of the Fundamental Theorem of Calculus using accumulated area and thin rectangles." />
+  <title>Visual Proof: Fundamental Theorem of Calculus</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #7c3aed;
+      --accent-2: #0891b2;
+      --success: #059669;
+      --warning: #d97706;
+      --shadow: 0 16px 40px rgba(15,23,42,.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 15%, rgba(8,145,178,.06), transparent 26rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 60px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid rgba(124,58,237,.25);
+      border-radius: 999px;
+      color: #6d28d9;
+      background: rgba(124,58,237,.06);
+      font-size: .82rem;
+      font-weight: 760;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      margin: 0 auto;
+      max-width: 900px;
+      color: var(--muted);
+      font-size: clamp(.98rem, 1.8vw, 1.12rem);
+    }
+
+    .formula-banner {
+      margin: 22px auto 0;
+      max-width: 920px;
+      padding: 15px 18px;
+      border: 1px solid rgba(8,145,178,.20);
+      border-radius: 15px;
+      background: linear-gradient(180deg, rgba(8,145,178,.055), rgba(8,145,178,.018));
+      font-size: clamp(1.02rem, 2.1vw, 1.32rem);
+      overflow-x: auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.42fr) minmax(320px, .58fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .slider-box {
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+      border-radius: 14px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: .9rem;
+    }
+
+    .slider-head strong { color: #6d28d9; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 9px 13px;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+      transition: .18s ease;
+      font-weight: 720;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(124,58,237,.45);
+      background: rgba(124,58,237,.06);
+    }
+
+    .btn.primary {
+      border-color: rgba(124,58,237,.40);
+      background: linear-gradient(180deg, rgba(124,58,237,.12), rgba(124,58,237,.07));
+    }
+
+    .btn:disabled { opacity: .42; cursor: not-allowed; }
+
+    .stage-shell {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.095) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.095) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 28px 28px;
+      min-height: 545px;
+    }
+
+    #proofSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 545px;
+      aspect-ratio: 1.28 / 1;
+    }
+
+    .stage-badge {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 2;
+      padding: 7px 10px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,.93);
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch {
+      width: 15px;
+      height: 15px;
+      border-radius: 4px;
+      border: 1px solid rgba(15,23,42,.18);
+    }
+
+    .swatch.area { background: rgba(124,58,237,.48); }
+    .swatch.delta { background: rgba(8,145,178,.54); }
+    .swatch.bounds { background: rgba(245,158,11,.40); }
+
+    .side-card {
+      padding: 18px;
+      position: sticky;
+      top: 14px;
+    }
+
+    .step-kicker {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .step-title {
+      margin: 4px 0 8px;
+      font-size: 1.34rem;
+      line-height: 1.25;
+    }
+
+    .step-copy {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .equation-card {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid rgba(124,58,237,.20);
+      background: rgba(124,58,237,.045);
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .equation-label {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+    }
+
+    .dynamic-equation { min-width: max-content; }
+
+    .fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .fact {
+      padding: 11px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      font-size: .98rem;
+      overflow-wrap: anywhere;
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border-left: 3px solid var(--accent-2);
+      border-radius: 8px 12px 12px 8px;
+      background: rgba(8,145,178,.045);
+      color: #334155;
+      font-size: .91rem;
+    }
+
+    .below {
+      margin-top: 20px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .explain-card { padding: 22px; }
+
+    .explain-card h2,
+    .explain-card h3 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .explain-card p,
+    .explain-card li { color: #475569; }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-weight: 800;
+      font-size: .82rem;
+    }
+
+    .proof-step b { color: #0f172a; }
+
+    .final-box {
+      padding: 17px;
+      text-align: center;
+      border: 1px solid rgba(5,150,105,.24);
+      border-radius: 14px;
+      background: rgba(16,185,129,.055);
+      overflow-x: auto;
+    }
+
+    .final-box .big {
+      font-size: clamp(1.03rem, 2vw, 1.31rem);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .mini-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .mini-card h4 {
+      margin: 0 0 6px;
+      color: #0f172a;
+    }
+
+    .mini-card p { margin: 0; }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    /* SVG */
+    .axis {
+      stroke: #64748b;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .curve {
+      fill: none;
+      stroke: #0f172a;
+      stroke-width: 2.2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .area-main {
+      fill: #7c3aed;
+      fill-opacity: .28;
+      stroke: none;
+    }
+
+    .area-extra {
+      fill: #0891b2;
+      fill-opacity: .38;
+      stroke: none;
+    }
+
+    .bound-low {
+      fill: rgba(245,158,11,.14);
+      stroke: #d97706;
+      stroke-width: 1;
+      stroke-dasharray: 5 4;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .bound-high {
+      fill: rgba(245,158,11,.06);
+      stroke: #b45309;
+      stroke-width: 1;
+      stroke-dasharray: 5 4;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .avg-line {
+      stroke: #0891b2;
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .guide {
+      stroke: rgba(100,116,139,.38);
+      stroke-width: .9;
+      stroke-dasharray: 5 5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .label {
+      fill: #334155;
+      font-weight: 800;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+    }
+
+    .purple-label { fill: #6d28d9; }
+    .cyan-label { fill: #0e7490; }
+    .orange-label { fill: #b45309; }
+
+    .point {
+      fill: #0f172a;
+      stroke: #fff;
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .animate-in {
+      animation: fadeIn .5s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: .05; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 880px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .side-card { position: static; }
+      .stage-shell, #proofSvg { min-height: 440px; }
+    }
+
+    @media (max-width: 700px) {
+      .control-grid { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; }
+      .button-row { width: 100%; }
+      .btn { flex: 1 1 auto; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 18px, 1180px); padding-top: 22px; }
+      .visual-card, .side-card, .explain-card { padding: 13px; }
+      .stage-shell, #proofSvg { min-height: 370px; }
+      .fact-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Proof • Calculus</div>
+    <h1>The Fundamental Theorem of Calculus as Growing Area</h1>
+    <p class="subtitle">
+      Define \(A(x)\) to be the area accumulated under \(f\) from a fixed starting point to \(x\).
+      When \(x\) moves a tiny distance \(h\), the new area is almost a rectangle of height \(f(x)\).
+      That is why the derivative of accumulated area is the original function.
+    </p>
+
+    <div class="formula-banner">
+      \[
+        \boxed{\displaystyle A(x)=\int_a^x f(t)\,dt
+        \quad\Longrightarrow\quad
+        A'(x)=f(x)}
+      \]
+    </div>
+  </header>
+
+  <section class="main-grid">
+    <div class="card visual-card">
+      <div class="control-grid">
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Point \(x\)</span>
+            <strong id="xReadout">x = 2.00</strong>
+          </div>
+          <input id="xSlider" type="range" min="0.5" max="3.2" value="2" step="0.05"
+                 aria-label="Choose x">
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Small change \(h\)</span>
+            <strong id="hReadout">h = 0.60</strong>
+          </div>
+          <input id="hSlider" type="range" min="0.05" max="1" value="0.6" step="0.05"
+                 aria-label="Choose h">
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Riemann strips</span>
+            <strong id="stripReadout">24 strips</strong>
+          </div>
+          <input id="stripSlider" type="range" min="8" max="50" value="24" step="1"
+                 aria-label="Number of Riemann strips">
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="button-row">
+          <button class="btn" id="resetBtn" type="button">↺ Reset</button>
+          <button class="btn" id="prevBtn" type="button">← Previous</button>
+        </div>
+        <div class="button-row">
+          <button class="btn primary" id="playBtn" type="button">▶ Play</button>
+          <button class="btn primary" id="nextBtn" type="button">Next →</button>
+        </div>
+      </div>
+
+      <div class="stage-shell">
+        <div class="stage-badge" id="stageBadge">Step 1 of 5</div>
+        <svg id="proofSvg" viewBox="0 0 920 600" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">Fundamental Theorem of Calculus visualized with accumulated area</title>
+          <desc id="svgDesc">
+            The area under a positive increasing curve from zero to x is shown. Extending the endpoint to x plus h adds a thin sliver whose average height approaches f of x as h shrinks.
+          </desc>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="swatch area"></span> accumulated area \(A(x)\)</span>
+        <span class="legend-item"><span class="swatch delta"></span> new area \(\Delta A\)</span>
+        <span class="legend-item"><span class="swatch bounds"></span> bounding rectangles</span>
+      </div>
+    </div>
+
+    <aside class="card side-card" aria-live="polite">
+      <div class="step-kicker" id="stepKicker">Step 1</div>
+      <h2 class="step-title" id="stepTitle">Accumulate area up to x</h2>
+      <p class="step-copy" id="stepCopy"></p>
+
+      <div class="equation-card">
+        <div class="equation-label">What the picture says</div>
+        <div class="dynamic-equation" id="stepEquation"></div>
+      </div>
+
+      <div class="fact-grid">
+        <div class="fact">
+          <small>\(f(x)\)</small>
+          <strong id="factFx">2.600</strong>
+        </div>
+        <div class="fact">
+          <small>\(A(x)\)</small>
+          <strong id="factAx">3.067</strong>
+        </div>
+        <div class="fact">
+          <small>\(\Delta A/h\)</small>
+          <strong id="factAvg">3.104</strong>
+        </div>
+        <div class="fact">
+          <small>Error from \(f(x)\)</small>
+          <strong id="factErr">0.504</strong>
+        </div>
+      </div>
+
+      <div class="notice" id="notice"></div>
+    </aside>
+  </section>
+
+  <section class="below">
+    <article class="card explain-card">
+      <h2>The visual proof of FTC Part I</h2>
+
+      <div class="proof-steps">
+        <div class="proof-step">
+          <b>Define accumulated area.</b>
+          Let
+          \[
+            A(x)=\int_a^x f(t)\,dt.
+          \]
+          This means \(A(x)\) is the area under the graph from the fixed point \(a\) to the moving endpoint \(x\).
+        </div>
+
+        <div class="proof-step">
+          <b>Move the endpoint from \(x\) to \(x+h\).</b>
+          The change in accumulated area is
+          \[
+            \Delta A=A(x+h)-A(x)=\int_x^{x+h}f(t)\,dt.
+          \]
+        </div>
+
+        <div class="proof-step">
+          <b>Compare the new sliver with rectangles.</b>
+          If \(f\) is increasing on this tiny interval, then
+          \[
+            f(x)h\le \Delta A\le f(x+h)h.
+          \]
+        </div>
+
+        <div class="proof-step">
+          <b>Divide by the width \(h\).</b>
+          This gives
+          \[
+            f(x)\le \frac{\Delta A}{h}\le f(x+h).
+          \]
+          The middle quantity is the average height of the new sliver.
+        </div>
+
+        <div class="proof-step">
+          <b>Let \(h\to0\).</b>
+          Continuity makes \(f(x+h)\to f(x)\), so both bounds squeeze the average height to \(f(x)\):
+          \[
+            A'(x)=\lim_{h\to0}\frac{A(x+h)-A(x)}{h}=f(x).
+          \]
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>The intuition in one sentence</h3>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \boxed{\text{rate at which area grows}=\text{current height of the graph}}
+          \]
+        </div>
+      </div>
+
+      <p>
+        When you increase \(x\) by a tiny amount \(dx\), you add a very thin strip whose width is \(dx\)
+        and whose height is approximately \(f(x)\). Therefore
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            dA\approx f(x)\,dx
+            \qquad\Longrightarrow\qquad
+            \frac{dA}{dx}=f(x).
+          \]
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>FTC Part II: why antiderivatives evaluate definite integrals</h3>
+
+      <p>
+        From Part I, the accumulation function
+        \[
+          A(x)=\int_a^x f(t)\,dt
+        \]
+        is an antiderivative of \(f\). So if \(F'(x)=f(x)\), then \(F\) and \(A\) differ only by a constant:
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            A(x)=F(x)-F(a).
+          \]
+        </div>
+      </div>
+
+      <p>
+        Now set \(x=b\):
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \boxed{\displaystyle
+            \int_a^b f(x)\,dx=F(b)-F(a)}
+          \]
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>The example used in the animation</h3>
+
+      <p>
+        The curve in the interactive graphic is
+        \[
+          f(x)=1+\frac{2}{5}x^2.
+        \]
+        One antiderivative is
+        \[
+          F(x)=x+\frac{2}{15}x^3.
+        \]
+        Therefore
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \int_0^b \left(1+\frac25x^2\right)\,dx
+            =
+            b+\frac{2}{15}b^3.
+          \]
+        </div>
+      </div>
+
+      <p>
+        The sliders let you see the difference quotient
+        \[
+          \frac{A(x+h)-A(x)}{h}
+        \]
+        move closer to \(f(x)\) as \(h\) becomes smaller.
+      </p>
+    </article>
+  </section>
+
+  <p class="footer-note">
+    Interactive visual proof using accumulated area, thin rectangles, and the squeeze idea.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const svg = document.getElementById("proofSvg");
+
+  const xSlider = document.getElementById("xSlider");
+  const hSlider = document.getElementById("hSlider");
+  const stripSlider = document.getElementById("stripSlider");
+
+  const xReadout = document.getElementById("xReadout");
+  const hReadout = document.getElementById("hReadout");
+  const stripReadout = document.getElementById("stripReadout");
+
+  const resetBtn = document.getElementById("resetBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const playBtn = document.getElementById("playBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const stageBadge = document.getElementById("stageBadge");
+  const stepKicker = document.getElementById("stepKicker");
+  const stepTitle = document.getElementById("stepTitle");
+  const stepCopy = document.getElementById("stepCopy");
+  const stepEquation = document.getElementById("stepEquation");
+  const notice = document.getElementById("notice");
+
+  const factFx = document.getElementById("factFx");
+  const factAx = document.getElementById("factAx");
+  const factAvg = document.getElementById("factAvg");
+  const factErr = document.getElementById("factErr");
+
+  let step = 1;
+  let timer = null;
+
+  function f(x) {
+    return 1 + 0.4*x*x;
+  }
+
+  function A(x) {
+    return x + (2/15)*x*x*x;
+  }
+
+  function state() {
+    const x = Number(xSlider.value);
+    let h = Number(hSlider.value);
+
+    const maxH = Math.max(0.05, 3.7 - x);
+    if (h > maxH) {
+      h = Math.floor(maxH*20)/20;
+      h = Math.max(0.05, h);
+      hSlider.value = h.toFixed(2);
+    }
+
+    const strips = Number(stripSlider.value);
+    const fx = f(x);
+    const fxh = f(x+h);
+    const ax = A(x);
+    const axh = A(x+h);
+    const deltaA = axh - ax;
+    const avg = deltaA/h;
+    const err = Math.abs(avg-fx);
+
+    return {x,h,strips,fx,fxh,ax,axh,deltaA,avg,err};
+  }
+
+  function fmt(v) {
+    return Number(v).toFixed(3);
+  }
+
+  function makeSvg(tag, attrs={}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v));
+    return el;
+  }
+
+  function addText(x,y,text,cls,size,parent=svg,extra={}) {
+    const el = makeSvg("text",{x,y,class:cls,"font-size":size,...extra});
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  function clearSvg() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+  }
+
+  function areaPath(xa, xb, X, Y, samples=100) {
+    const pts = [];
+    pts.push([X(xa),Y(0)]);
+    for (let i=0;i<=samples;i++) {
+      const t = xa + (xb-xa)*i/samples;
+      pts.push([X(t),Y(f(t))]);
+    }
+    pts.push([X(xb),Y(0)]);
+    return pts.map((p,i)=>(i===0?"M":"L")+p[0]+" "+p[1]).join(" ")+" Z";
+  }
+
+  function renderSvg() {
+    clearSvg();
+
+    const {x,h,strips,fx,fxh,avg} = state();
+
+    const W=920, H=600;
+    const left=85, right=65, top=60, bottom=82;
+    const plotW=W-left-right;
+    const plotH=H-top-bottom;
+
+    const xmax=3.8;
+    const ymax=f(xmax)*1.08;
+
+    const X = t => left + (t/xmax)*plotW;
+    const Y = y => H-bottom - (y/ymax)*plotH;
+
+    const xAxisY = Y(0);
+
+    // Axes
+    svg.appendChild(makeSvg("line",{x1:left,y1:xAxisY,x2:W-right+10,y2:xAxisY,class:"axis"}));
+    svg.appendChild(makeSvg("line",{x1:left,y1:xAxisY,x2:left,y2:top-10,class:"axis"}));
+
+    addText(W-right+18,xAxisY+4,"t","label",16);
+    addText(left-12,top-18,"f(t)","label",16,svg,{"text-anchor":"end"});
+
+    // main accumulated area
+    if (step >= 1) {
+      svg.appendChild(makeSvg("path",{
+        d:areaPath(0,x,X,Y,100),
+        class:"area-main animate-in"
+      }));
+
+      // Riemann guides inside A(x)
+      for (let i=0;i<strips;i++) {
+        const a=x*i/strips;
+        const b=x*(i+1)/strips;
+        const mid=(a+b)/2;
+        const rx=X(a), rw=X(b)-X(a);
+        const ry=Y(f(mid)), rh=xAxisY-ry;
+        svg.appendChild(makeSvg("rect",{
+          x:rx,y:ry,width:rw,height:rh,
+          fill:"none",
+          stroke:"rgba(124,58,237,.18)",
+          "stroke-width":".65",
+          "vector-effect":"non-scaling-stroke"
+        }));
+      }
+    }
+
+    // new sliver
+    if (step >= 2) {
+      svg.appendChild(makeSvg("path",{
+        d:areaPath(x,x+h,X,Y,60),
+        class:"area-extra animate-in"
+      }));
+
+      svg.appendChild(makeSvg("line",{
+        x1:X(x),y1:xAxisY,x2:X(x),y2:Y(f(x)),
+        class:"guide"
+      }));
+      svg.appendChild(makeSvg("line",{
+        x1:X(x+h),y1:xAxisY,x2:X(x+h),y2:Y(f(x+h)),
+        class:"guide"
+      }));
+
+      addText(X(x),xAxisY+22,"x","label",14,svg,{"text-anchor":"middle"});
+      addText(X(x+h),xAxisY+22,"x+h","label",14,svg,{"text-anchor":"middle"});
+    }
+
+    // bounding rectangles
+    if (step >= 3) {
+      const rx=X(x);
+      const rw=X(x+h)-X(x);
+
+      svg.appendChild(makeSvg("rect",{
+        x:rx,y:Y(fx),width:rw,height:xAxisY-Y(fx),
+        class:"bound-low animate-in"
+      }));
+
+      svg.appendChild(makeSvg("rect",{
+        x:rx,y:Y(fxh),width:rw,height:xAxisY-Y(fxh),
+        class:"bound-high animate-in"
+      }));
+
+      addText(
+        rx+rw/2,
+        Y(fx)+20,
+        "lower: f(x)h",
+        "label orange-label",
+        14,
+        svg,
+        {"text-anchor":"middle"}
+      );
+
+      addText(
+        rx+rw/2,
+        Y(fxh)-10,
+        "upper: f(x+h)h",
+        "label orange-label",
+        14,
+        svg,
+        {"text-anchor":"middle"}
+      );
+    }
+
+    // average height line
+    if (step >= 4) {
+      const rx=X(x), rx2=X(x+h);
+      svg.appendChild(makeSvg("line",{
+        x1:rx,y1:Y(avg),x2:rx2,y2:Y(avg),
+        class:"avg-line animate-in"
+      }));
+
+      addText(
+        (rx+rx2)/2,
+        Y(avg)-10,
+        "average height = ΔA / h",
+        "label cyan-label",
+        15,
+        svg,
+        {"text-anchor":"middle"}
+      );
+    }
+
+    // curve
+    const pts=[];
+    for (let i=0;i<=180;i++) {
+      const t=xmax*i/180;
+      pts.push([X(t),Y(f(t))]);
+    }
+    const curveD=pts.map((p,i)=>(i===0?"M":"L")+p[0]+" "+p[1]).join(" ");
+    svg.appendChild(makeSvg("path",{d:curveD,class:"curve"}));
+
+    // current points
+    svg.appendChild(makeSvg("circle",{cx:X(x),cy:Y(fx),r:"5",class:"point"}));
+    if (step>=2) {
+      svg.appendChild(makeSvg("circle",{cx:X(x+h),cy:Y(fxh),r:"5",class:"point"}));
+    }
+
+    addText(X(x)+9,Y(fx)-11,`f(x)=${fx.toFixed(2)}`,"label purple-label",15);
+
+    if (step >= 5) {
+      const boxW=430, boxH=78;
+      const bx=left+plotW/2-boxW/2;
+      const by=top+26;
+
+      svg.appendChild(makeSvg("rect",{
+        x:bx,y:by,width:boxW,height:boxH,rx:"13",
+        fill:"#fff","fill-opacity":".95",
+        stroke:"rgba(15,23,42,.13)"
+      }));
+
+      addText(left+plotW/2,by+29,"as h → 0, average height → f(x)","label",18,svg,{"text-anchor":"middle"});
+      addText(left+plotW/2,by+57,"therefore A′(x) = f(x)","label purple-label",22,svg,{"text-anchor":"middle"});
+    }
+  }
+
+  function typesetMath() {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([stepCopy,stepEquation,notice]).catch(()=>{});
+    }
+  }
+
+  function renderText() {
+    const {x,h,strips,fx,fxh,ax,deltaA,avg,err} = state();
+
+    xReadout.textContent=`x = ${x.toFixed(2)}`;
+    hReadout.textContent=`h = ${h.toFixed(2)}`;
+    stripReadout.textContent=`${strips} strips`;
+
+    factFx.textContent=fmt(fx);
+    factAx.textContent=fmt(ax);
+    factAvg.textContent=fmt(avg);
+    factErr.textContent=fmt(err);
+
+    stageBadge.textContent=`Step ${step} of 5`;
+    stepKicker.textContent=`Step ${step}`;
+
+    if (step===1) {
+      stepTitle.textContent="Accumulate area up to x";
+      stepCopy.innerHTML=
+        `Let \\(A(x)\\) be the area under \\(f(t)\\) from \\(0\\) to \\(x\\). ` +
+        `For our example, \\(f(t)=1+\\frac25 t^2\\).`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `A(x)=\\int_0^x f(t)\\,dt` +
+        `=x+\\frac{2}{15}x^3.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `The purple region is not just an area to compute; think of it as a quantity that changes when the endpoint \\(x\\) moves.`;
+    }
+
+    if (step===2) {
+      stepTitle.textContent="Move the endpoint from x to x+h";
+      stepCopy.innerHTML=
+        `When the right endpoint moves by \\(h\\), the accumulated area gains the cyan sliver. ` +
+        `That extra area is exactly \\(A(x+h)-A(x)\\).`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `\\Delta A=A(x+h)-A(x)=\\int_x^{x+h}f(t)\\,dt=${fmt(deltaA)}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `The derivative asks how much area is added per unit horizontal distance, so the crucial quantity is \\(\\Delta A/h\\).`;
+    }
+
+    if (step===3) {
+      stepTitle.textContent="Trap the sliver between two rectangles";
+      stepCopy.innerHTML=
+        `Because this example is increasing, every height in the sliver lies between \\(f(x)\\) and \\(f(x+h)\\). ` +
+        `So the sliver is trapped between two rectangles of width \\(h\\).`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `f(x)h\\le \\Delta A\\le f(x+h)h` +
+        `\\]` +
+        `\\[` +
+        `${fx.toFixed(3)}(${h.toFixed(2)})\\le ${fmt(deltaA)}\\le ${fxh.toFixed(3)}(${h.toFixed(2)}).` +
+        `\\]`;
+
+      notice.innerHTML=
+        `This is the geometric squeeze: the true curved sliver is larger than the lower rectangle and smaller than the upper rectangle.`;
+    }
+
+    if (step===4) {
+      stepTitle.textContent="Divide by h: the quotient is an average height";
+      stepCopy.innerHTML=
+        `Dividing the sliver's area by its width gives its average height. ` +
+        `That average must lie between the smallest and largest heights of the curve on the interval.`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `f(x)\\le\\frac{A(x+h)-A(x)}{h}\\le f(x+h)` +
+        `\\]` +
+        `\\[` +
+        `${fmt(fx)}\\le ${fmt(avg)}\\le ${fmt(fxh)}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `Move the \\(h\\) slider toward zero. The two endpoint heights become nearly equal, forcing the average height between them to match \\(f(x)\\).`;
+    }
+
+    if (step===5) {
+      stepTitle.textContent="Let h shrink to zero";
+      stepCopy.innerHTML=
+        `As \\(h\\to0\\), continuity gives \\(f(x+h)\\to f(x)\\). ` +
+        `The difference quotient is squeezed to the same value.`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `A'(x)=\\lim_{h\\to0}\\frac{A(x+h)-A(x)}{h}=f(x).` +
+        `\\]`;
+
+      notice.innerHTML=
+        `This is the Fundamental Theorem of Calculus: differentiating accumulated area returns the original height function.`;
+    }
+
+    prevBtn.disabled=step===1;
+    nextBtn.disabled=step===5;
+
+    typesetMath();
+  }
+
+  function render() {
+    renderSvg();
+    renderText();
+  }
+
+  function stopPlay() {
+    if (timer) {
+      clearInterval(timer);
+      timer=null;
+    }
+    playBtn.textContent="▶ Play";
+  }
+
+  function togglePlay() {
+    if (timer) {
+      stopPlay();
+      return;
+    }
+
+    if (step===5) step=1;
+    playBtn.textContent="❚❚ Pause";
+    render();
+
+    timer=setInterval(()=>{
+      if (step>=5) {
+        stopPlay();
+        return;
+      }
+      step++;
+      render();
+    },1650);
+  }
+
+  [xSlider,hSlider,stripSlider].forEach(el=>{
+    el.addEventListener("input",()=>{
+      stopPlay();
+      render();
+    });
+  });
+
+  resetBtn.addEventListener("click",()=>{
+    stopPlay();
+    step=1;
+    xSlider.value="2";
+    hSlider.value="0.6";
+    stripSlider.value="24";
+    render();
+  });
+
+  prevBtn.addEventListener("click",()=>{
+    stopPlay();
+    if (step>1) {
+      step--;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener("click",()=>{
+    stopPlay();
+    if (step<5) {
+      step++;
+      render();
+    }
+  });
+
+  playBtn.addEventListener("click",togglePlay);
+
+  render();
+})();
+</script>
+</body>
+</html>

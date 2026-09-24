@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Geometric Mean &ge; Harmonic Mean</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* SVG Geometry Transitions */
+        .geom-rect { transition: all 0.2s ease-out, opacity 0.4s ease; }
+        .geom-dim { transition: all 0.2s ease-out; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Geometric Mean $\ge$ Harmonic Mean
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 min-h-[70px] flex items-center justify-center transition-all flex-wrap gap-4" id="liveEq">
+            $$\sqrt{ab} \ge \frac{2ab}{a+b}$$
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-6 w-full md:w-auto flex-grow max-w-lg">
+                <!-- A Slider -->
+                <div class="flex flex-col gap-2 w-full">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Parameter <span class="math-font text-sm normal-case text-indigo-600">a</span></span>
+                        <span id="valA" class="text-indigo-600 text-sm">7.0</span>
+                    </div>
+                    <input type="range" id="sliderA" value="7.0" min="1.0" max="10.0" step="0.1" class="w-full">
+                </div>
+
+                <!-- B Slider -->
+                <div class="flex flex-col gap-2 w-full">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Parameter <span class="math-font text-sm normal-case text-emerald-600">b</span></span>
+                        <span id="valB" class="text-emerald-600 text-sm">3.0</span>
+                    </div>
+                    <input type="range" id="sliderB" value="3.0" min="1.0" max="10.0" step="0.1" class="w-full">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-lg bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play Auto</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+            
+            <!-- SVG Viewport (Spans 3 cols) -->
+            <div class="lg:col-span-3 svg-container p-4 flex items-center justify-center min-h-[460px]">
+                <svg id="proofSvg" viewBox="0 0 500 500" class="w-full max-w-[460px] h-auto overflow-visible">
+                    <defs>
+                        <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#10b981" stroke-width="2" opacity="0.5"/>
+                        </pattern>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 2 L 10 5 L 0 8 z" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Base coordinate system offset by 50px for dimension lines -->
+                    <g transform="translate(50, 50)">
+                        <!-- Background Boundary (Unit Square 1x1) -->
+                        <rect x="0" y="0" width="400" height="400" fill="#f8fafc" stroke="#334155" stroke-width="3" />
+
+                        <!-- Internal Grid Guidelines -->
+                        <line id="guideV1" x1="280" y1="0" x2="280" y2="400" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,4" />
+                        <line id="guideV2" x1="120" y1="0" x2="120" y2="400" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,4" />
+                        <line id="guideH1" x1="0" y1="280" x2="400" y2="280" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,4" />
+                        <line id="guideH2" x1="0" y1="120" x2="400" y2="120" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,4" />
+
+                        <!-- 4 Rectangles -->
+                        <!-- R1: Top-Left [0, x] * [0, y] -->
+                        <rect id="rect1" class="geom-rect" fill="#c7d2fe" stroke="#4f46e5" stroke-width="2" opacity="0" /> 
+                        <!-- R2: Top-Right [x, 1] * [0, x] -->
+                        <rect id="rect2" class="geom-rect" fill="url(#diagonalHatch)" stroke="#059669" stroke-width="2" opacity="0" /> 
+                        <!-- R3: Bottom-Right [y, 1] * [x, 1] -->
+                        <rect id="rect3" class="geom-rect" fill="#c7d2fe" stroke="#4f46e5" stroke-width="2" opacity="0" /> 
+                        <!-- R4: Bottom-Left [0, y] * [y, 1] -->
+                        <rect id="rect4" class="geom-rect" fill="url(#diagonalHatch)" stroke="#059669" stroke-width="2" opacity="0" /> 
+                        
+                        <!-- Central Hole Highlight -->
+                        <rect id="centerHole" class="geom-rect" fill="#fef3c7" stroke="#d97706" stroke-width="2" stroke-dasharray="6,4" opacity="0" />
+
+                        <!-- Dimension Lines & Labels -->
+                        <g id="dimLines">
+                            <!-- Top X -->
+                            <path id="dimTopX" class="geom-dim" stroke="#64748b" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                            <text id="lblTopX" class="geom-dim math-font" y="-30" font-weight="bold" font-size="20" fill="#4f46e5" text-anchor="middle">a</text>
+                            
+                            <!-- Top Y -->
+                            <path id="dimTopY" class="geom-dim" stroke="#64748b" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                            <text id="lblTopY" class="geom-dim math-font" y="-30" font-weight="bold" font-size="20" fill="#059669" text-anchor="middle">b</text>
+                            
+                            <!-- Left Y -->
+                            <path id="dimLeftY" class="geom-dim" stroke="#64748b" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                            <text id="lblLeftY" class="geom-dim math-font" x="-25" font-weight="bold" font-size="20" fill="#059669" text-anchor="end" dominant-baseline="middle">b</text>
+                            
+                            <!-- Left X -->
+                            <path id="dimLeftX" class="geom-dim" stroke="#64748b" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                            <text id="lblLeftX" class="geom-dim math-font" x="-25" font-weight="bold" font-size="20" fill="#4f46e5" text-anchor="end" dominant-baseline="middle">a</text>
+
+                            <!-- Denominator Note -->
+                            <text x="200" y="-10" font-family="Inter" font-size="12" fill="#94a3b8" text-anchor="middle">fractions of (a+b)</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger & Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Area Placed</span>
+                        <span class="text-xs font-normal text-slate-500">Value</span>
+                    </h2>
+                    
+                    <div id="ledger-lines" class="space-y-1">
+                        <!-- Populated dynamically to avoid MathJax reflows -->
+                        <div class="flex justify-between items-center px-2 py-2 rounded-md transition-opacity duration-300 opacity-30" id="ledger-1">
+                            <span class="text-sm font-semibold text-slate-700 flex items-center gap-2"><div class="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-500"></div> $R_1$</span>
+                            <div class="inline-flex flex-col items-center justify-center align-middle mx-1 font-mono text-[12px] font-bold text-slate-600"><span class="border-b border-slate-400 pb-[1px] leading-none">ab</span><span class="pt-[2px] leading-none">(a+b)²</span></div>
+                        </div>
+                        <div class="flex justify-between items-center px-2 py-2 rounded-md transition-opacity duration-300 opacity-30" id="ledger-2">
+                            <span class="text-sm font-semibold text-slate-700 flex items-center gap-2"><div class="w-3 h-3 rounded-sm bg-emerald-200 border border-emerald-500"></div> $R_2$</span>
+                            <div class="inline-flex flex-col items-center justify-center align-middle mx-1 font-mono text-[12px] font-bold text-slate-600"><span class="border-b border-slate-400 pb-[1px] leading-none">ab</span><span class="pt-[2px] leading-none">(a+b)²</span></div>
+                        </div>
+                        <div class="flex justify-between items-center px-2 py-2 rounded-md transition-opacity duration-300 opacity-30" id="ledger-3">
+                            <span class="text-sm font-semibold text-slate-700 flex items-center gap-2"><div class="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-500"></div> $R_3$</span>
+                            <div class="inline-flex flex-col items-center justify-center align-middle mx-1 font-mono text-[12px] font-bold text-slate-600"><span class="border-b border-slate-400 pb-[1px] leading-none">ab</span><span class="pt-[2px] leading-none">(a+b)²</span></div>
+                        </div>
+                        <div class="flex justify-between items-center px-2 py-2 rounded-md transition-opacity duration-300 opacity-30" id="ledger-4">
+                            <span class="text-sm font-semibold text-slate-700 flex items-center gap-2"><div class="w-3 h-3 rounded-sm bg-emerald-200 border border-emerald-500"></div> $R_4$</span>
+                            <div class="inline-flex flex-col items-center justify-center align-middle mx-1 font-mono text-[12px] font-bold text-slate-600"><span class="border-b border-slate-400 pb-[1px] leading-none">ab</span><span class="pt-[2px] leading-none">(a+b)²</span></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t-2 border-slate-800 flex justify-between items-center font-bold text-slate-900 text-sm">
+                        <span>Total Shaded Area</span>
+                        <div id="ledgerTotal" class="inline-flex flex-col items-center justify-center align-middle mx-1 font-mono text-[14px] text-indigo-700"><span class="border-b border-indigo-400 pb-[1px] leading-none">—</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm flex flex-col justify-center min-h-[100px]" id="explainerBox">
+                    <p class="text-sm text-indigo-900 leading-relaxed text-center font-medium" id="statusText">
+                        The outer square has an area of 1. Press <strong>Play</strong> to place the four rectangles inside it.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-6">Deriving the Inequality</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-base">
+                
+                <!-- Left Text Section -->
+                <div class="pt-2">
+                    <p class="mb-4 leading-relaxed">
+                        We start with a unit square of area $1$. We divide its side lengths proportionally into segments $\frac{a}{a+b}$ and $\frac{b}{a+b}$.
+                    </p>
+                    <p class="mb-4 leading-relaxed">
+                        By doing this, we can fit 4 congruent rectangles inside the unit square in a pinwheel formation. The area of each rectangle is simply its width times its height:
+                    </p>
+                    <div class="text-indigo-700 my-6">
+                        $$ \text{Area} = \left(\frac{a}{a+b}\right) \times \left(\frac{b}{a+b}\right) = \frac{ab}{(a+b)^2} $$
+                    </div>
+                </div>
+                
+                <!-- Right Box Section -->
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-900 border-b border-slate-200 pb-2">Comparing Areas</h3>
+                    <p class="mb-3 leading-relaxed">Because all 4 rectangles fit comfortably <em>inside</em> the unit square (leaving a central gap), their combined area must be less than or equal to $1$:</p>
+                    
+                    <div class="text-indigo-700 my-4">
+                        $$ 4 \cdot \frac{ab}{(a+b)^2} \le 1 $$
+                    </div>
+                    
+                    <p class="mb-3 leading-relaxed">Multiply both sides by $ab$:</p>
+                    
+                    <div class="text-indigo-700 my-4">
+                        $$ \frac{4a^2b^2}{(a+b)^2} \le ab $$
+                    </div>
+                    
+                    <p class="mb-3 leading-relaxed">Taking the square root of both sides perfectly separates the Geometric and Harmonic means!</p>
+                    
+                    <div class="text-emerald-700 mt-4 text-lg font-bold">
+                        $$ \frac{2ab}{a+b} \le \sqrt{ab} $$
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            a: 7.0,
+            b: 3.0,
+            currentStep: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            playInterval: null
+        };
+
+        const SIZE = 400; // 400px drawing area inside the SVG
+        
+        // DOM Elements
+        const sliderA = document.getElementById('sliderA');
+        const sliderB = document.getElementById('sliderB');
+        const valA = document.getElementById('valA');
+        const valB = document.getElementById('valB');
+        
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const stepBtn = document.getElementById('stepBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const stepIndicator = document.getElementById('stepIndicator');
+        const statusText = document.getElementById('statusText');
+        const ledgerTotal = document.getElementById('ledgerTotal');
+        
+        // SVG Elements
+        const rect1 = document.getElementById('rect1');
+        const rect2 = document.getElementById('rect2');
+        const rect3 = document.getElementById('rect3');
+        const rect4 = document.getElementById('rect4');
+        const centerHole = document.getElementById('centerHole');
+        
+        const guideV1 = document.getElementById('guideV1');
+        const guideV2 = document.getElementById('guideV2');
+        const guideH1 = document.getElementById('guideH1');
+        const guideH2 = document.getElementById('guideH2');
+
+        const dimTopX = document.getElementById('dimTopX');
+        const lblTopX = document.getElementById('lblTopX');
+        const dimTopY = document.getElementById('dimTopY');
+        const lblTopY = document.getElementById('lblTopY');
+        
+        const dimLeftY = document.getElementById('dimLeftY');
+        const lblLeftY = document.getElementById('lblLeftY');
+        const dimLeftX = document.getElementById('dimLeftX');
+        const lblLeftX = document.getElementById('lblLeftX');
+
+        function init() {
+            sliderA.addEventListener('input', (e) => { 
+                state.a = parseFloat(e.target.value); 
+                updateVisuals(); 
+            });
+            sliderB.addEventListener('input', (e) => { 
+                state.b = parseFloat(e.target.value); 
+                updateVisuals(); 
+            });
+            
+            playPauseBtn.addEventListener('click', togglePlay);
+            stepBtn.addEventListener('click', stepForward);
+            resetBtn.addEventListener('click', () => { 
+                pauseAnimation(); 
+                state.a = 7.0; 
+                state.b = 3.0; 
+                sliderA.value = 7.0; 
+                sliderB.value = 3.0;
+                setStep(0); 
+                updateVisuals(); 
+            });
+            
+            updateVisuals(); 
+            setStep(0);
+        }
+
+        function updateVisuals() {
+            const a = state.a;
+            const b = state.b;
+            const sum = a + b;
+            
+            // Fractions
+            const xFrac = a / sum;
+            const yFrac = b / sum;
+            
+            // Pixels
+            const px = xFrac * SIZE;
+            const py = yFrac * SIZE;
+
+            // UI Text Updates
+            valA.textContent = a.toFixed(1);
+            valB.textContent = b.toFixed(1);
+
+            // Update Guides
+            guideV1.setAttribute('x1', px); guideV1.setAttribute('x2', px);
+            guideV2.setAttribute('x1', py); guideV2.setAttribute('x2', py);
+            guideH1.setAttribute('y1', px); guideH1.setAttribute('y2', px);
+            guideH2.setAttribute('y1', py); guideH2.setAttribute('y2', py);
+
+            // R1: Top-Left [0, x] * [0, y]
+            rect1.setAttribute('x', 0); rect1.setAttribute('y', 0);
+            rect1.setAttribute('width', px); rect1.setAttribute('height', py);
+
+            // R2: Top-Right [x, 1] * [0, x]
+            rect2.setAttribute('x', px); rect2.setAttribute('y', 0);
+            rect2.setAttribute('width', py); rect2.setAttribute('height', px);
+
+            // R3: Bottom-Right [y, 1] * [x, 1]
+            rect3.setAttribute('x', py); rect3.setAttribute('y', px);
+            rect3.setAttribute('width', px); rect3.setAttribute('height', py);
+
+            // R4: Bottom-Left [0, y] * [y, 1]
+            rect4.setAttribute('x', 0); rect4.setAttribute('y', py);
+            rect4.setAttribute('width', py); rect4.setAttribute('height', px);
+
+            // Central Hole (Appears in Step 5)
+            const minSize = Math.min(px, py);
+            const holeSize = Math.abs(px - py);
+            centerHole.setAttribute('x', minSize);
+            centerHole.setAttribute('y', minSize);
+            centerHole.setAttribute('width', holeSize);
+            centerHole.setAttribute('height', holeSize);
+
+            // Dimension Lines
+            dimTopX.setAttribute('d', `M 0 -15 L 0 -25 L ${px} -25 L ${px} -15`);
+            lblTopX.setAttribute('x', px/2);
+            
+            dimTopY.setAttribute('d', `M ${px} -15 L ${px} -25 L ${SIZE} -25 L ${SIZE} -15`);
+            lblTopY.setAttribute('x', px + py/2);
+
+            dimLeftY.setAttribute('d', `M -15 0 L -25 0 L -25 ${py} L -15 ${py}`);
+            lblLeftY.setAttribute('y', py/2);
+            
+            dimLeftX.setAttribute('d', `M -15 ${py} L -25 ${py} L -25 ${SIZE} L -15 ${SIZE}`);
+            lblLeftX.setAttribute('y', py + px/2);
+        }
+
+        function setStep(step) {
+            state.currentStep = step;
+            stepIndicator.textContent = `${step} / ${state.maxSteps}`;
+
+            // Update Rectangles Visibility
+            rect1.style.opacity = step >= 1 ? '1' : '0';
+            rect2.style.opacity = step >= 2 ? '1' : '0';
+            rect3.style.opacity = step >= 3 ? '1' : '0';
+            rect4.style.opacity = step >= 4 ? '1' : '0';
+            centerHole.style.opacity = step === 5 ? '1' : '0';
+
+            // Update Ledger UI
+            for (let i = 1; i <= 4; i++) {
+                const line = document.getElementById(`ledger-${i}`);
+                if (step >= i) {
+                    line.classList.remove('opacity-30');
+                    line.classList.add('bg-slate-50', 'opacity-100');
+                } else {
+                    line.classList.add('opacity-30');
+                    line.classList.remove('bg-slate-50', 'opacity-100');
+                }
+            }
+
+            // Update Total Ledger
+            if (step === 0) {
+                ledgerTotal.innerHTML = `<span class="border-b border-indigo-400 pb-[1px] leading-none">—</span>`;
+                statusText.innerHTML = `The outer square has an area of 1. Press <strong>Play</strong> to place the four rectangles inside it.`;
+            } else if (step > 0 && step <= 4) {
+                ledgerTotal.innerHTML = `<span class="border-b border-indigo-400 pb-[1px] leading-none">${step}ab</span><span class="pt-[2px] leading-none">(a+b)²</span>`;
+                statusText.innerHTML = `Placed Rectangle ${step}. It has dimensions $\\frac{a}{a+b}$ by $\\frac{b}{a+b}$, giving an area of $\\frac{ab}{(a+b)^2}$.`;
+            } else if (step === 5) {
+                statusText.innerHTML = `<strong>Q.E.D.</strong> All 4 rectangles fit inside the 1x1 square. The remaining empty area in the center proves their sum is $\\le 1$.`;
+            }
+
+            // Button States
+            if (step >= state.maxSteps) {
+                stepBtn.disabled = true;
+            } else {
+                stepBtn.disabled = false;
+            }
+
+            // MathJax re-render for explanations
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([statusText]).catch(console.error);
+            }
+        }
+
+        function stepForward() {
+            if (state.currentStep < state.maxSteps) {
+                setStep(state.currentStep + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.currentStep >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                playPauseBtn.classList.replace('btn-play', 'btn-secondary');
+                
+                state.playInterval = setInterval(() => {
+                    stepForward();
+                }, 1200);
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.playInterval);
+            playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Play Auto';
+            playPauseBtn.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

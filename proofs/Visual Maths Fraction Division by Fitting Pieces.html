@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual for dividing a fraction by a unit fraction using how many pieces fit." />
+  <title>Visual Maths: Fraction Division by Fitting Pieces</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fbff;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --purple: #7c3aed;
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --shadow: 0 16px 38px rgba(15, 23, 42, 0.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      line-height: 1.55;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 10%, rgba(37,99,235,.06), transparent 26rem),
+        var(--bg);
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1120px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 30px 0 54px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(124,58,237,.22);
+      background: rgba(124,58,237,.07);
+      color: #6d28d9;
+      text-transform: uppercase;
+      font-size: .8rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.15rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      max-width: 920px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.8vw, 1.1rem);
+    }
+
+    .top-box {
+      margin: 20px auto 0;
+      max-width: 860px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(16,185,129,.20);
+      background: linear-gradient(180deg, rgba(16,185,129,.07), rgba(16,185,129,.03));
+      color: #065f46;
+      font-weight: 800;
+      font-size: clamp(1.08rem, 2vw, 1.34rem);
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card, .side-card, .explain-card {
+      padding: 18px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .slider-box {
+      padding: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.02);
+      border-radius: 14px;
+      min-width: 0;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: .92rem;
+    }
+
+    .slider-head strong {
+      color: #6d28d9;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--purple);
+      cursor: pointer;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 14px;
+      background: white;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 760;
+      transition: .18s ease;
+    }
+
+    .btn.primary {
+      border-color: rgba(124,58,237,.34);
+      background: rgba(124,58,237,.08);
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(124,58,237,.42);
+    }
+
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .stage-wrap {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.08) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 32px 32px;
+      padding: 22px 18px 20px;
+      overflow-x: auto;
+      min-height: 390px;
+    }
+
+    .stage-badge {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      padding: 7px 10px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,.94);
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .visual-inner {
+      min-width: 560px;
+      padding-top: 42px;
+    }
+
+    .bar-title {
+      text-align: center;
+      font-weight: 850;
+      color: #334155;
+      margin-bottom: 9px;
+    }
+
+    .fraction-bar {
+      position: relative;
+      height: 94px;
+      display: grid;
+      border: 2px solid rgba(15,23,42,.35);
+      border-radius: 12px;
+      overflow: hidden;
+      background: white;
+      margin: 0 auto;
+      max-width: 760px;
+    }
+
+    .bar-cell {
+      border-right: 1px solid rgba(15,23,42,.24);
+      position: relative;
+      background: white;
+    }
+
+    .bar-cell:last-child { border-right: 0; }
+
+    .bar-cell.shaded {
+      background: rgba(37,99,235,.45);
+    }
+
+    .bar-cell.fit {
+      background:
+        linear-gradient(135deg, rgba(16,185,129,.45), rgba(16,185,129,.25));
+    }
+
+    .bar-cell.partial {
+      background: rgba(245,158,11,.35);
+    }
+
+    .group-labels {
+      display: grid;
+      max-width: 760px;
+      margin: 7px auto 0;
+      gap: 0;
+      color: #475569;
+      font-size: .76rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .group-label {
+      border-top: 2px solid rgba(5,150,105,.45);
+      padding-top: 5px;
+      min-width: 0;
+    }
+
+    .count-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .piece-chip {
+      min-width: 54px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(5,150,105,.26);
+      background: rgba(16,185,129,.09);
+      color: #047857;
+      text-align: center;
+      font-weight: 850;
+    }
+
+    .piece-chip.partial {
+      border-color: rgba(245,158,11,.30);
+      background: rgba(245,158,11,.10);
+      color: #92400e;
+    }
+
+    .stage-note {
+      margin-top: 18px;
+      text-align: center;
+      color: #475569;
+      font-size: .92rem;
+      font-weight: 700;
+    }
+
+    .step-kicker {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .step-title {
+      margin: 4px 0 8px;
+      font-size: 1.34rem;
+      line-height: 1.24;
+    }
+
+    .step-copy {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .math-strip, .kid-note, .facts-card {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .math-strip {
+      border: 1px solid rgba(124,58,237,.18);
+      background: rgba(124,58,237,.05);
+    }
+
+    .math-strip small {
+      display: block;
+      color: #6d28d9;
+      font-size: .77rem;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .math-line {
+      font-size: clamp(1.06rem, 2vw, 1.32rem);
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .kid-note {
+      border: 1px solid rgba(16,185,129,.18);
+      background: rgba(16,185,129,.055);
+      color: #334155;
+      font-size: .92rem;
+    }
+
+    .kid-note strong, .facts-card strong.title {
+      display: block;
+      color: #047857;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-size: .8rem;
+      margin-bottom: 4px;
+    }
+
+    .facts-card {
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+    }
+
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .fact {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      padding: 10px 11px;
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      color: #0f172a;
+      font-size: 1rem;
+    }
+
+    .explain-card {
+      margin-top: 18px;
+    }
+
+    .explain-card h2 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+      color: #475569;
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .big-box {
+      margin-top: 14px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid rgba(5,150,105,.24);
+      border-radius: 14px;
+      background: rgba(16,185,129,.055);
+      font-size: clamp(1.08rem, 2vw, 1.34rem);
+      font-weight: 800;
+      color: #065f46;
+      overflow-x: auto;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    mjx-container {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    @media (max-width: 920px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .control-grid { grid-template-columns: 1fr; }
+      .facts-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        width: min(100% - 18px, 1120px);
+        padding-top: 22px;
+      }
+      .visual-card, .side-card, .explain-card { padding: 13px; }
+      .stage-wrap { padding: 18px 10px; }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Maths • Fraction Division</div>
+    <h1>Fraction Division: How Many Small Pieces Fit?</h1>
+    <p class="subtitle">
+      To understand \(\frac34\div\frac18\), ask a simple question:
+      “How many pieces of size \(\frac18\) fit inside \(\frac34\)?”
+      The bar lets us see and count those pieces.
+    </p>
+    <div class="top-box" id="topBox">
+      \(\frac34\div\frac18=6\)
+    </div>
+  </header>
+
+  <section class="main-grid">
+    <div class="card visual-card">
+      <div class="control-grid">
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Fraction numerator</span>
+            <strong id="aReadout">3</strong>
+          </div>
+          <input id="aSlider" type="range" min="1" max="3" value="3" step="1" aria-label="Dividend numerator">
+
+          <div class="slider-head" style="margin-top:10px;">
+            <span>Fraction denominator</span>
+            <strong id="bReadout">4</strong>
+          </div>
+          <input id="bSlider" type="range" min="2" max="10" value="4" step="1" aria-label="Dividend denominator">
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Size of each small piece</span>
+            <strong id="dReadout">1/8</strong>
+          </div>
+          <input id="dSlider" type="range" min="2" max="12" value="8" step="1" aria-label="Unit fraction denominator">
+          <div style="color:#64748b;font-size:.82rem;margin-top:7px;">
+            We divide by a unit fraction \(\frac1d\).
+          </div>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button class="btn" id="resetBtn" type="button">↺ Reset</button>
+        <button class="btn" id="prevBtn" type="button">← Previous</button>
+        <button class="btn primary" id="nextBtn" type="button">Next →</button>
+      </div>
+
+      <div class="stage-wrap">
+        <div class="stage-badge" id="stageBadge">Step 1 of 4</div>
+
+        <div class="visual-inner">
+          <div class="bar-title" id="barTitle">Start with the whole bar</div>
+          <div class="fraction-bar" id="fractionBar"></div>
+          <div class="group-labels" id="groupLabels"></div>
+          <div class="count-row" id="countRow"></div>
+          <div class="stage-note" id="stageNote">
+            The whole bar represents 1.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="card side-card">
+      <div class="step-kicker" id="stepKicker">Step 1</div>
+      <h2 class="step-title" id="stepTitle">Start with one whole</h2>
+      <p class="step-copy" id="stepCopy">
+        The long rectangle is one whole. We will first mark \(\frac34\), and then cut the bar into eighths.
+      </p>
+
+      <div class="math-strip">
+        <small>Division sentence</small>
+        <div class="math-line" id="divisionEquation">\(\frac34\div\frac18=6\)</div>
+      </div>
+
+      <div class="kid-note">
+        <strong>What is happening?</strong>
+        <div id="kidExplanation">
+          Division asks “how many of these pieces fit?” We are going to count how many \(\frac18\)-pieces fit inside \(\frac34\).
+        </div>
+      </div>
+
+      <div class="facts-card">
+        <strong class="title">Quick facts</strong>
+        <div class="facts-grid">
+          <div class="fact">
+            <small>Starting fraction</small>
+            <strong id="factStart">\(\frac34\)</strong>
+          </div>
+          <div class="fact">
+            <small>Piece size</small>
+            <strong id="factPiece">\(\frac18\)</strong>
+          </div>
+          <div class="fact">
+            <small>Whole pieces that fit</small>
+            <strong id="factWhole">6</strong>
+          </div>
+          <div class="fact">
+            <small>Exact answer</small>
+            <strong id="factAnswer">\(6\)</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="big-box" id="bigBox">
+        \(\frac34=\frac68\), so six \(\frac18\)-pieces fit.
+      </div>
+    </aside>
+  </section>
+
+  <section class="card explain-card">
+    <h2>How to explain fraction division to small kids</h2>
+
+    <div class="proof-steps">
+      <div class="proof-step">
+        <b>Think “How many fit?”</b>
+        \(\frac34\div\frac18\) means:
+        “How many pieces of size \(\frac18\) fit inside \(\frac34\)?”
+      </div>
+
+      <div class="proof-step">
+        <b>Draw the starting amount.</b>
+        Shade \(\frac34\) of one whole bar.
+      </div>
+
+      <div class="proof-step">
+        <b>Cut the whole into eighths.</b>
+        When the bar is divided into 8 equal pieces, \(\frac34\) covers 6 of them.
+        So
+        \[
+          \frac34=\frac68.
+        \]
+      </div>
+
+      <div class="proof-step">
+        <b>Count the eighths.</b>
+        There are 6 pieces of size \(\frac18\) inside \(\frac34\).
+      </div>
+
+      <div class="proof-step">
+        <b>So the division answer is 6.</b>
+        \[
+          \boxed{\frac34\div\frac18=6}.
+        \]
+      </div>
+    </div>
+
+    <div class="big-box">
+      Division of fractions can be understood as:
+      <br>
+      <b>“How many pieces of this size fit inside that amount?”</b>
+    </div>
+  </section>
+
+  <p class="footer-note">
+    Kid-friendly interactive visual for dividing a fraction by a unit fraction.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const aSlider = document.getElementById("aSlider");
+  const bSlider = document.getElementById("bSlider");
+  const dSlider = document.getElementById("dSlider");
+
+  const aReadout = document.getElementById("aReadout");
+  const bReadout = document.getElementById("bReadout");
+  const dReadout = document.getElementById("dReadout");
+
+  const resetBtn = document.getElementById("resetBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const stageBadge = document.getElementById("stageBadge");
+  const barTitle = document.getElementById("barTitle");
+  const fractionBar = document.getElementById("fractionBar");
+  const groupLabels = document.getElementById("groupLabels");
+  const countRow = document.getElementById("countRow");
+  const stageNote = document.getElementById("stageNote");
+
+  const stepKicker = document.getElementById("stepKicker");
+  const stepTitle = document.getElementById("stepTitle");
+  const stepCopy = document.getElementById("stepCopy");
+  const divisionEquation = document.getElementById("divisionEquation");
+  const kidExplanation = document.getElementById("kidExplanation");
+
+  const factStart = document.getElementById("factStart");
+  const factPiece = document.getElementById("factPiece");
+  const factWhole = document.getElementById("factWhole");
+  const factAnswer = document.getElementById("factAnswer");
+  const bigBox = document.getElementById("bigBox");
+  const topBox = document.getElementById("topBox");
+
+  let step = 1;
+
+  function gcd(a,b) {
+    while (b) [a,b] = [b, a%b];
+    return a;
+  }
+
+  function lcm(a,b) {
+    return a / gcd(a,b) * b;
+  }
+
+  function typesetMath(targets) {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise(targets).catch(() => {});
+    }
+  }
+
+  function getState() {
+    const b = Number(bSlider.value);
+    aSlider.max = String(b - 1);
+    if (Number(aSlider.value) >= b) aSlider.value = String(b - 1);
+
+    const a = Number(aSlider.value);
+    const d = Number(dSlider.value);
+
+    const common = lcm(b,d);
+    const shadedCells = a * (common / b);
+    const cellsPerPiece = common / d;
+
+    const exactNum = a * d;
+    const exactDen = b;
+    const g = gcd(exactNum, exactDen);
+    const ansNum = exactNum / g;
+    const ansDen = exactDen / g;
+
+    const fullPieces = Math.floor(shadedCells / cellsPerPiece);
+    const remainderCells = shadedCells % cellsPerPiece;
+
+    return {
+      a,b,d,common,shadedCells,cellsPerPiece,
+      fullPieces,remainderCells,ansNum,ansDen
+    };
+  }
+
+  function renderBar() {
+    const s = getState();
+
+    fractionBar.innerHTML = "";
+    fractionBar.style.gridTemplateColumns = `repeat(${s.common}, 1fr)`;
+
+    groupLabels.innerHTML = "";
+    groupLabels.style.gridTemplateColumns = `repeat(${s.d}, 1fr)`;
+
+    countRow.innerHTML = "";
+
+    for (let i=0; i<s.common; i++) {
+      const cell = document.createElement("div");
+      cell.className = "bar-cell";
+
+      if (step >= 2 && i < s.shadedCells) {
+        cell.classList.add("shaded");
+      }
+
+      if (step >= 4 && i < s.shadedCells) {
+        const pieceIndex = Math.floor(i / s.cellsPerPiece);
+        const pieceEnd = (pieceIndex + 1) * s.cellsPerPiece;
+
+        if (pieceEnd <= s.shadedCells) cell.classList.add("fit");
+        else cell.classList.add("partial");
+      }
+
+      fractionBar.appendChild(cell);
+    }
+
+    if (step >= 3) {
+      for (let p=0; p<s.d; p++) {
+        const label = document.createElement("div");
+        label.className = "group-label";
+        label.innerHTML = `\\(\\frac1{${s.d}}\\)`;
+        groupLabels.appendChild(label);
+      }
+    }
+
+    if (step >= 4) {
+      for (let p=1; p<=s.fullPieces; p++) {
+        const chip = document.createElement("div");
+        chip.className = "piece-chip";
+        chip.textContent = String(p);
+        countRow.appendChild(chip);
+      }
+
+      if (s.remainderCells > 0) {
+        const chip = document.createElement("div");
+        chip.className = "piece-chip partial";
+        chip.textContent = "part";
+        countRow.appendChild(chip);
+      }
+    }
+
+    typesetMath([groupLabels]);
+  }
+
+  function renderText() {
+    const s = getState();
+
+    aReadout.textContent = String(s.a);
+    bReadout.textContent = String(s.b);
+    dReadout.textContent = `1/${s.d}`;
+
+    stageBadge.textContent = `Step ${step} of 4`;
+    stepKicker.textContent = `Step ${step}`;
+
+    const answerLatex = s.ansDen === 1
+      ? `${s.ansNum}`
+      : `\\frac{${s.ansNum}}{${s.ansDen}}`;
+
+    divisionEquation.innerHTML =
+      `\\(\\frac{${s.a}}{${s.b}}\\div\\frac1{${s.d}}=${answerLatex}\\)`;
+
+    factStart.innerHTML = `\\(\\frac{${s.a}}{${s.b}}\\)`;
+    factPiece.innerHTML = `\\(\\frac1{${s.d}}\\)`;
+    factWhole.textContent = String(s.fullPieces);
+    factAnswer.innerHTML = `\\(${answerLatex}\\)`;
+
+    topBox.innerHTML =
+      `\\(\\frac{${s.a}}{${s.b}}\\div\\frac1{${s.d}}=${answerLatex}\\)`;
+
+    const convertedNum = s.shadedCells;
+    const convertedDen = s.common;
+
+    if (step === 1) {
+      barTitle.textContent = "One whole bar";
+      stageNote.textContent = "The entire bar represents 1.";
+
+      stepTitle.textContent = "Start with one whole";
+      stepCopy.innerHTML =
+        `The long rectangle is one whole. We want to see how many pieces of size \\(\\frac1{${s.d}}\\) fit inside \\(\\frac{${s.a}}{${s.b}}\\).`;
+
+      kidExplanation.innerHTML =
+        `Fraction division can mean “How many pieces fit?” Here we ask how many \\(\\frac1{${s.d}}\\)-pieces fit inside \\(\\frac{${s.a}}{${s.b}}\\).`;
+    }
+
+    if (step === 2) {
+      barTitle.textContent = `Shade the starting fraction`;
+      stageNote.textContent = `The blue part is the amount we have.`;
+
+      stepTitle.textContent = `Shade the starting amount`;
+      stepCopy.innerHTML =
+        `We shade \\(\\frac{${s.a}}{${s.b}}\\) of the whole bar. This is the amount we want to divide into smaller pieces.`;
+
+      kidExplanation.innerHTML =
+        `Think of the blue part as the amount of chocolate, ribbon, or pizza we have. Now we want to cut it into pieces of size \\(\\frac1{${s.d}}\\).`;
+    }
+
+    if (step === 3) {
+      barTitle.textContent = `Cut the whole into ${s.d} equal pieces`;
+      stageNote.textContent =
+        `Each marked piece is 1/${s.d} of the whole.`;
+
+      stepTitle.textContent = `Make pieces of the divisor size`;
+      stepCopy.innerHTML =
+        `To divide by \\(\\frac1{${s.d}}\\), cut the whole into ${s.d} equal pieces. Each piece now has exactly the size of the divisor.`;
+
+      kidExplanation.innerHTML =
+        `Now the question is easy to see: how many of these equal \\(\\frac1{${s.d}}\\)-pieces lie inside the blue part?`;
+    }
+
+    if (step === 4) {
+      barTitle.textContent = `Count how many pieces fit`;
+      stageNote.textContent =
+        s.remainderCells === 0
+          ? `${s.fullPieces} whole pieces fit exactly.`
+          : `${s.fullPieces} whole pieces fit, plus part of one more.`;
+
+      stepTitle.textContent = `Count the pieces`;
+      stepCopy.innerHTML =
+        s.remainderCells === 0
+          ? `The shaded amount contains exactly ${s.fullPieces} pieces of size \\(\\frac1{${s.d}}\\).`
+          : `The shaded amount contains ${s.fullPieces} full pieces of size \\(\\frac1{${s.d}}\\), plus part of another piece.`;
+
+      kidExplanation.innerHTML =
+        s.remainderCells === 0
+          ? `So we can literally count the answer: ${s.fullPieces}. That is why \\(\\frac{${s.a}}{${s.b}}\\div\\frac1{${s.d}}=${s.fullPieces}\\).`
+          : `The answer is not a whole number this time, because the shaded amount ends in the middle of one \\(\\frac1{${s.d}}\\)-piece. The exact answer is \\(${answerLatex}\\).`;
+    }
+
+    bigBox.innerHTML =
+      `\\(\\frac{${s.a}}{${s.b}}=\\frac{${convertedNum}}{${convertedDen}}\\)` +
+      (s.common === s.d
+        ? `, so ${convertedNum} pieces of size \\(\\frac1{${s.d}}\\) are visible.`
+        : `, shown on a common partition into ${s.common} equal parts.`);
+
+    prevBtn.disabled = step === 1;
+    nextBtn.disabled = step === 4;
+
+    typesetMath([
+      divisionEquation, factStart, factPiece, factAnswer, topBox,
+      stepCopy, kidExplanation, bigBox
+    ]);
+  }
+
+  function render() {
+    renderBar();
+    renderText();
+  }
+
+  aSlider.addEventListener("input", render);
+  bSlider.addEventListener("input", render);
+  dSlider.addEventListener("input", render);
+
+  resetBtn.addEventListener("click", () => {
+    step = 1;
+    aSlider.value = "3";
+    bSlider.value = "4";
+    dSlider.value = "8";
+    render();
+  });
+
+  prevBtn.addEventListener("click", () => {
+    if (step > 1) {
+      step--;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    if (step < 4) {
+      step++;
+      render();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

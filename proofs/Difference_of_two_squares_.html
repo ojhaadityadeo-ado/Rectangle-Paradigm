@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Difference of Squares</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* SVG Visualization Area */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 650px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* SVG Element Styles */
+        .poly-base {
+            fill: rgba(191, 219, 254, 0.6); /* blue-200 */
+            stroke: #2563eb; /* blue-600 */
+            stroke-width: 2;
+            stroke-linejoin: round;
+        }
+        
+        .poly-moving {
+            fill: rgba(253, 230, 138, 0.7); /* orange-200 */
+            stroke: #ea580c; /* orange-600 */
+            stroke-width: 2;
+            stroke-linejoin: round;
+        }
+
+        .poly-missing {
+            fill: rgba(254, 226, 226, 0.5); /* red-200 */
+            stroke: #dc2626; /* red-600 */
+            stroke-width: 2;
+            stroke-dasharray: 6 4;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .poly-full {
+            fill: none;
+            stroke: #16a34a; /* green-600 */
+            stroke-width: 2;
+            stroke-dasharray: 6 4;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .cut-line {
+            stroke: #475569;
+            stroke-width: 2.5;
+            stroke-dasharray: 8 6;
+            stroke-linecap: round;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dim-line {
+            stroke: #334155;
+            stroke-width: 1.5;
+            fill: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .dim-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            fill: #1e293b;
+            text-anchor: middle;
+            dominant-baseline: central;
+            transition: opacity 0.4s ease;
+        }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #0284c7;
+            color: white;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #0369a1; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Input styling */
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Difference of Two Squares
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-blue-50 text-blue-950 rounded-lg mb-6 shadow-sm border border-blue-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$N = x \times y$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            
+            <div class="flex items-center gap-6">
+                <!-- X Input -->
+                <div class="flex flex-col items-center gap-1.5 w-24">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Factor 1 ($x$)</label>
+                    <div class="flex items-center bg-white border border-slate-300 rounded-md overflow-hidden shadow-sm">
+                        <button class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold border-r border-slate-300" onclick="adjustValue('inX', -2)">-</button>
+                        <input type="number" id="inX" value="7" min="3" step="2" class="w-10 text-center font-bold text-blue-700 outline-none" readonly>
+                        <button class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold border-l border-slate-300" onclick="adjustValue('inX', 2)">+</button>
+                    </div>
+                </div>
+
+                <div class="text-xl font-bold text-slate-300">&times;</div>
+
+                <!-- Y Input -->
+                <div class="flex flex-col items-center gap-1.5 w-24">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Factor 2 ($y$)</label>
+                    <div class="flex items-center bg-white border border-slate-300 rounded-md overflow-hidden shadow-sm">
+                        <button class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold border-r border-slate-300" onclick="adjustValue('inY', -2)">-</button>
+                        <input type="number" id="inY" value="3" min="1" step="2" class="w-10 text-center font-bold text-orange-600 outline-none" readonly>
+                        <button class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold border-l border-slate-300" onclick="adjustValue('inY', 2)">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-blue-700 font-bold text-lg bg-blue-100 px-3 py-1 rounded-md border border-blue-200">0 / 3</span>
+                </div>
+                <button id="playBtn" class="btn-action btn-play">▶ Play Auto</button>
+                <button id="prevBtn" class="btn-action btn-secondary" disabled>← Prev</button>
+                <button id="nextBtn" class="btn-action btn-secondary">Next →</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- SVG Visualization Window -->
+            <div class="lg:col-span-2 visualization-area mb-0">
+                <div class="svg-container">
+                    <svg id="proofSvg" viewBox="0 0 800 600">
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 2 L 10 5 L 0 8 z" fill="#334155" />
+                            </marker>
+                            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <rect width="20" height="20" fill="none" stroke="#e2e8f0" stroke-width="1" />
+                            </pattern>
+                        </defs>
+                        
+                        <rect width="100%" height="100%" fill="url(#grid)" />
+
+                        <!-- Content dynamically injected here -->
+                        <g id="svgContent"></g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Explanation Box Sidebar -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
+                <h3 class="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3 mb-4" id="stepTitle">1. The Original Rectangle</h3>
+                <p class="text-slate-600 text-[15px] leading-relaxed min-h-[140px]" id="stepDesc">
+                    Select <strong>Play Auto</strong> or <strong>Next</strong> to start the visual proof.
+                </p>
+                <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 text-center shadow-inner">
+                    <p class="text-sm font-semibold text-slate-500 mb-1">Definitions:</p>
+                    <p class="text-slate-800 font-bold font-mono text-sm">Average ($S$) = $\frac{x+y}{2}$</p>
+                    <p class="text-slate-800 font-bold font-mono text-sm mt-1">Difference ($D$) = $\frac{x-y}{2}$</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Insight</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        Every odd composite number $N$ can be factored into two odd integers $x$ and $y$ such that $N = x \times y$ (where $x > y \ge 1$). This algebraically forms a rectangle of area $N$.
+                    </p>
+                    <p class="mb-4">
+                        Because $x$ and $y$ are both odd, their sum ($x+y$) and their difference ($x-y$) are always <em>even</em> numbers. This guarantees that the average $S$ and the distance $D$ are perfect integers.
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">The Transformation</h3>
+                    <p class="text-sm mb-2">Notice that the original width is exactly $x = S + D$ and the height is exactly $y = S - D$.</p>
+                    <p class="text-sm mb-2">If we split the rectangle vertically into a left block of width $S$ and a right block of width $D$, we can detach the right block.</p>
+                    <p class="text-sm">By rotating this right block $90^\circ$ and placing it at the bottom, the pieces perfectly bound a large square of side $S$, missing exactly a small square of side $D$ in the corner!</p>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-blue-200 bg-blue-50 rounded-xl mt-6">
+                <p class="text-2xl font-bold text-blue-800">
+                    $$ x \cdot y = \left(\frac{x+y}{2}\right)^2 - \left(\frac{x-y}{2}\right)^2 = S^2 - D^2 $$
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // State variables
+        let state = {
+            x: 7, y: 3, S: 5, D: 2,
+            currentStep: 0, maxSteps: 3,
+            isAnimating: false,
+            autoPlaying: false,
+            animProgress: 0,
+            animationId: null,
+            autoTimer: null
+        };
+
+        const svgContent = document.getElementById('svgContent');
+        const stepIndicator = document.getElementById('stepIndicator');
+        const playBtn = document.getElementById('playBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const liveEq = document.getElementById('liveEq');
+        const stepTitle = document.getElementById('stepTitle');
+        const stepDesc = document.getElementById('stepDesc');
+
+        // Text Content
+        const stepData = [
+            {
+                title: "1. The Original Rectangle",
+                desc: "We start with a rectangle of width $x$ and height $y$. Its total area is $N = x \times y$."
+            },
+            {
+                title: "2. The Split",
+                desc: "We split the width $x$ into two parts: the average $S$ and the difference $D$. Note that $x = S + D$."
+            },
+            {
+                title: "3. The Transformation",
+                desc: "We cut the rightmost block (width $D$, height $y$) and rotate it by $90^\\circ$."
+            },
+            {
+                title: "4. The Difference of Squares",
+                desc: "Placing the rotated block at the bottom fits perfectly because the left block's height is $y$, and the rotated block's width is $y$. Together, they form a large square $S^2$ missing a smaller square $D^2$."
+            }
+        ];
+
+        // Ensure valid odd inputs where x > y
+        window.adjustValue = function(id, delta) {
+            const input = document.getElementById(id);
+            let val = parseInt(input.value) + delta;
+            
+            if (id === 'inX') {
+                if (val <= state.y) val = state.y + 2;
+                state.x = val;
+            } else if (id === 'inY') {
+                if (val < 1) val = 1;
+                if (val >= state.x) val = state.x - 2;
+                state.y = val;
+            }
+            
+            input.value = val;
+            state.S = (state.x + state.y) / 2;
+            state.D = (state.x - state.y) / 2;
+            
+            stopAll();
+            state.animProgress = 1;
+            setStep(0);
+        };
+
+        function updateMathJax() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.texReset();
+                MathJax.typesetPromise().catch((err) => console.log(err.message));
+            }
+        }
+
+        // --- SVG Drawing Utilities ---
+        function drawBracket(x, y, w, label, isTop = true, color = "#334155") {
+            const dir = isTop ? -1 : 1;
+            return `
+                <path d="M ${x} ${y + 8*dir} L ${x} ${y} L ${x+w} ${y} L ${x+w} ${y + 8*dir}" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" stroke="${color}"/>
+                <text x="${x + w/2}" y="${y + 16*dir}" class="dim-text" fill="${color}" dominant-baseline="${isTop ? 'bottom' : 'hanging'}">${label}</text>
+            `;
+        }
+
+        function drawVertBracket(x, y, h, label, isLeft = true, color = "#334155") {
+            const dir = isLeft ? -1 : 1;
+            return `
+                <path d="M ${x + 8*dir} ${y} L ${x} ${y} L ${x} ${y+h} L ${x + 8*dir} ${y+h}" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" stroke="${color}"/>
+                <text x="${x + 16*dir}" y="${y + h/2}" class="dim-text" fill="${color}" text-anchor="${isLeft ? 'end' : 'start'}">${label}</text>
+            `;
+        }
+
+        function renderGeometry() {
+            const { x, y, S, D, currentStep, animProgress } = state;
+            
+            // Layout calculations
+            const CANVAS_W = 800;
+            const CANVAS_H = 600;
+            const PADDING = 100;
+            
+            // Calculate scale to fit max dimension S
+            const maxDim = Math.max(x, S);
+            const scale = Math.min((CANVAS_W - PADDING*2) / maxDim, (CANVAS_H - PADDING*2) / S);
+            
+            const pxX = x * scale;
+            const pxY = y * scale;
+            const pxS = S * scale;
+            const pxD = D * scale;
+
+            // Center the final S x S square in the canvas
+            const originX = (CANVAS_W - pxS) / 2;
+            const originY = (CANVAS_H - pxS) / 2;
+
+            let html = '';
+
+            // Block A (Left block, width S, height y)
+            html += `<rect x="${originX}" y="${originY}" width="${pxS}" height="${pxY}" class="poly-base" />`;
+
+            // Block B Animation Logic
+            let bX = originX + pxS;
+            let bY = originY;
+            let bRot = 0;
+            let pivotX = originX + pxS;
+            let pivotY = originY;
+
+            if (currentStep >= 2) {
+                // Animate progress 0 to 1
+                const p = (currentStep === 2) ? animProgress : 1;
+                // Easing
+                const easeP = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
+                
+                bRot = easeP * 90; 
+                const transY = easeP * pxY;
+
+                html += `
+                    <g style="transform: translate(0px, ${transY}px) rotate(${bRot}deg); transform-origin: ${pivotX}px ${pivotY}px;">
+                        <rect x="${bX}" y="${bY}" width="${pxD}" height="${pxY}" class="poly-moving" />
+                    </g>
+                `;
+            } else {
+                html += `<rect x="${bX}" y="${bY}" width="${pxD}" height="${pxY}" class="poly-moving" />`;
+            }
+
+            // Cut Line (Step 1)
+            const cutOpacity = (currentStep === 1) ? 1 : 0;
+            html += `<line x1="${originX + pxS}" y1="${originY}" x2="${originX + pxS}" y2="${originY + pxY}" class="cut-line" style="opacity: ${cutOpacity};" />`;
+
+            // Missing D x D Square & Full S x S bounding box (Step 3)
+            const finalOpacity = (currentStep === 3) ? 1 : 0;
+            html += `
+                <rect x="${originX}" y="${originY}" width="${pxS}" height="${pxS}" class="poly-full" style="opacity: ${finalOpacity};" />
+                <rect x="${originX}" y="${originY + pxY}" width="${pxD}" height="${pxD}" class="poly-missing" style="opacity: ${finalOpacity};" />
+            `;
+
+            // --- Labels & Dimensions ---
+            
+            // Left bracket (Always present, height y initially, height S finally)
+            const hLeft = (currentStep === 3) ? pxS : pxY;
+            const labelLeft = (currentStep === 3) ? `S = ${S}` : `y = ${y}`;
+            html += drawVertBracket(originX - 15, originY, hLeft, labelLeft, true, "#2563eb");
+
+            // Top bracket (Width x initially, Width S finally)
+            if (currentStep === 0) {
+                html += drawBracket(originX, originY - 15, pxX, `x = ${x}`, true, "#2563eb");
+            } else {
+                html += drawBracket(originX, originY - 15, pxS, `S = ${S}`, true, "#16a34a");
+                // Label D for the moving piece if it's still attached at the top
+                if (currentStep < 2) {
+                    html += drawBracket(originX + pxS, originY - 15, pxD, `D = ${D}`, true, "#ea580c");
+                }
+            }
+
+            // Missing Square Labels (Step 3)
+            if (currentStep === 3) {
+                html += drawBracket(originX, originY + pxS + 15, pxD, `D = ${D}`, false, "#dc2626");
+                html += drawVertBracket(originX + pxD + 15, originY + pxY, pxD, `D = ${D}`, false, "#dc2626");
+                // Label "Area = D²" inside missing box
+                html += `<text x="${originX + pxD/2}" y="${originY + pxY + pxD/2}" class="dim-text" fill="#dc2626">D²</text>`;
+            }
+
+            svgContent.innerHTML = html;
+        }
+
+        function updateUI() {
+            const { x, y, S, D, currentStep, maxSteps } = state;
+            stepIndicator.textContent = `${currentStep} / ${maxSteps}`;
+
+            stepTitle.innerHTML = stepData[currentStep].title;
+            stepDesc.innerHTML = stepData[currentStep].desc;
+
+            let eq = "";
+            if (currentStep === 0) eq = `$$\\text{Area} = ${x} \\times ${y} = ${x*y}$$`;
+            else if (currentStep === 1) eq = `$$x = S + D \\implies ${x} = ${S} + ${D}$$`;
+            else if (currentStep === 2) eq = `$$\\text{Rearranging pieces...}$$`;
+            else eq = `$$\\text{Area} = S^2 - D^2 = ${S}^2 - ${D}^2 = ${x*y}$$`;
+
+            liveEq.innerHTML = eq;
+            updateMathJax();
+
+            prevBtn.disabled = currentStep === 0 || state.isAnimating || state.autoPlaying;
+            if (currentStep >= maxSteps) {
+                nextBtn.innerHTML = "Finish";
+                nextBtn.classList.replace('btn-play', 'btn-secondary');
+                nextBtn.disabled = true;
+            } else {
+                nextBtn.innerHTML = "Next →";
+                nextBtn.classList.replace('btn-secondary', 'btn-play');
+                nextBtn.disabled = state.isAnimating || state.autoPlaying;
+            }
+        }
+
+        function animate() {
+            if (state.animProgress < 1) {
+                state.animProgress += 0.025; // Animation speed
+                if (state.animProgress > 1) state.animProgress = 1;
+                renderGeometry();
+                state.animationId = requestAnimationFrame(animate);
+            } else {
+                state.isAnimating = false;
+                if (state.currentStep === 2) {
+                    setStep(3); // Auto advance to final step after rotation
+                } else {
+                    updateUI();
+                }
+            }
+        }
+
+        function setStep(step) {
+            if (state.isAnimating) return;
+            state.currentStep = step;
+            
+            if (step === 2) {
+                state.animProgress = 0;
+                state.isAnimating = true;
+                updateUI();
+                animate();
+            } else {
+                state.animProgress = 1;
+                renderGeometry();
+                updateUI();
+            }
+        }
+
+        function stopAuto() {
+            state.autoPlaying = false;
+            if (state.autoTimer) {
+                clearTimeout(state.autoTimer);
+                state.autoTimer = null;
+            }
+            playBtn.innerHTML = '▶ Play Auto';
+            playBtn.classList.remove('btn-secondary');
+            playBtn.classList.add('btn-play');
+        }
+
+        function stopAll() {
+            stopAuto();
+            state.isAnimating = false;
+            if (state.animationId) {
+                cancelAnimationFrame(state.animationId);
+                state.animationId = null;
+            }
+        }
+
+        playBtn.addEventListener('click', () => {
+            if (state.autoPlaying) {
+                stopAuto();
+                updateUI();
+                return;
+            }
+
+            if (state.currentStep >= state.maxSteps) {
+                state.isAnimating = false;
+                state.currentStep = 0;
+                state.animProgress = 1;
+                renderGeometry();
+                updateUI();
+            }
+
+            state.autoPlaying = true;
+            playBtn.innerHTML = '⏸ Pause';
+            playBtn.classList.remove('btn-play');
+            playBtn.classList.add('btn-secondary');
+            updateUI();
+
+            const advanceAuto = () => {
+                if (!state.autoPlaying) return;
+
+                // Let the cut/rotation animation finish before moving on.
+                if (state.isAnimating) {
+                    state.autoTimer = setTimeout(advanceAuto, 120);
+                    return;
+                }
+
+                if (state.currentStep < state.maxSteps) {
+                    const targetStep = state.currentStep + 1;
+                    setStep(targetStep);
+                    state.autoTimer = setTimeout(
+                        advanceAuto,
+                        targetStep === 2 ? 2200 : 1300
+                    );
+                } else {
+                    stopAuto();
+                    updateUI();
+                }
+            };
+
+            state.autoTimer = setTimeout(advanceAuto, 450);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            stopAuto();
+            updateUI();
+            if (!state.isAnimating && state.currentStep < state.maxSteps) {
+                setStep(state.currentStep + 1);
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            stopAuto();
+            updateUI();
+            if (!state.isAnimating && state.currentStep > 0) {
+                setStep(state.currentStep - 1);
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            stopAll();
+            state.animProgress = 1;
+            setStep(0);
+        });
+
+        // Init
+        function initPage() {
+            state.S = (state.x + state.y) / 2;
+            state.D = (state.x - state.y) / 2;
+            setStep(0);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPage, { once: true });
+        } else {
+            initPage();
+        }
+    </script>
+</body>
+</html>

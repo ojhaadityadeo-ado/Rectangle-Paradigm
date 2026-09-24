@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Integral Bounds Inequality</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.4s ease-out; }
+        .geom-line { transition: all 0.4s ease-out; }
+        .geom-path { transition: opacity 0.4s ease, d 0.4s ease-out; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-chart-area text-indigo-600 text-2xl"></i> Visual Proof: Integral Bounds
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Bounding the area of a definite integral using rectangles formed by the infimum and supremum of the function.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap">
+                $$ m(b-a) \le \int_{a}^{b} f(x)\,dx \le M(b-a) $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-4xl">
+                
+                <!-- A Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[200px] bg-white p-2 rounded border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Bound <span class="math-font text-sm normal-case text-slate-700">a</span></span>
+                        <span id="valA" class="text-slate-700 font-mono text-sm font-bold">1.0</span>
+                    </div>
+                    <input type="range" id="sliderA" value="1.0" min="0.0" max="5.0" step="0.1" class="w-full">
+                </div>
+
+                <!-- B Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[200px] bg-white p-2 rounded border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Bound <span class="math-font text-sm normal-case text-slate-700">b</span></span>
+                        <span id="valB" class="text-slate-700 font-mono text-sm font-bold">4.5</span>
+                    </div>
+                    <input type="range" id="sliderB" value="4.5" min="1.0" max="6.2" step="0.1" class="w-full">
+                </div>
+
+                <!-- Live Area Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Lower Rect</span>
+                        <span class="font-mono text-sm font-bold text-amber-600" id="stat-lower">0.00</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Exact Integral</span>
+                        <span class="font-mono text-sm font-bold text-emerald-600" id="stat-exact">0.00</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Upper Rect</span>
+                        <span class="font-mono text-sm font-bold text-sky-600" id="stat-upper">0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 6</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[550px]" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Grid pattern -->
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="0.5"/>
+                        </pattern>
+                        <!-- Hatch pattern for Exact Area -->
+                        <pattern id="hatchExact" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Background Grid -->
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+
+                    <!-- Axes -->
+                    <g id="axes">
+                        <!-- X Axis -->
+                        <line x1="60" y1="420" x2="760" y2="420" stroke="#334155" stroke-width="2.5" />
+                        <polygon points="760,416 768,420 760,424" fill="#334155" />
+                        <text x="750" y="445" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="18" fill="#334155">x</text>
+                        
+                        <!-- Y Axis -->
+                        <line x1="80" y1="440" x2="80" y2="40" stroke="#334155" stroke-width="2.5" />
+                        <polygon points="76,40 80,32 84,40" fill="#334155" />
+                        <text x="60" y="50" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="18" fill="#334155">y</text>
+                        
+                        <!-- Origin -->
+                        <text x="65" y="440" font-family="Times New Roman" font-size="14" fill="#64748b">0</text>
+                    </g>
+
+                    <!-- Dynamic Elements -->
+                    <g id="dynamic-layers">
+                        
+                        <!-- Exact Area (Hatched Region) -->
+                        <path id="path-exact" class="geom-path fade" fill="url(#hatchExact)" opacity="0" />
+
+                        <!-- Full Function Curve (Faint) -->
+                        <path id="curve-full" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" />
+
+                        <!-- Upper Rectangle M(b-a) -->
+                        <rect id="rect-upper" class="geom-rect fade" fill="rgba(14, 165, 233, 0.15)" stroke="#0284c7" stroke-width="2.5" opacity="0" />
+                        
+                        <!-- Lower Rectangle m(b-a) -->
+                        <rect id="rect-lower" class="geom-rect fade" fill="rgba(245, 158, 11, 0.3)" stroke="#d97706" stroke-width="2.5" opacity="0" />
+
+                        <!-- Active Function Segment [a,b] -->
+                        <path id="curve-active" fill="none" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+
+                        <!-- Interval Markers [a, b] -->
+                        <line id="line-a" class="geom-line" stroke="#334155" stroke-width="2" stroke-dasharray="4,4" />
+                        <line id="line-b" class="geom-line" stroke="#334155" stroke-width="2" stroke-dasharray="4,4" />
+                        
+                        <!-- Labels for a, b -->
+                        <text id="lbl-a" class="geom-text math-font font-bold text-slate-800 text-lg" text-anchor="middle" dominant-baseline="top" y="435">a</text>
+                        <text id="lbl-b" class="geom-text math-font font-bold text-slate-800 text-lg" text-anchor="middle" dominant-baseline="top" y="435">b</text>
+
+                        <!-- Infimum (m) Guide -->
+                        <g id="guide-min" class="fade" opacity="0">
+                            <line id="line-min" class="geom-line" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6,4" />
+                            <circle id="pt-min" r="5" fill="#d97706" />
+                            <text id="lbl-m" class="geom-text math-font font-bold text-amber-700 text-lg" text-anchor="end" dominant-baseline="middle" x="70">m</text>
+                        </g>
+
+                        <!-- Supremum (M) Guide -->
+                        <g id="guide-max" class="fade" opacity="0">
+                            <line id="line-max" class="geom-line" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="6,4" />
+                            <circle id="pt-max" r="5" fill="#0284c7" />
+                            <text id="lbl-M" class="geom-text math-font font-bold text-sky-700 text-lg" text-anchor="end" dominant-baseline="middle" x="70">M</text>
+                        </g>
+
+                        <!-- Function Label -->
+                        <text x="320" y="80" class="math-font fade" font-weight="bold" font-size="20" fill="#4338ca">y = f(x)</text>
+
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Integration Process</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Interval</span>
+                            <span class="text-xs text-slate-600">Consider a continuous function $f(x)$ strictly defined over the bounded interval $[a, b]$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-emerald-700 block mb-1">2. The Definite Integral</span>
+                            <span class="text-xs text-slate-600">The exact value of the integral $\int_a^b f(x)\,dx$ is represented by the true shaded area under the curve.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-slate-800 block mb-1">3. The Infimum ($m$)</span>
+                            <span class="text-xs text-slate-600">Find the absolute lowest value the function reaches within the interval, denoted as $m = \inf f(x)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-700 block mb-1">4. The Lower Bound</span>
+                            <span class="text-xs text-slate-600">Construct a rectangle of width $(b-a)$ and height $m$. Because $m \le f(x)$ everywhere on the interval, this rectangle fits entirely under the curve. Area = $m(b-a)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. The Supremum ($M$)</span>
+                            <span class="text-xs text-slate-600">Find the absolute highest value the function reaches within the interval, denoted as $M = \sup f(x)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-sky-700 block mb-1">6. The Upper Bound</span>
+                            <span class="text-xs text-slate-600">Construct a rectangle of width $(b-a)$ and height $M$. Because $M \ge f(x)$ everywhere, this rectangle completely encapsulates the curve area. Area = $M(b-a)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-6">
+                            <span class="font-bold text-indigo-700 block mb-1">7. Conclusion</span>
+                            <span class="text-xs text-slate-600">Visually overlaying all three reveals a strict ordering of areas. The integral is bounded by the inscribed and circumscribed rectangles!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Context Box -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust bounds $a$ and $b$. Press <strong>Play</strong> to visualize how extreme values bound the integral.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Mathematical Formulation</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Theoretical Bounds -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">1. Properties of the Function</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        By the Extreme Value Theorem, if $f(x)$ is continuous on a closed interval $[a,b]$, it must attain an absolute minimum $m$ and an absolute maximum $M$. Therefore, for all $x \in [a,b]$:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ m \le f(x) \le M $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        This guarantees that the curve is structurally restricted between two horizontal lines $y=m$ and $y=M$.
+                    </p>
+                </div>
+
+                <!-- Right: Definite Integral -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Integration Preserves Inequality</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        A fundamental property of the Riemann Integral states that if $g(x) \le f(x) \le h(x)$ on an interval, then the integrals of the functions follow the same inequality. Taking the integral of our bounds:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \int_{a}^{b} m\,dx \le \int_{a}^{b} f(x)\,dx \le \int_{a}^{b} M\,dx $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Since $m$ and $M$ are constants, integrating them simply yields the area of rectangles, completing our proof: $m(b-a) \le \int f(x) \le M(b-a)$.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            a: 1.0,
+            b: 4.5,
+            step: 0,
+            maxSteps: 6,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Mathematical Function: f(x) = sin(x) + 2 over interval [0, 2pi]
+        const mathConf = {
+            domainMin: 0,
+            domainMax: 6.28,
+            f: (x) => Math.sin(x) + 2,
+            // Analytical Integral for Area: -cos(x) + 2x
+            integral: (x) => -Math.cos(x) + 2 * x
+        };
+
+        // SVG Mapping Constants
+        const svgConf = {
+            viewW: 800,
+            viewH: 500,
+            padX: 80,   // Left padding for Y axis
+            padY: 80,   // Bottom padding for X axis
+            graphW: 680, // Math width 6.28 maps to 680px
+            graphH: 350, // Math height 3.5 maps to 350px
+            yMax: 3.5    // function max is 3
+        };
+
+        // Core Coordinate Mapping Functions
+        const mapX = (x) => svgConf.padX + (x / mathConf.domainMax) * svgConf.graphW;
+        const mapY = (y) => (svgConf.viewH - svgConf.padY) - (y / svgConf.yMax) * svgConf.graphH;
+        const mapW = (dx) => (dx / mathConf.domainMax) * svgConf.graphW;
+        const mapH = (y) => (y / svgConf.yMax) * svgConf.graphH;
+        const baseLineY = mapY(0);
+
+        // DOM Elements
+        const DOM = {
+            sliderA: document.getElementById('sliderA'), valA: document.getElementById('valA'),
+            sliderB: document.getElementById('sliderB'), valB: document.getElementById('valB'),
+            statLower: document.getElementById('stat-lower'), statExact: document.getElementById('stat-exact'), statUpper: document.getElementById('stat-upper'),
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                curveFull: document.getElementById('curve-full'), curveActive: document.getElementById('curve-active'),
+                pathExact: document.getElementById('path-exact'),
+                rectLower: document.getElementById('rect-lower'), rectUpper: document.getElementById('rect-upper'),
+                lineA: document.getElementById('line-a'), lineB: document.getElementById('line-b'),
+                lblA: document.getElementById('lbl-a'), lblB: document.getElementById('lbl-b'),
+                guideMin: document.getElementById('guide-min'), lineMin: document.getElementById('line-min'), ptMin: document.getElementById('pt-min'), lblM: document.getElementById('lbl-m'),
+                guideMax: document.getElementById('guide-max'), lineMax: document.getElementById('line-max'), ptMax: document.getElementById('pt-max'), lblM_upper: document.getElementById('lbl-M')
+            }
+        };
+
+        const descriptions = [
+            "Consider a continuous function $f(x)$ strictly defined over the bounded interval $[a, b]$.",
+            "The exact value of the integral $\\int_a^b f(x)\\,dx$ is represented by the true shaded area under the curve.",
+            "Find the absolute lowest value the function reaches within the interval, denoted as $m = \\inf f(x)$.",
+            "Construct a rectangle of width $(b-a)$ and height $m$. Because $m \\le f(x)$, this rectangle fits entirely under the curve.",
+            "Find the absolute highest value the function reaches within the interval, denoted as $M = \\sup f(x)$.",
+            "Construct a rectangle of width $(b-a)$ and height $M$. Because $M \\ge f(x)$, this completely encapsulates the curve area.",
+            "Visually overlaying all three reveals a strict ordering of areas: Lower Bound $\\le$ Exact Integral $\\le$ Upper Bound."
+        ];
+
+        function init() {
+            // Draw static background curve
+            drawFullCurve();
+
+            // Slider Listeners with collision constraints
+            DOM.sliderA.addEventListener('input', (e) => {
+                let v = parseFloat(e.target.value);
+                if (v >= state.b - 0.2) { v = state.b - 0.2; DOM.sliderA.value = v; }
+                state.a = v;
+                pauseAnimation();
+                updateGeometry();
+            });
+
+            DOM.sliderB.addEventListener('input', (e) => {
+                let v = parseFloat(e.target.value);
+                if (v <= state.a + 0.2) { v = state.a + 0.2; DOM.sliderB.value = v; }
+                state.b = v;
+                pauseAnimation();
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.a = 1.0; state.b = 4.5;
+                DOM.sliderA.value = 1.0; DOM.sliderB.value = 4.5;
+                setStep(0);
+                updateGeometry();
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function drawFullCurve() {
+            const steps = 200;
+            const dx = mathConf.domainMax / steps;
+            let pathD = `M ${mapX(0)} ${mapY(mathConf.f(0))} `;
+            
+            for (let i = 1; i <= steps; i++) {
+                const cx = i * dx;
+                pathD += `L ${mapX(cx)} ${mapY(mathConf.f(cx))} `;
+            }
+            DOM.svg.curveFull.setAttribute('d', pathD);
+        }
+
+        // Numerical analysis to find extrema on active interval
+        function getExtrema(a, b) {
+            let m = Infinity, M = -Infinity;
+            let xm = a, xM = a;
+            const steps = 100;
+            const dx = (b - a) / steps;
+            
+            for (let i = 0; i <= steps; i++) {
+                let x = a + i * dx;
+                let y = mathConf.f(x);
+                if (y < m) { m = y; xm = x; }
+                if (y > M) { M = y; xM = x; }
+            }
+            return { m, M, xm, xM };
+        }
+
+        function updateGeometry() {
+            const { a, b, step } = state;
+            
+            // Math computations
+            const { m, M, xm, xM } = getExtrema(a, b);
+            const exactArea = mathConf.integral(b) - mathConf.integral(a);
+            const lowerArea = m * (b - a);
+            const upperArea = M * (b - a);
+
+            // Update UI Texts
+            DOM.valA.textContent = a.toFixed(1);
+            DOM.valB.textContent = b.toFixed(1);
+            DOM.statLower.textContent = lowerArea.toFixed(2);
+            DOM.statExact.textContent = exactArea.toFixed(2);
+            DOM.statUpper.textContent = upperArea.toFixed(2);
+
+            // Pixel mappings
+            const pxA = mapX(a);
+            const pxB = mapX(b);
+            const width = mapW(b - a);
+            
+            // 1. Update Active Curve & Exact Area Path
+            const steps = 100;
+            const dx = (b - a) / steps;
+            let curveD = `M ${pxA} ${mapY(mathConf.f(a))} `;
+            let areaD = `M ${pxA} ${baseLineY} L ${pxA} ${mapY(mathConf.f(a))} `;
+            
+            for (let i = 1; i <= steps; i++) {
+                const cx = a + i * dx;
+                const sy = mapY(mathConf.f(cx));
+                curveD += `L ${mapX(cx)} ${sy} `;
+                areaD += `L ${mapX(cx)} ${sy} `;
+            }
+            areaD += `L ${pxB} ${baseLineY} Z`;
+
+            DOM.svg.curveActive.setAttribute('d', curveD);
+            DOM.svg.pathExact.setAttribute('d', areaD);
+
+            // 2. Vertical Bounds lines
+            DOM.svg.lineA.setAttribute('x1', pxA); DOM.svg.lineA.setAttribute('y1', baseLineY);
+            DOM.svg.lineA.setAttribute('x2', pxA); DOM.svg.lineA.setAttribute('y2', mapY(mathConf.f(a)));
+            DOM.svg.lblA.setAttribute('x', pxA);
+
+            DOM.svg.lineB.setAttribute('x1', pxB); DOM.svg.lineB.setAttribute('y1', baseLineY);
+            DOM.svg.lineB.setAttribute('x2', pxB); DOM.svg.lineB.setAttribute('y2', mapY(mathConf.f(b)));
+            DOM.svg.lblB.setAttribute('x', pxB);
+
+            // 3. Infimum (m) Guide
+            const pyM_low = mapY(m);
+            DOM.svg.ptMin.setAttribute('cx', mapX(xm)); DOM.svg.ptMin.setAttribute('cy', pyM_low);
+            DOM.svg.lineMin.setAttribute('x1', svgConf.padX); DOM.svg.lineMin.setAttribute('y1', pyM_low);
+            DOM.svg.lineMin.setAttribute('x2', mapX(xm)); DOM.svg.lineMin.setAttribute('y2', pyM_low);
+            DOM.svg.lblM.setAttribute('y', pyM_low - 2);
+
+            // 4. Lower Rectangle
+            DOM.svg.rectLower.setAttribute('x', pxA);
+            DOM.svg.rectLower.setAttribute('y', pyM_low);
+            DOM.svg.rectLower.setAttribute('width', width);
+            DOM.svg.rectLower.setAttribute('height', mapH(m));
+
+            // 5. Supremum (M) Guide
+            const pyM_high = mapY(M);
+            DOM.svg.ptMax.setAttribute('cx', mapX(xM)); DOM.svg.ptMax.setAttribute('cy', pyM_high);
+            DOM.svg.lineMax.setAttribute('x1', svgConf.padX); DOM.svg.lineMax.setAttribute('y1', pyM_high);
+            DOM.svg.lineMax.setAttribute('x2', mapX(xM)); DOM.svg.lineMax.setAttribute('y2', pyM_high);
+            DOM.svg.lblM_upper.setAttribute('y', pyM_high - 2);
+
+            // 6. Upper Rectangle
+            DOM.svg.rectUpper.setAttribute('x', pxA);
+            DOM.svg.rectUpper.setAttribute('y', pyM_high);
+            DOM.svg.rectUpper.setAttribute('width', width);
+            DOM.svg.rectUpper.setAttribute('height', mapH(M));
+
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            // Step 1: Exact Area
+            op(DOM.svg.pathExact, step >= 1 ? 1 : 0);
+            
+            // Step 2: Infimum Guide
+            op(DOM.svg.guideMin, step >= 2 ? 1 : 0);
+            
+            // Step 3: Lower Rectangle
+            op(DOM.svg.rectLower, step >= 3 ? 1 : 0);
+
+            // Step 4: Supremum Guide
+            op(DOM.svg.guideMax, step >= 4 ? 1 : 0);
+
+            // Step 5: Upper Rectangle
+            op(DOM.svg.rectUpper, step >= 5 ? 1 : 0);
+
+            // Step 6: Visual combination tweak. 
+            // When combined, we want lower rect solid, exact area translucent, upper rect outlines.
+            if (step === 6) {
+                DOM.svg.rectLower.style.fillOpacity = '0.5';
+                DOM.svg.pathExact.style.fillOpacity = '0.8';
+                DOM.svg.rectUpper.style.fillOpacity = '0.1';
+            } else {
+                DOM.svg.rectLower.style.fillOpacity = '0.3';
+                DOM.svg.pathExact.style.fillOpacity = '0.4';
+                DOM.svg.rectUpper.style.fillOpacity = '0.15';
+            }
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            applyStepOpacities(stepVal);
+
+            // Text Update
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

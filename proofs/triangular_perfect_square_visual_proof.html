@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual Proof: 8Tₙ + 1 = (2n + 1)²</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      startup: {
+        pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+          window.mathJaxLoaded = true;
+        })
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+
+    .container-custom {
+      max-width: 1280px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .svg-container {
+      background-color: #ffffff;
+      background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+      background-size: 24px 24px;
+      border-radius: 8px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+      border: 2px solid #cbd5e1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    input[type=range] {
+      accent-color: #4f46e5;
+      cursor: pointer;
+    }
+
+    .btn-action {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+      box-shadow: 0 4px 6px rgba(79,70,229,0.18);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #4338ca;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #cbd5e1;
+    }
+
+    .btn-action:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .ledger-step {
+      transition: all 0.3s ease;
+      border-left: 4px solid transparent;
+      opacity: 0.5;
+    }
+
+    .ledger-step.active {
+      background: #eff6ff;
+      border-left-color: #3b82f6;
+      box-shadow: 0 2px 5px rgba(59,130,246,0.05);
+      opacity: 1;
+    }
+
+    .piece-group {
+      transition: transform 0.9s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.45s ease;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .unit-cell {
+      stroke: rgba(255,255,255,0.96);
+      stroke-width: 1.3;
+      rx: 2.5;
+      ry: 2.5;
+    }
+
+    .piece-label {
+      font-family: 'Times New Roman', Times, serif;
+      font-style: italic;
+      font-weight: 700;
+      font-size: 18px;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .dim-text {
+      font-family: 'Times New Roman', Times, serif;
+      font-style: italic;
+      font-weight: 700;
+      fill: #334155;
+      font-size: 18px;
+    }
+
+    .soft-pulse {
+      animation: softPulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes softPulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .piece-group, .ledger-step { transition: none !important; }
+      .soft-pulse { animation: none !important; }
+    }
+  </style>
+</head>
+<body class="p-4 md:p-6">
+  <div class="container-custom">
+    <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+      <i class="fa-solid fa-border-all text-indigo-600 text-2xl"></i>
+      Visual Proof: $8T_n + 1$ is a Perfect Square
+    </h1>
+
+    <p class="text-center text-slate-500 text-sm mb-6 max-w-3xl mx-auto">
+      Eight identical triangular staircases, each containing $T_n=1+2+\cdots+n$ unit squares, fit around one central unit square to form a square of side $2n+1$.
+    </p>
+
+    <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 overflow-x-auto">
+      $$8T_n+1
+      =8\left(\frac{n(n+1)}{2}\right)+1
+      =4n(n+1)+1
+      =(2n+1)^2$$
+    </div>
+
+    <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-5">
+      <div class="flex flex-wrap gap-4 items-center justify-center flex-grow">
+        <div class="flex flex-col gap-1 w-full bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm max-w-md">
+          <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <span>Staircase Size</span>
+            <span id="valN" class="text-indigo-600 font-mono text-sm font-bold">n = 4</span>
+          </div>
+          <input type="range" id="sliderN" value="4" min="1" max="8" step="1" class="w-full" aria-label="Choose n" />
+          <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+            <span>smaller</span><span>larger</span>
+          </div>
+        </div>
+
+        <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex items-center gap-4 min-w-[270px] justify-center">
+          <div class="text-center">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Each piece</div>
+            <div class="text-indigo-700 font-semibold">$T_n$</div>
+          </div>
+          <div class="w-px h-8 bg-slate-200"></div>
+          <div class="text-center">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Copies</div>
+            <div class="text-emerald-700 font-semibold">$8$</div>
+          </div>
+          <div class="w-px h-8 bg-slate-200"></div>
+          <div class="text-center">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Center</div>
+            <div class="text-amber-700 font-semibold">$1$</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        <span class="font-semibold text-slate-700 text-sm">Step</span>
+        <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+        <button id="playBtn" class="btn-action btn-primary" type="button"><i class="fa-solid fa-play"></i> Auto</button>
+        <button id="nextBtn" class="btn-action btn-secondary" type="button">Next &rarr;</button>
+        <button id="resetBtn" class="btn-action btn-secondary" type="button" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+      <div class="lg:col-span-3 svg-container min-h-[560px] flex items-center justify-center">
+        <svg id="canvas" class="w-full h-full" viewBox="0 0 760 580" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Eight triangular staircases rearranging into an odd square">
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1.4" />
+            </pattern>
+            <marker id="arrowHead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+              <polygon points="0 0, 8 4, 0 8" fill="#64748b"></polygon>
+            </marker>
+          </defs>
+
+          <rect width="100%" height="100%" fill="url(#grid)"></rect>
+
+          <text id="visualCaption" x="380" y="42" text-anchor="middle" fill="#475569" font-size="14" font-weight="700">Start with one triangular staircase containing Tₙ unit squares.</text>
+
+          <g id="piecesLayer"></g>
+          <g id="centerLayer"></g>
+
+          <rect id="squareOutline" x="0" y="0" width="0" height="0" fill="none" stroke="#334155" stroke-width="3" stroke-dasharray="7 5" opacity="0"></rect>
+
+          <g id="dimensions" opacity="0">
+            <line id="dimTop" x1="0" y1="0" x2="0" y2="0" stroke="#64748b" stroke-width="1.6" marker-start="url(#arrowHead)" marker-end="url(#arrowHead)"></line>
+            <text id="dimTopLabel" class="dim-text" x="0" y="0" text-anchor="middle">2n + 1</text>
+
+            <line id="dimLeft" x1="0" y1="0" x2="0" y2="0" stroke="#64748b" stroke-width="1.6" marker-start="url(#arrowHead)" marker-end="url(#arrowHead)"></line>
+            <text id="dimLeftLabel" class="dim-text" x="0" y="0" text-anchor="middle">2n + 1</text>
+          </g>
+
+          <g id="finalBadge" opacity="0">
+            <rect x="225" y="510" width="310" height="44" rx="10" fill="#ecfdf5" stroke="#a7f3d0"></rect>
+            <text x="380" y="538" text-anchor="middle" fill="#065f46" font-size="19" font-weight="800">8Tₙ + 1 = (2n + 1)²</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="lg:col-span-2 flex flex-col gap-4">
+        <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+          <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800">Visual Rearrangement</h2>
+          <div id="ledger" class="space-y-2.5 text-sm">
+            <div class="ledger-step active p-3 rounded-lg border border-slate-200" id="ledger-0">
+              <span class="font-bold text-slate-800 block mb-1">1. One triangular staircase</span>
+              <span class="text-xs text-slate-600">A staircase with rows $1,2,\ldots,n$ contains exactly $T_n$ unit squares.</span>
+            </div>
+            <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+              <span class="font-bold text-indigo-700 block mb-1">2. Make eight identical copies</span>
+              <span class="text-xs text-slate-600">Eight congruent staircases contribute a total area of $8T_n$ unit squares.</span>
+            </div>
+            <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+              <span class="font-bold text-amber-700 block mb-1">3. Add one unit square</span>
+              <span class="text-xs text-slate-600">Place a single unit square at the center. The total area is now $8T_n+1$.</span>
+            </div>
+            <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+              <span class="font-bold text-emerald-700 block mb-1">4. Rearrange without gaps</span>
+              <span class="text-xs text-slate-600">Slide the eight staircases inward. Together with the center square, they exactly tile one larger square.</span>
+            </div>
+            <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+              <span class="font-bold text-slate-800 block mb-1">5. Read the side length</span>
+              <span class="text-xs text-slate-600">The completed square has $n$ cells on either side of the center, plus the center cell itself: side $2n+1$. Hence its area is $(2n+1)^2$.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+          <p id="statusText" class="text-sm text-indigo-950 leading-relaxed font-medium text-center" aria-live="polite">
+            One staircase has rows of lengths $1,2,\ldots,n$, so its area is $T_n$.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-slate-200 pt-8 mt-4">
+      <h3 class="text-2xl font-bold text-slate-800 mb-6">Why the Rearrangement Proves the Identity</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h4 class="text-lg font-bold mb-3 text-indigo-700">Area before rearranging</h4>
+          <p class="text-slate-700 text-sm leading-relaxed mb-3">
+            Each colored staircase has rows containing $1,2,\ldots,n$ unit squares, so each has area
+          </p>
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold overflow-x-auto">
+            $$T_n=1+2+\cdots+n=\frac{n(n+1)}2.$$
+          </div>
+          <p class="text-slate-700 text-sm leading-relaxed mt-3">
+            Eight copies plus the single center square therefore have total area $8T_n+1$.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h4 class="text-lg font-bold mb-3 text-emerald-700">Area after rearranging</h4>
+          <p class="text-slate-700 text-sm leading-relaxed mb-3">
+            No cells are added, removed, stretched, or overlapped. The same pieces form a square with side
+          </p>
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center font-bold overflow-x-auto">
+            $$n+1+n=2n+1.$$
+          </div>
+          <p class="text-slate-700 text-sm leading-relaxed mt-3">
+            Hence the same area is $(2n+1)^2$. Therefore
+          </p>
+          <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-center font-bold overflow-x-auto mt-3">
+            $$\boxed{8T_n+1=(2n+1)^2}.$$
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      const state = {
+        n: 4,
+        step: 0,
+        maxStep: 4,
+        playing: false,
+        timer: null
+      };
+
+      const colors = [
+        '#6366f1', '#0ea5e9', '#14b8a6', '#22c55e',
+        '#84cc16', '#f59e0b', '#f97316', '#ec4899'
+      ];
+
+      const offsets = [
+        [-1.05, -1.00], [1.05, -1.00], [1.20, -0.12], [1.05, 1.00],
+        [0.15, 1.15], [-1.05, 1.00], [-1.20, 0.12], [-1.05, -1.00]
+      ];
+
+      const captions = [
+        'Start with one triangular staircase containing Tₙ unit squares.',
+        'Make eight congruent copies of the same staircase.',
+        'Add one unit square at the center.',
+        'Slide the eight staircases inward — no gaps and no overlaps.',
+        'The pieces form a square whose side is 2n + 1.'
+      ];
+
+      const status = [
+        'One staircase has rows of lengths $1,2,\\ldots,n$, so its area is $T_n$.',
+        'Eight identical staircases have total area $8T_n$.',
+        'Adding the center unit square makes the total area $8T_n+1$.',
+        'Rearrangement preserves area, and the same cells now fill one complete square.',
+        'The square has side $n+1+n=2n+1$, so $8T_n+1=(2n+1)^2$.'
+      ];
+
+      const els = {
+        slider: document.getElementById('sliderN'),
+        valN: document.getElementById('valN'),
+        stepIndicator: document.getElementById('stepIndicator'),
+        playBtn: document.getElementById('playBtn'),
+        nextBtn: document.getElementById('nextBtn'),
+        resetBtn: document.getElementById('resetBtn'),
+        piecesLayer: document.getElementById('piecesLayer'),
+        centerLayer: document.getElementById('centerLayer'),
+        squareOutline: document.getElementById('squareOutline'),
+        dimensions: document.getElementById('dimensions'),
+        dimTop: document.getElementById('dimTop'),
+        dimTopLabel: document.getElementById('dimTopLabel'),
+        dimLeft: document.getElementById('dimLeft'),
+        dimLeftLabel: document.getElementById('dimLeftLabel'),
+        finalBadge: document.getElementById('finalBadge'),
+        visualCaption: document.getElementById('visualCaption'),
+        statusText: document.getElementById('statusText')
+      };
+
+      function createSvg(tag, attrs = {}) {
+        const node = document.createElementNS(SVG_NS, tag);
+        for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+        return node;
+      }
+
+      function ringCells(k) {
+        const cells = [];
+        for (let x = -k; x <= k - 1; x++) cells.push([x, -k]);
+        for (let y = -k; y <= k - 1; y++) cells.push([k, y]);
+        for (let x = k; x >= -k + 1; x--) cells.push([x, k]);
+        for (let y = k; y >= -k + 1; y--) cells.push([-k, y]);
+        return cells;
+      }
+
+      function buildPieces(n) {
+        const pieces = Array.from({ length: 8 }, () => []);
+        for (let k = 1; k <= n; k++) {
+          const ring = ringCells(k);
+          for (let p = 0; p < 8; p++) {
+            const start = p * k;
+            for (let j = 0; j < k; j++) pieces[p].push(ring[start + j]);
+          }
+        }
+        return pieces;
+      }
+
+      function geometry() {
+        const n = state.n;
+        const sideCells = 2 * n + 1;
+        const cell = Math.min(31, 350 / sideCells);
+        const sidePx = sideCells * cell;
+        const originX = 380 - sidePx / 2;
+        const originY = 285 - sidePx / 2;
+        return { cell, sidePx, originX, originY };
+      }
+
+      function cellToPixel(dx, dy, g) {
+        return {
+          x: g.originX + (dx + state.n) * g.cell,
+          y: g.originY + (dy + state.n) * g.cell
+        };
+      }
+
+      function pieceCentroid(cells, g) {
+        let sx = 0, sy = 0;
+        cells.forEach(([dx, dy]) => {
+          const p = cellToPixel(dx, dy, g);
+          sx += p.x + g.cell / 2;
+          sy += p.y + g.cell / 2;
+        });
+        return { x: sx / cells.length, y: sy / cells.length };
+      }
+
+      function explodedShift(index, g) {
+        const d = Math.min(116, 42 + state.n * 9);
+        const dirs = [
+          [-0.45,-1], [0.45,-1], [1,-0.45], [1,0.45],
+          [0.45,1], [-0.45,1], [-1,0.45], [-1,-0.45]
+        ];
+        return { x: dirs[index][0] * d, y: dirs[index][1] * d };
+      }
+
+      function render() {
+        els.piecesLayer.innerHTML = '';
+        els.centerLayer.innerHTML = '';
+
+        const g = geometry();
+        const pieces = buildPieces(state.n);
+        const showOnlyOne = state.step === 0;
+        const assembled = state.step >= 3;
+
+        pieces.forEach((cells, index) => {
+          const group = createSvg('g', { class: 'piece-group', 'data-piece': String(index) });
+          const shift = assembled ? { x: 0, y: 0 } : explodedShift(index, g);
+          group.style.transform = `translate(${shift.x}px, ${shift.y}px)`;
+          group.style.opacity = showOnlyOne && index !== 0 ? '0.08' : '1';
+
+          cells.forEach(([dx, dy]) => {
+            const p = cellToPixel(dx, dy, g);
+            const rect = createSvg('rect', {
+              x: p.x + 0.8,
+              y: p.y + 0.8,
+              width: Math.max(2, g.cell - 1.6),
+              height: Math.max(2, g.cell - 1.6),
+              fill: colors[index],
+              class: 'unit-cell'
+            });
+            group.appendChild(rect);
+          });
+
+          if (!assembled && state.n >= 2 && (!showOnlyOne || index === 0)) {
+            const c = pieceCentroid(cells, g);
+            const label = createSvg('text', {
+              x: c.x,
+              y: c.y + 6,
+              'text-anchor': 'middle',
+              class: 'piece-label',
+              fill: '#0f172a'
+            });
+            label.textContent = 'Tₙ';
+            group.appendChild(label);
+          }
+
+          els.piecesLayer.appendChild(group);
+        });
+
+        const cp = cellToPixel(0, 0, g);
+        const centerGroup = createSvg('g', { class: 'piece-group' });
+        const centerRect = createSvg('rect', {
+          x: cp.x + 0.8,
+          y: cp.y + 0.8,
+          width: Math.max(2, g.cell - 1.6),
+          height: Math.max(2, g.cell - 1.6),
+          fill: '#fbbf24',
+          stroke: '#92400e',
+          'stroke-width': 1.6,
+          rx: 2.5,
+          ry: 2.5
+        });
+        centerGroup.appendChild(centerRect);
+        centerGroup.style.opacity = state.step >= 2 ? '1' : '0.10';
+        if (state.step === 2) centerGroup.classList.add('soft-pulse');
+        els.centerLayer.appendChild(centerGroup);
+
+        els.squareOutline.setAttribute('x', g.originX);
+        els.squareOutline.setAttribute('y', g.originY);
+        els.squareOutline.setAttribute('width', g.sidePx);
+        els.squareOutline.setAttribute('height', g.sidePx);
+        els.squareOutline.style.opacity = state.step >= 3 ? '1' : '0';
+
+        const topY = g.originY - 24;
+        els.dimTop.setAttribute('x1', g.originX);
+        els.dimTop.setAttribute('x2', g.originX + g.sidePx);
+        els.dimTop.setAttribute('y1', topY);
+        els.dimTop.setAttribute('y2', topY);
+        els.dimTopLabel.setAttribute('x', g.originX + g.sidePx / 2);
+        els.dimTopLabel.setAttribute('y', topY - 9);
+
+        const leftX = g.originX - 24;
+        els.dimLeft.setAttribute('x1', leftX);
+        els.dimLeft.setAttribute('x2', leftX);
+        els.dimLeft.setAttribute('y1', g.originY);
+        els.dimLeft.setAttribute('y2', g.originY + g.sidePx);
+        els.dimLeftLabel.setAttribute('x', leftX - 12);
+        els.dimLeftLabel.setAttribute('y', g.originY + g.sidePx / 2 + 6);
+        els.dimLeftLabel.setAttribute('transform', `rotate(-90 ${leftX - 12} ${g.originY + g.sidePx / 2 + 6})`);
+
+        els.dimensions.style.opacity = state.step === 4 ? '1' : '0';
+        els.finalBadge.style.opacity = state.step === 4 ? '1' : '0';
+        els.visualCaption.textContent = captions[state.step];
+      }
+
+      function typesetStatus() {
+        els.statusText.innerHTML = status[state.step];
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          MathJax.typesetPromise([els.statusText]).catch(() => {});
+        }
+      }
+
+      function setStep(step) {
+        state.step = Math.max(0, Math.min(state.maxStep, step));
+        els.stepIndicator.textContent = `${state.step} / ${state.maxStep}`;
+        for (let i = 0; i <= state.maxStep; i++) {
+          const row = document.getElementById(`ledger-${i}`);
+          if (row) row.classList.toggle('active', i === state.step);
+        }
+        els.nextBtn.disabled = state.step >= state.maxStep;
+        render();
+        typesetStatus();
+      }
+
+      function stopAuto() {
+        state.playing = false;
+        if (state.timer) clearInterval(state.timer);
+        state.timer = null;
+        els.playBtn.innerHTML = '<i class="fa-solid fa-play"></i> Auto';
+        els.playBtn.classList.remove('btn-secondary');
+        els.playBtn.classList.add('btn-primary');
+      }
+
+      function startAuto() {
+        if (state.step >= state.maxStep) setStep(0);
+        state.playing = true;
+        els.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+        els.playBtn.classList.remove('btn-primary');
+        els.playBtn.classList.add('btn-secondary');
+
+        state.timer = setInterval(() => {
+          if (state.step < state.maxStep) setStep(state.step + 1);
+          else stopAuto();
+        }, 2600);
+      }
+
+      els.slider.addEventListener('input', (event) => {
+        stopAuto();
+        const value = Number(event.target.value);
+        state.n = Number.isFinite(value) ? Math.max(1, Math.min(8, Math.round(value))) : 4;
+        els.valN.textContent = `n = ${state.n}`;
+        setStep(state.step);
+      });
+
+      els.nextBtn.addEventListener('click', () => {
+        stopAuto();
+        if (state.step < state.maxStep) setStep(state.step + 1);
+      });
+
+      els.resetBtn.addEventListener('click', () => {
+        stopAuto();
+        state.n = 4;
+        els.slider.value = '4';
+        els.valN.textContent = 'n = 4';
+        setStep(0);
+      });
+
+      els.playBtn.addEventListener('click', () => {
+        if (state.playing) stopAuto();
+        else startAuto();
+      });
+
+      setStep(0);
+    })();
+  </script>
+</body>
+</html>

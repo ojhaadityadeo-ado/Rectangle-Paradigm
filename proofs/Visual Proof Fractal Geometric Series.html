@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Fractal Geometric Series</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #0ea5e9; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #0ea5e9; color: white; box-shadow: 0 4px 6px rgba(14, 165, 233, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #0284c7; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #f0fdfa; border-left-color: #0ea5e9; box-shadow: 0 2px 5px rgba(14, 165, 233, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.4s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+
+        /* Pop Animation for newly added squares */
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .anim-pop { animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-shapes text-cyan-600 text-2xl"></i> Visual Proof: Fractal Geometric Series
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Decomposing a unit square to visually prove that an infinite geometric series converges perfectly to 1.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-cyan-50 text-cyan-950 rounded-lg mb-6 shadow-sm border border-cyan-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="whitespace-nowrap flex items-center gap-3" id="liveEq">
+                $$ \text{Total Area} = \sum_{n=1}^{\infty} \frac{3^{n-1}}{4^n} = \frac{1}{4} + \frac{3}{16} + \frac{9}{64} + \dots = 1 $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-2xl">
+                <!-- N Slider -->
+                <div class="flex flex-col gap-1 w-full bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex-1 min-w-[200px]">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Iterations (<span class="math-font text-sm normal-case text-cyan-600">n</span>)</span>
+                        <span id="valN" class="text-cyan-600 font-mono text-sm font-bold">1</span>
+                    </div>
+                    <input type="range" id="sliderN" value="1" min="0" max="6" step="1" class="w-full">
+                </div>
+
+                <!-- Live Area Stats -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex flex-col items-center justify-center min-w-[120px]">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Area Filled</span>
+                    <span class="font-mono text-lg font-bold text-slate-800" id="valArea">0.2500</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-cyan-700 font-bold text-base bg-cyan-100 px-3 py-1 rounded-md border border-cyan-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <pattern id="emptyHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#e2e8f0" stroke-width="1.5"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Background Base Grid -->
+                    <g transform="translate(50, 50)">
+                        <!-- Main Bounding Box (Unit Square) -->
+                        <rect x="0" y="0" width="400" height="400" fill="url(#emptyHatch)" stroke="#94a3b8" stroke-width="3" stroke-dasharray="8,6" />
+                        
+                        <!-- Center Crosshairs for the very first division -->
+                        <line x1="200" y1="0" x2="200" y2="400" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4" />
+                        <line x1="0" y1="200" x2="400" y2="200" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4" />
+
+                        <!-- Dynamic Fractal Squares will be injected here -->
+                        <g id="fractalGroup"></g>
+                        
+                        <!-- Overlay for "Infinity" Step -->
+                        <g id="infinityOverlay" class="fade" opacity="0">
+                            <rect x="0" y="0" width="400" height="400" fill="rgba(6, 182, 212, 0.2)" stroke="none" />
+                            <rect x="50" y="150" width="300" height="100" fill="rgba(255, 255, 255, 0.9)" stroke="#0ea5e9" stroke-width="2" rx="10" />
+                            <text x="200" y="200" class="geom-text math-font font-bold text-2xl" fill="#0369a1" text-anchor="middle" dominant-baseline="middle">Total Area = 1</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">Step 0: Initial State</span>
+                            <span class="text-xs text-slate-600">We begin with an empty unit square. Total Area = $0$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-cyan-700 block mb-1">Step 1 ($n=1$)</span>
+                            <span class="text-xs text-slate-600">The unit square is divided into 4 quadrants, and the top-left one is colored cyan. <strong>Area = $\frac{1}{4}$</strong>.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-cyan-800 block mb-1">Step 2 ($n=2$)</span>
+                            <span class="text-xs text-slate-600">In each of the three remaining empty squares, the process repeats. This adds three new, smaller squares. <strong>Added Area = $3 \times \frac{1}{16} = \frac{3}{16}$</strong>.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-cyan-900 block mb-1">Step 3 ($n=3$)</span>
+                            <span class="text-xs text-slate-600">Now there are 9 remaining small empty squares. Splitting them adds nine even smaller squares. <strong>Added Area = $9 \times \frac{1}{64} = \frac{9}{64}$</strong>.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">Step 4: Iterative Pattern</span>
+                            <span class="text-xs text-slate-600">This forms a deterministic fractal. At step $n$, we add $3^{n-1}$ squares, each of area $\frac{1}{4^n}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-slate-900 block mb-1">Step 5: Infinite Convergence</span>
+                            <span class="text-xs text-slate-600">As $n \to \infty$, the square is almost entirely filled with small cyan points, leading to a visual convergence where the area is fully consumed, totaling <strong>$1$</strong>.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-cyan-50 p-4 rounded-xl border border-cyan-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-cyan-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust $n$. Press <strong>Play</strong> to watch the fractal decomposition.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Mathematical Derivation</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Series Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-cyan-700">1. Series Breakdown</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        We define the series we are visually constructing. The "From Visual" boxes trace each color-coded area from the graphic back to its corresponding term in the series:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Total Area} = \sum_{n=1}^{\infty} \frac{3^{n-1}}{4^n} = \frac{1}{4} + \frac{3}{16} + \frac{9}{64} + \dots $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Each term precisely matches the area added in each successive step of the animation.
+                    </p>
+                </div>
+
+                <!-- Right: Summation -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Summation Calculation</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        We treat this sequence as an infinite geometric summation:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-2 mb-4">
+                        <li><strong>First Term ($a$):</strong> $\frac{1}{4}$ (The first colored area).</li>
+                        <li><strong>Common Ratio ($r$):</strong> $\frac{3}{4}$ (Each step adds three times as many squares that are one-fourth the previous size; meaning we are taking exactly three-fourths of the remaining area).</li>
+                    </ul>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Using the standard geometric sum formula $S = \frac{a}{1-r}$:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mt-3">
+                        $$ S = \frac{1/4}{1 - 3/4} = \frac{1/4}{1/4} = 1 $$
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            n: 1,
+            step: 1, // Start at step 1 to match the default n=1 slider
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null,
+            maxRenderDepth: 6 // To prevent browser freeze on very high N
+        };
+
+        const SIZE = 400; // SVG Square Size
+
+        // DOM Elements
+        const DOM = {
+            sliderN: document.getElementById('sliderN'),
+            valN: document.getElementById('valN'),
+            valArea: document.getElementById('valArea'),
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { stepInd: document.getElementById('stepIndicator'), status: document.getElementById('statusText'), eq: document.getElementById('liveEq') },
+            svg: {
+                fractalGroup: document.getElementById('fractalGroup'),
+                overlayFinal: document.getElementById('infinityOverlay')
+            }
+        };
+
+        const descriptions = [
+            "We begin with an empty unit square. Total Area = $0$.",
+            "The unit square is divided into 4 quadrants, and the top-left one is colored cyan. Area = $1/4$.",
+            "In each of the three remaining empty squares, the process repeats. This adds three new, smaller squares. Added Area = $3 \times 1/16 = 3/16$.",
+            "Now there are 9 remaining small squares. Splitting them adds nine even smaller squares. Added Area = $9 \times 1/64 = 9/64$.",
+            "This forms a deterministic fractal. At step $n$, we add $3^{n-1}$ squares, each of area $1/4^n$.",
+            "As $n \\to \\infty$, the square is almost entirely filled with small cyan points, leading to a visual convergence where the area is fully consumed."
+        ];
+
+        function init() {
+            DOM.sliderN.addEventListener('input', (e) => {
+                pauseAnimation();
+                let v = parseInt(e.target.value);
+                state.n = v;
+                
+                // Map slider N to logical Step
+                if (v === 0) setStepOnly(0);
+                else if (v === 1) setStepOnly(1);
+                else if (v === 2) setStepOnly(2);
+                else if (v === 3) setStepOnly(3);
+                else if (v >= 4 && v < 6) setStepOnly(4);
+                else setStepOnly(5);
+                
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.n = 1;
+                DOM.sliderN.value = 1;
+                setStep(1);
+            });
+
+            // Initial Draw
+            updateGeometry();
+            setStepOnly(1);
+        }
+
+        // Recursive SVG Generator for the Fractal
+        // Returns an HTML string of the generated SVG elements
+        function getFractalHTML(x, y, size, currentDepth, targetDepth) {
+            if (currentDepth > targetDepth || currentDepth > state.maxRenderDepth) return '';
+            
+            let html = '';
+            let half = size / 2;
+            
+            // CSS animation class only applied to the NEWEST level being drawn
+            let animClass = (currentDepth === targetDepth && targetDepth > 0) ? 'anim-pop' : '';
+            
+            // Color variation: slightly darken as depth increases to add visual distinction
+            let lightness = Math.max(30, 60 - (currentDepth - 1) * 6);
+            let fillCol = `hsl(190, 100%, ${lightness}%)`;
+            
+            // Draw Top-Left quadrant (The filled part)
+            html += `<rect x="${x}" y="${y}" width="${half}" height="${half}" fill="${fillCol}" stroke="#0e7490" stroke-width="0.5" class="geom-rect ${animClass}" style="transform-origin: ${x + half/2}px ${y + half/2}px;" />`;
+            
+            // Recurse for the 3 remaining empty quadrants
+            if (currentDepth < targetDepth) {
+                // Top-Right
+                html += getFractalHTML(x + half, y, half, currentDepth + 1, targetDepth);
+                // Bottom-Left
+                html += getFractalHTML(x, y + half, half, currentDepth + 1, targetDepth);
+                // Bottom-Right
+                html += getFractalHTML(x + half, y + half, half, currentDepth + 1, targetDepth);
+            }
+            
+            return html;
+        }
+
+        function updateGeometry() {
+            const n = state.n;
+            
+            // Mathematical calculations
+            // Total Area = 1 - (3/4)^N
+            let filledArea = 1 - Math.pow(0.75, n);
+            if (n === 0) filledArea = 0;
+            if (n === 6) filledArea = 1; // "Infinity" override
+
+            // UI Text
+            DOM.valN.textContent = n === 6 ? '∞' : n;
+            DOM.valArea.textContent = filledArea.toFixed(4);
+
+            // Generate Fractal SVG
+            if (n === 0) {
+                DOM.svg.fractalGroup.innerHTML = '';
+            } else {
+                let fractalHtml = getFractalHTML(0, 0, SIZE, 1, Math.min(n, state.maxRenderDepth));
+                DOM.svg.fractalGroup.innerHTML = fractalHtml;
+            }
+
+            // Dynamic Equation based on step
+            let eqLatex = '';
+            if (n === 0) {
+                eqLatex = `\\text{Total Area Filled} = 0`;
+            } else if (n === 1) {
+                eqLatex = `\\text{Total Area} = \\frac{1}{4} = 0.2500`;
+            } else if (n === 2) {
+                eqLatex = `\\text{Total Area} = \\frac{1}{4} + 3\\left(\\frac{1}{16}\\right) = \\frac{7}{16} = 0.4375`;
+            } else if (n === 3) {
+                eqLatex = `\\text{Total Area} = \\frac{1}{4} + \\frac{3}{16} + 9\\left(\\frac{1}{64}\\right) = \\frac{37}{64} \\approx 0.5781`;
+            } else if (n >= 4 && n < 6) {
+                eqLatex = `\\text{Area}_N = \\sum_{k=1}^{N} \\frac{3^{k-1}}{4^k} = 1 - \\left(\\frac{3}{4}\\right)^N`;
+            } else {
+                eqLatex = `\\text{Total Area} = \\sum_{n=1}^{\\infty} \\frac{3^{n-1}}{4^n} = 1`;
+            }
+
+            DOM.ui.eq.innerHTML = `$$ ${eqLatex} $$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 80);
+            }
+
+            // Overlay for final step
+            DOM.svg.overlayFinal.style.opacity = (n === 6) ? '1' : '0';
+        }
+
+        // Just update text/ledger without forcing slider
+        function setStepOnly(step) {
+            state.step = step;
+            DOM.ui.stepInd.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+        }
+
+        function setStep(step) {
+            setStepOnly(step);
+
+            // Sync depth slider with step
+            if (step === 0) state.n = 0;
+            else if (step === 1) state.n = 1;
+            else if (step === 2) state.n = 2;
+            else if (step === 3) state.n = 3;
+            else if (step === 4) state.n = 4; 
+            else if (step === 5) state.n = 6; // Infinity proxy
+
+            DOM.sliderN.value = state.n;
+            
+            updateGeometry();
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); // 3 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

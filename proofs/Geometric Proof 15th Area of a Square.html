@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometric Proof: 1/5th Area of a Square</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering beautiful mathematical equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            --c-blue-fill: #bae6fd;
+            --c-blue-stroke: #0284c7;
+            --c-green-fill: #bbf7d0;
+            --c-green-stroke: #16a34a;
+            --c-red-fill: #fecaca;
+            --c-red-stroke: #dc2626;
+            --c-orange-fill: #fed7aa;
+            --c-orange-stroke: #ea580c;
+            --c-slate-fill: #e2e8f0;
+            --c-slate-stroke: #475569;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* SVG Board Styling */
+        .visualization-area {
+            position: relative;
+            width: 100%;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        svg {
+            max-height: 500px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Geometric Shapes */
+        .poly {
+            stroke-linejoin: round;
+            stroke-width: 2.5;
+            transition: all 0.5s ease;
+        }
+
+        .shape-blue { fill: var(--c-blue-fill); stroke: var(--c-blue-stroke); }
+        .shape-green { fill: var(--c-green-fill); stroke: var(--c-green-stroke); }
+        .shape-red { fill: var(--c-red-fill); stroke: var(--c-red-stroke); }
+        .shape-orange { fill: var(--c-orange-fill); stroke: var(--c-orange-stroke); }
+        .shape-slate { fill: var(--c-slate-fill); stroke: var(--c-slate-stroke); }
+
+        /* Outer Boundary Dashed Line */
+        .outer-bound {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2.5;
+            stroke-dasharray: 6 6;
+        }
+
+        /* Triangle Rotational Animation */
+        .anim-rotate {
+            transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Square Labels (1-5) */
+        .sq-label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 24px;
+            fill: #1e293b;
+            text-anchor: middle;
+            dominant-baseline: central;
+            opacity: 0;
+            transition: opacity 0.8s ease 0.5s;
+        }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-play {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-play:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-play:active { transform: translateY(1px); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Visual Proof: $\frac{1}{5}\text{th}$ Area of a Square</h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-lg md:text-xl font-bold p-4 bg-slate-50 text-slate-800 rounded-lg mb-6 shadow-sm border border-slate-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            Total Area = Outer Square Area
+        </div>
+
+        <!-- SVG Visualization Board -->
+        <div class="visualization-area">
+            <svg viewBox="-50 -50 300 300">
+                
+                <!-- Dashed Outline showing the original square's position -->
+                <rect x="0" y="0" width="200" height="200" class="outer-bound" />
+
+                <!-- The 4 Trapezoids (Stationary) -->
+                <!-- Top Blue Trapezoid -->
+                <polygon points="100,0 200,0 160,80 80,40" class="poly shape-blue" />
+                <!-- Right Green Trapezoid -->
+                <polygon points="200,100 200,200 120,160 160,80" class="poly shape-green" />
+                <!-- Bottom Red Trapezoid -->
+                <polygon points="100,200 0,200 40,120 120,160" class="poly shape-red" />
+                <!-- Left Orange Trapezoid -->
+                <polygon points="0,100 0,0 80,40 40,120" class="poly shape-orange" />
+
+                <!-- The Central Square (Stationary) -->
+                <polygon points="80,40 160,80 120,160 40,120" class="poly shape-slate" />
+
+                <!-- The 4 Corner Triangles (Animated) -->
+                <!-- Top-Left Blue Triangle (Rotates around Top Midpoint) -->
+                <polygon id="tri-1" points="0,0 80,40 100,0" class="poly shape-blue anim-rotate" style="transform-origin: 100px 0px;" />
+                
+                <!-- Top-Right Green Triangle (Rotates around Right Midpoint) -->
+                <polygon id="tri-2" points="200,0 160,80 200,100" class="poly shape-green anim-rotate" style="transform-origin: 200px 100px;" />
+                
+                <!-- Bottom-Right Red Triangle (Rotates around Bottom Midpoint) -->
+                <polygon id="tri-3" points="200,200 120,160 100,200" class="poly shape-red anim-rotate" style="transform-origin: 100px 200px;" />
+                
+                <!-- Bottom-Left Orange Triangle (Rotates around Left Midpoint) -->
+                <polygon id="tri-4" points="0,200 40,120 0,100" class="poly shape-orange anim-rotate" style="transform-origin: 0px 100px;" />
+
+                <!-- Number Labels for the 5 Final Squares -->
+                <text id="sq-lbl-1" class="sq-label" x="140" y="20">1</text>
+                <text id="sq-lbl-2" class="sq-label" x="180" y="140">2</text>
+                <text id="sq-lbl-3" class="sq-label" x="60" y="180">3</text>
+                <text id="sq-lbl-4" class="sq-label" x="20" y="60">4</text>
+                <text id="sq-lbl-5" class="sq-label" x="100" y="100">5</text>
+            </svg>
+        </div>
+
+        <!-- Interactive Controls -->
+        <div class="flex justify-center mb-6">
+            <button id="animBtn" class="btn-action btn-play px-8 py-3" onclick="nextStep()">
+                ▶ Recombine Pieces
+            </button>
+        </div>
+
+        <!-- Explanation Box -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg shadow-sm mb-6 min-h-[140px] flex items-center">
+            <p class="text-slate-800 text-lg leading-relaxed w-full transition-opacity duration-300" id="status-text">
+                <strong>1. Divide the Square:</strong> <br><br>
+                By drawing lines from the vertices to the midpoints of adjacent sides, we slice the large square into 9 pieces: 1 central tilted square (slate), 4 identical trapezoids, and 4 identical corner right-triangles.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+
+        function updateMathJax() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.texReset();
+                MathJax.typesetPromise().catch((err) => console.log(err.message));
+            }
+        }
+
+        function updateMsg(text) {
+            const el = document.getElementById('status-text');
+            el.style.opacity = '0';
+            setTimeout(() => { 
+                el.innerHTML = text; 
+                el.style.opacity = '1'; 
+                updateMathJax(); 
+            }, 300);
+        }
+
+        function nextStep() {
+            const btn = document.getElementById('animBtn');
+            const liveEq = document.getElementById('liveEq');
+            
+            if (currentStep === 0) {
+                // Step 1: Rotate Triangles outward
+                document.getElementById('tri-1').style.transform = 'rotate(180deg)';
+                document.getElementById('tri-2').style.transform = 'rotate(180deg)';
+                document.getElementById('tri-3').style.transform = 'rotate(180deg)';
+                document.getElementById('tri-4').style.transform = 'rotate(180deg)';
+                
+                updateMsg(`<strong>2. Recombine the Pieces:</strong> <br><br>Notice that the colors match. Watch what happens when you rotate each corner triangle 180° around the midpoint of the side it touches. The blue triangle perfectly completes the blue rectangle, the green triangle completes the green rectangle, and so on.`);
+                
+                btn.innerHTML = "▶ Show Final Result";
+                currentStep = 1;
+
+            } else if (currentStep === 1) {
+                // Step 2: Fade in Numbers and show final Math
+                for(let i=1; i<=5; i++) {
+                    document.getElementById('sq-lbl-'+i).style.opacity = '1';
+                }
+                
+                updateMsg(`<strong>3. The Final Shape:</strong><br><br>The newly formed shape is a cross made of exactly 5 identical squares. Since we just rearranged the pieces, the total area is unchanged.<br><br>Therefore:<br>$$5 \\times (\\text{Inner Square Area}) = \\text{Outer Square Area}$$<br>$$\\text{Inner Square Area} = \\frac{1}{5} \\times \\text{Outer Square Area}$$`);
+                
+                liveEq.innerHTML = `$$5 \\times A_{\\text{inner}} = A_{\\text{outer}}$$`;
+                updateMathJax();
+
+                btn.innerHTML = "↺ Reset Proof";
+                btn.classList.replace('btn-play', 'bg-slate-300');
+                btn.classList.add('text-slate-800', 'hover:bg-slate-400');
+                currentStep = 2;
+
+            } else {
+                // Step 3: Reset back to Original
+                document.getElementById('tri-1').style.transform = 'rotate(0deg)';
+                document.getElementById('tri-2').style.transform = 'rotate(0deg)';
+                document.getElementById('tri-3').style.transform = 'rotate(0deg)';
+                document.getElementById('tri-4').style.transform = 'rotate(0deg)';
+                
+                for(let i=1; i<=5; i++) {
+                    document.getElementById('sq-lbl-'+i).style.opacity = '0';
+                }
+
+                updateMsg(`<strong>1. Divide the Square:</strong> <br><br>By drawing lines from the vertices to the midpoints of adjacent sides, we slice the large square into 9 pieces: 1 central tilted square (slate), 4 identical trapezoids, and 4 identical corner right-triangles.`);
+                
+                liveEq.innerHTML = `Total Area = Outer Square Area`;
+                
+                btn.innerHTML = "▶ Recombine Pieces";
+                btn.classList.replace('bg-slate-300', 'btn-play');
+                btn.classList.remove('text-slate-800', 'hover:bg-slate-400');
+                currentStep = 0;
+            }
+        }
+
+        // Initialize equation rendering on load
+        window.onload = () => {
+            updateMathJax();
+        };
+    </script>
+</body>
+</html>

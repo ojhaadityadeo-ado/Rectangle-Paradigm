@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Arithmetic-Geometric Series</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-text { user-select: none; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-border-all text-indigo-600 text-2xl"></i> Visual Proof: Arithmetic-Geometric Series
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            A beautiful grid-based proof showing how a self-similar fractal perfectly evaluates an infinite series to exactly 4.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap">
+                $$ \sum_{i=1}^{\infty} i \left(\frac{1}{2}\right)^{i-1} = 4 $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-6 items-center justify-center flex-grow">
+                <!-- N Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[300px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Terms to Sum (<span class="math-font text-sm normal-case text-indigo-600">N</span>)</span>
+                        <span id="val-n" class="text-indigo-600 text-lg font-mono">1</span>
+                    </div>
+                    <input type="range" id="slider-n" value="1" min="1" max="8" step="1" class="w-full">
+                </div>
+
+                <!-- Live Area Value -->
+                <div class="bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-600 flex flex-col items-center justify-center min-w-[150px]">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Area</span>
+                    <span class="font-mono text-lg font-bold text-emerald-600" id="val-area">1.000</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Static Boundaries and Grid Guides -->
+                    <g id="grid-base">
+                        <!-- Bounding 2x2 Square (Mapped to 400x400 SVG coords starting at 50,50) -->
+                        <rect x="50" y="50" width="400" height="400" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,6"/>
+                        
+                        <!-- Dimension Lines -->
+                        <!-- Top (Width = 2) -->
+                        <line x1="50" y1="30" x2="450" y2="30" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                        <text class="math-font" x="250" y="20" font-size="18" font-weight="bold" fill="#334155" text-anchor="middle">2</text>
+                        <!-- Left (Height = 2) -->
+                        <line x1="30" y1="50" x2="30" y2="450" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                        <text class="math-font" x="20" y="250" font-size="18" font-weight="bold" fill="#334155" text-anchor="end" dominant-baseline="middle">2</text>
+                    </g>
+
+                    <!-- We use Javascript to inject the colored blocks dynamically to leverage clean opacities -->
+                    <g id="dynamic-svg">
+                        <!-- Content injected via JS -->
+                    </g>
+                </svg>
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Bounding Box</span>
+                            <span class="text-xs text-slate-600">We construct a grid where the columns and rows follow the infinite geometric sum: $1 + \frac{1}{2} + \frac{1}{4} \dots = 2$. The total area is $2 \times 2 = 4$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Term 1 (k=0)</span>
+                            <span class="text-xs text-slate-600">The first anti-diagonal has exactly $1$ block of area $1$. Total area added is $1(1/2)^0 = 1$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-amber-600 block mb-1">3. Term 2 (k=1)</span>
+                            <span class="text-xs text-slate-600">The second anti-diagonal has $2$ blocks of area $1/2$. Total area added is $2(1/2)^1 = 1$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-600 block mb-1">4. Term 3 (k=2)</span>
+                            <span class="text-xs text-slate-600">The third anti-diagonal has $3$ blocks of area $1/4$. Total area added is $3(1/2)^2 = 3/4$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-rose-600 block mb-1">5. Term 4 (k=3)</span>
+                            <span class="text-xs text-slate-600">The fourth anti-diagonal has $4$ blocks of area $1/8$. Total area added is $4(1/2)^3 = 1/2$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-slate-800 block mb-1">6. The Infinite Limit</span>
+                            <span class="text-xs text-slate-600">As $N \to \infty$, the infinite sum of these diagonals perfectly fills the entire $2 \times 2$ grid, proving the sum equals 4.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the slider to add anti-diagonals to the grid. Press <strong>Play</strong> to visualize the sum.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Algebraic Identity</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Geometric Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Constructing the Grid</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        We build a square grid where both the row heights and column widths strictly follow the infinite geometric progression:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ 1, \frac{1}{2}, \frac{1}{4}, \frac{1}{8}, \dots $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Because the sum of this geometric series is exactly $\frac{1}{1 - 1/2} = 2$, the overall bounding box converges perfectly to a square of size $2 \times 2$. Thus, the <strong>total area is 4</strong>.
+                    </p>
+                </div>
+
+                <!-- Right: Telescoping sum -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Summing by Anti-Diagonals</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Let's index the grid cells. Row $i$ has height $(1/2)^i$ and column $j$ has width $(1/2)^j$. The area of any individual cell is therefore $(1/2)^{i+j}$.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        If we group the cells by their "anti-diagonal" where $k = i+j$, we notice a beautiful pattern. For any diagonal $k$, there are exactly $k+1$ cells.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area of diagonal } k = (k+1)\left(\frac{1}{2}\right)^k $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: Equating the Areas</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    We've established two different ways to calculate the exact same area. By summing the individual anti-diagonals to infinity, we must arrive at the total area of the bounding box. Let $i = k+1$:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ \sum_{i=1}^{\infty} i\left(\frac{1}{2}\right)^{i-1} = 2 \times 2 = 4 $$
+                </div>
+                <p class="text-slate-700 leading-relaxed">
+                    Because the cells are drawn to true scale, this visual proof acts as a photographic demonstration of the arithmetic-geometric series converging.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            N: 1, // Number of terms (1 to 8)
+            step: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG
+        const S_SIZE = 400; // Physical pixel size of the max square
+        const OX = 50;      // Origin X
+        const OY = 50;      // Origin Y
+
+        const colors = [
+            { bg: '#4A63E7', border: '#3730a3', text: '#ffffff' }, // Indigo
+            { bg: '#E8A33D', border: '#b45309', text: '#ffffff' }, // Amber
+            { bg: '#5FA88F', border: '#047857', text: '#ffffff' }, // Emerald
+            { bg: '#D6604D', border: '#be123c', text: '#ffffff' }, // Rose
+            { bg: '#0284c7', border: '#0369a1', text: '#ffffff' }, // Sky
+            { bg: '#9333ea', border: '#6b21a8', text: '#ffffff' }, // Purple
+            { bg: '#ea580c', border: '#c2410c', text: '#ffffff' }, // Orange
+            { bg: '#475569', border: '#1e293b', text: '#ffffff' }, // Slate
+        ];
+
+        // DOM Elements
+        const DOM = {
+            sliderN: document.getElementById('slider-n'),
+            valN: document.getElementById('val-n'),
+            valArea: document.getElementById('val-area'),
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svgDynamic: document.getElementById('dynamic-svg')
+        };
+
+        const descriptions = [
+            "We construct a grid where columns and rows follow the infinite geometric sum: $1 + \\frac{1}{2} + \\frac{1}{4} \\dots = 2$.",
+            "The first anti-diagonal has exactly $1$ block of area $1$. Total area added is $1(1/2)^0 = 1$.",
+            "The second anti-diagonal has $2$ blocks of area $1/2$. Total area added is $2(1/2)^1 = 1$.",
+            "The third anti-diagonal has $3$ blocks of area $1/4$. Total area added is $3(1/2)^2 = 3/4$.",
+            "The fourth anti-diagonal has $4$ blocks of area $1/8$. Total area added is $4(1/2)^3 = 1/2$.",
+            "As $N \\to \\infty$, the infinite sum of these diagonals perfectly fills the entire $2 \\times 2$ grid, proving the sum equals 4."
+        ];
+
+        function init() {
+            // Pre-generate SVG blocks so we can transition opacities cleanly
+            generateSVGBlocks();
+
+            // Slider events
+            DOM.sliderN.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.N = parseInt(e.target.value);
+                
+                // Sync narrative loosely if user forces slider
+                if (state.N === 1) setStepOnly(1);
+                else if (state.N === 2) setStepOnly(2);
+                else if (state.N === 3) setStepOnly(3);
+                else if (state.N === 4) setStepOnly(4);
+                else if (state.N >= 8) setStepOnly(5);
+                else setStepOnly(4); // Generic fallback
+                
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                setStep(0); 
+            });
+
+            setStep(0);
+        }
+
+        // Helper to get math coordinates to screen pixels
+        // Math sum of lengths = 2. Screen size = S_SIZE (400). Multiplier = 200.
+        function getDim(index) {
+            // Sum = 2 * (1 - (0.5)^index) -> Map to SVG Scale
+            return S_SIZE * (1 - Math.pow(0.5, index));
+        }
+
+        function generateSVGBlocks() {
+            let svgContent = '';
+            const maxK = 8; // Max depth to render
+
+            for (let k = 0; k <= maxK; k++) {
+                // Group by anti-diagonal k
+                svgContent += `<g id="group-k${k}" class="fade" opacity="0">`;
+                
+                const color = colors[k % colors.length];
+                
+                for (let i = 0; i <= k; i++) {
+                    let j = k - i;
+                    
+                    // Top-Left origin logic
+                    const x = OX + getDim(j);
+                    const y = OY + getDim(i);
+                    const w = (S_SIZE / 2) * Math.pow(0.5, j);
+                    const h = (S_SIZE / 2) * Math.pow(0.5, i);
+
+                    svgContent += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${color.bg}" stroke="${color.border}" stroke-width="1.5" />`;
+
+                    // Draw text if block is big enough
+                    if (w >= 35 && h >= 25) {
+                        let textStr = "1";
+                        if (k > 0) textStr = "1/" + Math.pow(2, k);
+                        svgContent += `<text class="geom-text math-font" x="${x + w/2}" y="${y + h/2}" font-size="${Math.min(18, h-4)}" fill="${color.text}" text-anchor="middle" dominant-baseline="middle">${textStr}</text>`;
+                    }
+                }
+                svgContent += `</g>`;
+            }
+
+            DOM.svgDynamic.innerHTML = svgContent;
+        }
+
+        // Only updates the narrative UI without forcing N values
+        function setStepOnly(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+        }
+
+        function setStep(step) {
+            state.step = step;
+            
+            // Map Steps to N values
+            if (step === 0) state.N = 0; // Empty
+            if (step === 1) state.N = 1; 
+            if (step === 2) state.N = 2; 
+            if (step === 3) state.N = 3; 
+            if (step === 4) state.N = 4; 
+            if (step === 5) state.N = 8; // Jump to "Infinity"
+
+            DOM.sliderN.value = Math.max(1, state.N);
+            
+            setStepOnly(step);
+            updateGeometry();
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function updateGeometry() {
+            const N = state.N;
+            
+            // UI text
+            DOM.valN.textContent = (state.step === 5) ? "∞" : Math.max(1, N);
+            
+            // Calculate Area
+            let area = 0;
+            for(let n=1; n<=N; n++) {
+                area += n * Math.pow(0.5, n-1);
+            }
+            DOM.valArea.textContent = (state.step === 5) ? "4.000" : area.toFixed(3);
+
+            // Toggle Opacities for the pre-generated SVG blocks
+            const maxK = 8;
+            for (let k = 0; k <= maxK; k++) {
+                const grp = document.getElementById(`group-k${k}`);
+                if (grp) {
+                    if (k < N) {
+                        grp.style.opacity = '1';
+                    } else {
+                        grp.style.opacity = '0';
+                    }
+                }
+            }
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                // Allow a small delay before first step
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); // 3 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

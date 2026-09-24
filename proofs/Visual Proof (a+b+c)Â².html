@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: (a+b+c)²</title>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --bg-light: #f8f9fa;
+            --text-dark: #2d3748;
+            
+            /* Themed Colors for Regions */
+            --c-a2: #3b82f6; /* Blue */
+            --c-b2: #ef4444; /* Red */
+            --c-c2: #a855f7; /* Purple */
+            --c-ab: #22c55e; /* Green */
+            --c-bc: #f59e0b; /* Orange/Yellow */
+            --c-ac: #14b8a6; /* Teal */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .container-custom {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Controls Area */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        input[type="range"] {
+            margin-top: 8px;
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        .slider-a { accent-color: var(--c-a2); }
+        .slider-b { accent-color: var(--c-b2); }
+        .slider-c { accent-color: var(--c-c2); }
+
+        /* Visualization Area */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 550px;
+            padding: 40px;
+            margin-bottom: 20px;
+            overflow: visible;
+        }
+
+        .board {
+            position: relative;
+            background-color: #cbd5e1;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), height 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s, border-color 0.5s, box-shadow 0.5s;
+            border: 2px solid #334155;
+        }
+
+        .board.exploded {
+            background-color: transparent;
+            border-color: transparent;
+            box-shadow: none;
+        }
+
+        .region {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: 1px solid rgba(255,255,255,0.4);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 2px;
+        }
+
+        .region span {
+            font-size: 0.9rem;
+            opacity: 0.95;
+            font-weight: 500;
+            margin-top: 4px;
+            white-space: nowrap;
+        }
+
+        /* Assigning colors to regions */
+        .r-a2 { background-color: var(--c-a2); }
+        .r-b2 { background-color: var(--c-b2); }
+        .r-c2 { background-color: var(--c-c2); }
+        .r-ab { background-color: var(--c-ab); }
+        .r-bc { background-color: var(--c-bc); }
+        .r-ac { background-color: var(--c-ac); }
+
+        /* External Dimension Labels */
+        .dim-label {
+            position: absolute;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .label-top {
+            top: -35px;
+            transform: translateX(-50%);
+        }
+        
+        .label-left {
+            left: -35px;
+            transform: translateY(-50%);
+        }
+        
+        .label-a { color: var(--c-a2); }
+        .label-b { color: var(--c-b2); }
+        .label-c { color: var(--c-c2); }
+
+        .btn-action {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-action:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-action:active {
+            transform: translateY(1px);
+        }
+
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Visual Proof of $(a+b+c)^2$</h1>
+
+        <!-- Interactive Sliders -->
+        <div class="controls shadow-inner">
+            <div class="control-group">
+                <label for="sliderA" class="label-a">Value of $a$: <span id="valA">5</span></label>
+                <input type="range" id="sliderA" class="slider-a" min="3" max="8" value="5">
+            </div>
+            <div class="control-group">
+                <label for="sliderB" class="label-b">Value of $b$: <span id="valB">4</span></label>
+                <input type="range" id="sliderB" class="slider-b" min="3" max="8" value="4">
+            </div>
+            <div class="control-group">
+                <label for="sliderC" class="label-c">Value of $c$: <span id="valC">3</span></label>
+                <input type="range" id="sliderC" class="slider-c" min="3" max="8" value="3">
+            </div>
+        </div>
+
+        <!-- Animation Trigger Button -->
+        <div class="flex justify-center mb-8">
+            <button id="btnExplode" class="btn-action">
+                <i class="ph-bold ph-squares-four mr-2"></i> Separate Pieces
+            </button>
+        </div>
+
+        <!-- Live Math Equation -->
+        <div class="text-center text-lg md:text-xl font-bold p-4 bg-slate-50 text-slate-800 rounded-lg mb-8 shadow-sm border border-slate-200" id="liveEq">
+            <!-- Rendered by JS -->
+        </div>
+
+        <!-- Visualization Board -->
+        <div class="visualization-area">
+            <div class="board" id="board">
+                
+                <!-- Dimension Labels -->
+                <div class="dim-label label-top label-a" id="lblTopA">a</div>
+                <div class="dim-label label-top label-b" id="lblTopB">b</div>
+                <div class="dim-label label-top label-c" id="lblTopC">c</div>
+                
+                <div class="dim-label label-left label-a" id="lblLeftA">a</div>
+                <div class="dim-label label-left label-b" id="lblLeftB">b</div>
+                <div class="dim-label label-left label-c" id="lblLeftC">c</div>
+
+                <!-- 9 Grid Regions -->
+                
+                <!-- Row 1 -->
+                <div class="region r-a2" id="r-a2">a² <span id="t-a2"></span></div>
+                <div class="region r-ab" id="r-ab1">ab <span id="t-ab1"></span></div>
+                <div class="region r-ac" id="r-ac1">ac <span id="t-ac1"></span></div>
+                
+                <!-- Row 2 -->
+                <div class="region r-ab" id="r-ab2">ab <span id="t-ab2"></span></div>
+                <div class="region r-b2" id="r-b2">b² <span id="t-b2"></span></div>
+                <div class="region r-bc" id="r-bc1">bc <span id="t-bc1"></span></div>
+                
+                <!-- Row 3 -->
+                <div class="region r-ac" id="r-ac2">ac <span id="t-ac2"></span></div>
+                <div class="region r-bc" id="r-bc2">bc <span id="t-bc2"></span></div>
+                <div class="region r-c2" id="r-c2">c² <span id="t-c2"></span></div>
+
+            </div>
+        </div>
+
+        <!-- Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">How to understand this proof:</h3>
+            <p class="text-slate-700 text-lg mb-4">
+                Imagine a large square. We want the length of each side to be divided into three parts: $(a + b + c)$. 
+                Because the area of a square is its total side length multiplied by itself, the grand total area of this big square is exactly <strong>$(a + b + c)^2$</strong>.
+            </p>
+            <p class="text-slate-700 text-lg mb-4">
+                Look at the visualization above. By extending lines where $a, b,$ and $c$ meet, we naturally slice the large square into <strong>nine smaller geometric pieces</strong>:
+            </p>
+            <ul class="list-disc list-inside space-y-2 text-slate-700 text-lg ml-2 mb-6">
+                <li><strong style="color: var(--c-a2);">One Blue Square:</strong> Sides are $a \times a$, so area is $a^2$.</li>
+                <li><strong style="color: var(--c-b2);">One Red Square:</strong> Sides are $b \times b$, so area is $b^2$.</li>
+                <li><strong style="color: var(--c-c2);">One Purple Square:</strong> Sides are $c \times c$, so area is $c^2$.</li>
+                <li><strong style="color: var(--c-ab);">Two Green Rectangles:</strong> Dimensions $a \times b$, contributing $2ab$.</li>
+                <li><strong style="color: var(--c-bc);">Two Orange Rectangles:</strong> Dimensions $b \times c$, contributing $2bc$.</li>
+                <li><strong style="color: var(--c-ac);">Two Teal Rectangles:</strong> Dimensions $a \times c$, contributing $2ac$.</li>
+            </ul>
+            <p class="text-slate-700 text-lg mb-6">
+                Because these 9 pieces fit perfectly together like a puzzle to form the large square, their combined areas must perfectly equal the area of the large square!
+            </p>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto">
+                $$(a+b+c)^2 = a^2 + b^2 + c^2 + 2ab + 2bc + 2ca$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const sliderA = document.getElementById('sliderA');
+        const sliderB = document.getElementById('sliderB');
+        const sliderC = document.getElementById('sliderC');
+        
+        const valA = document.getElementById('valA');
+        const valB = document.getElementById('valB');
+        const valC = document.getElementById('valC');
+        
+        const btnExplode = document.getElementById('btnExplode');
+        const liveEq = document.getElementById('liveEq');
+        const board = document.getElementById('board');
+
+        const SCALE = 22; // Pixels per unit multiplier
+        let isExploded = false;
+
+        function drawBoard() {
+            // Get slider values
+            const a = parseInt(sliderA.value);
+            const b = parseInt(sliderB.value);
+            const c = parseInt(sliderC.value);
+
+            // Update UI labels
+            valA.innerText = a;
+            valB.innerText = b;
+            valC.innerText = c;
+
+            // Pixel dimensions
+            const aPx = a * SCALE;
+            const bPx = b * SCALE;
+            const cPx = c * SCALE;
+            const totalPx = aPx + bPx + cPx;
+
+            // Explosion Gaps
+            const gap = isExploded ? 15 : 0;
+            const g1 = 0;
+            const g2 = gap;
+            const g3 = gap * 2;
+
+            // 1. Resize Main Board (accommodate gaps if exploded)
+            board.style.width = (totalPx + g3) + 'px';
+            board.style.height = (totalPx + g3) + 'px';
+
+            if (isExploded) {
+                board.classList.add('exploded');
+            } else {
+                board.classList.remove('exploded');
+            }
+
+            // Helper function to set region size and position
+            function setRegion(id, top, left, width, height, val) {
+                const el = document.getElementById(id);
+                el.style.top = top + 'px';
+                el.style.left = left + 'px';
+                el.style.width = width + 'px';
+                el.style.height = height + 'px';
+                document.getElementById('t-' + id.substring(2)).innerText = `= ${val}`;
+            }
+
+            // 2. Position all 9 internal regions dynamically (with gaps if applied)
+            // Row 1
+            setRegion('r-a2',  0,             0,             aPx, aPx, a*a);
+            setRegion('r-ab1', 0,             aPx + g2,      bPx, aPx, a*b);
+            setRegion('r-ac1', 0,             aPx + bPx + g3, cPx, aPx, a*c);
+
+            // Row 2
+            setRegion('r-ab2', aPx + g2,      0,             aPx, bPx, a*b);
+            setRegion('r-b2',  aPx + g2,      aPx + g2,      bPx, bPx, b*b);
+            setRegion('r-bc1', aPx + g2,      aPx + bPx + g3, cPx, bPx, b*c);
+
+            // Row 3
+            setRegion('r-ac2', aPx + bPx + g3, 0,             aPx, cPx, a*c);
+            setRegion('r-bc2', aPx + bPx + g3, aPx + g2,      bPx, cPx, b*c);
+            setRegion('r-c2',  aPx + bPx + g3, aPx + bPx + g3, cPx, cPx, c*c);
+
+            // 3. Position External Labels
+            document.getElementById('lblTopA').style.left = (aPx / 2) + 'px';
+            document.getElementById('lblTopB').style.left = aPx + g2 + (bPx / 2) + 'px';
+            document.getElementById('lblTopC').style.left = aPx + bPx + g3 + (cPx / 2) + 'px';
+
+            document.getElementById('lblLeftA').style.top = (aPx / 2) + 'px';
+            document.getElementById('lblLeftB').style.top = aPx + g2 + (bPx / 2) + 'px';
+            document.getElementById('lblLeftC').style.top = aPx + bPx + g3 + (cPx / 2) + 'px';
+
+            // 4. Update the Live Mathematical Equation
+            const sum = a + b + c;
+            const sumSq = sum * sum;
+            
+            const termA2 = a*a;
+            const termB2 = b*b;
+            const termC2 = c*c;
+            const term2AB = 2*a*b;
+            const term2BC = 2*b*c;
+            const term2AC = 2*a*c;
+
+            liveEq.innerHTML = `(${a} + ${b} + ${c})&sup2; = ${a}&sup2; + ${b}&sup2; + ${c}&sup2; + 2(${a})(${b}) + 2(${b})(${c}) + 2(${a})(${c}) <br> <span class="text-slate-500 font-medium text-base mt-2 block"> ${sumSq} = ${termA2} + ${termB2} + ${termC2} + ${term2AB} + ${term2BC} + ${term2AC}</span>`;
+        }
+
+        // Event Listeners
+        sliderA.addEventListener('input', drawBoard);
+        sliderB.addEventListener('input', drawBoard);
+        sliderC.addEventListener('input', drawBoard);
+
+        btnExplode.addEventListener('click', () => {
+            isExploded = !isExploded;
+            btnExplode.innerHTML = isExploded 
+                ? '<i class="ph-bold ph-arrows-in mr-2"></i> Join Pieces' 
+                : '<i class="ph-bold ph-squares-four mr-2"></i> Separate Pieces';
+            drawBoard();
+        });
+
+        // Initialization
+        window.onload = () => {
+            drawBoard();
+            // MathJax handles the static expressions globally on load
+        };
+    </script>
+</body>
+</html>

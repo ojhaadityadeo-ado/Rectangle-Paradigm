@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Euclidean Algorithm</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        canvas {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            cursor: pointer;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=number] {
+            -moz-appearance: textfield;
+            outline: none;
+        }
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Custom Scrollbar for Ledger */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Euclidean Algorithm
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$\gcd(A, B) = \gcd(B, A \bmod B)$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            <div class="flex items-center gap-6">
+                <!-- Input A -->
+                <div class="flex flex-col gap-2">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Dimension <span class="math-font text-sm normal-case">A</span></span>
+                    <div class="flex items-center bg-white border border-slate-300 rounded-md overflow-hidden shadow-sm">
+                        <input type="number" id="inputA" value="105" min="1" max="5000" class="w-20 text-center font-bold text-indigo-700 py-1.5">
+                    </div>
+                </div>
+
+                <div class="text-xl font-bold text-slate-300 mt-5">&times;</div>
+
+                <!-- Input B -->
+                <div class="flex flex-col gap-2">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Dimension <span class="math-font text-sm normal-case">B</span></span>
+                    <div class="flex items-center bg-white border border-slate-300 rounded-md overflow-hidden shadow-sm">
+                        <input type="number" id="inputB" value="24" min="1" max="5000" class="w-20 text-center font-bold text-indigo-700 py-1.5">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-lg bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 0</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play Auto</button>
+                <button id="prevBtn" class="btn-action btn-secondary" disabled>← Prev</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next →</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- Canvas Viewport -->
+            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-0 overflow-hidden flex items-center justify-center min-h-[450px]">
+                <canvas id="euclideanCanvas" class="w-full h-full"></canvas>
+            </div>
+
+            <!-- Sidebar Explainer & Math Log -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between max-h-[450px]">
+                <div class="flex flex-col h-full">
+                    <h2 class="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3 mb-4">Math Log</h2>
+                    
+                    <div id="statusText" class="text-sm text-slate-600 mb-4 pb-4 border-b border-slate-100">
+                        Starting Rectangle: <b>105 × 24</b>. Press play or step forward to begin cutting.
+                    </div>
+
+                    <!-- Scrollable Log List -->
+                    <div class="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-2" id="mathLog">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <!-- Result Box (Hidden initially) -->
+                    <div id="resultBox" class="mt-4 p-3 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200 hidden opacity-0 transition-opacity duration-300">
+                        <p class="font-semibold text-center text-lg">GCD(<span id="resA"></span>, <span id="resB"></span>) = <span id="resGCD" class="text-xl font-bold"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Proof</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        The Euclidean Algorithm finds the greatest common divisor (GCD) of two numbers $A$ and $B$ by repeatedly removing the largest square possible from a rectangle of size $A \times B$. What's left over after every square has been cut away tells us the GCD &mdash; and geometry shows us exactly why this works.
+                    </p>
+                    <p class="mb-4">
+                        If the current rectangle has width $w$ and height $h$ with $w \ge h$, the biggest square that fits has side length $h$. We can cut exactly $q$ of these squares before the leftover strip is narrower than $h$.
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">The Divisor Never Changes</h3>
+                    <p class="text-sm mb-2">This geometric long division gives us the equation:</p>
+                    <p class="text-sm text-center font-semibold text-indigo-700 my-3">$$ w = q \cdot h + r, \qquad 0 \le r < h $$</p>
+                    <p class="text-sm mb-2">Any number that perfectly divides both $w$ and $h$ must also perfectly divide the remainder $r = w - q \cdot h$. Therefore, the GCD stays exactly the same at every step:</p>
+                    <p class="text-sm text-center font-semibold text-indigo-700 my-3">$$ \gcd(w, h) = \gcd(r, h) $$</p>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-indigo-200 bg-indigo-50 rounded-xl mt-6">
+                <p class="text-sm mt-2 max-w-2xl mx-auto mb-3 text-slate-700">
+                    The cutting stops once a side is reduced to $0$ &mdash; at that moment, the leftover rectangle is a perfect square. Because every cut preserved the GCD, this final square's side length is the exact GCD!
+                </p>
+                <p class="text-2xl font-bold text-indigo-800 mt-4 overflow-x-auto">
+                    $$ \gcd(A, B) = \text{side length of the final square} $$
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            A: 105,
+            B: 24,
+            steps: [],
+            mathLogs: [],
+            currentStepIndex: 0,
+            isPlaying: false,
+            playInterval: null
+        };
+
+        const canvas = document.getElementById('euclideanCanvas');
+        const ctx = canvas.getContext('2d');
+        const inputA = document.getElementById('inputA');
+        const inputB = document.getElementById('inputB');
+        
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const stepBtn = document.getElementById('stepBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        const statusText = document.getElementById('statusText');
+        const mathLogContainer = document.getElementById('mathLog');
+        const stepIndicator = document.getElementById('stepIndicator');
+        const resultBox = document.getElementById('resultBox');
+
+        // Unified color palette matching Tailwind conventions
+        const colors = [
+            { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' }, // red
+            { bg: '#dbeafe', border: '#3b82f6', text: '#1e3a8a' }, // blue
+            { bg: '#dcfce7', border: '#22c55e', text: '#166534' }, // green
+            { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' }, // amber
+            { bg: '#f3e8ff', border: '#a855f7', text: '#581c87' }, // purple
+            { bg: '#ffedd5', border: '#f97316', text: '#9a3412' }, // orange
+            { bg: '#e0f2fe', border: '#0ea5e9', text: '#075985' }, // sky
+            { bg: '#fce7f3', border: '#ec4899', text: '#831843' }  // pink
+        ];
+
+        function init() {
+            // Input event listeners
+            inputA.addEventListener('input', (e) => { 
+                state.A = Math.max(1, parseInt(e.target.value) || 1); 
+                if (state.A > 5000) { state.A = 5000; inputA.value = 5000; }
+                reset(); 
+            });
+            inputB.addEventListener('input', (e) => { 
+                state.B = Math.max(1, parseInt(e.target.value) || 1); 
+                if (state.B > 5000) { state.B = 5000; inputB.value = 5000; }
+                reset(); 
+            });
+            
+            playPauseBtn.addEventListener('click', togglePlay);
+            stepBtn.addEventListener('click', stepForward);
+            prevBtn.addEventListener('click', stepBack);
+            resetBtn.addEventListener('click', reset);
+            
+            window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+            canvas.addEventListener('click', () => { if (state.currentStepIndex < state.steps.length) stepForward(); });
+
+            calculateSteps();
+            resizeCanvas();
+            updateUI();
+        }
+
+        function calculateSteps() {
+            state.steps = [];
+            state.mathLogs = [];
+            let w = state.A;
+            let h = state.B;
+            let x = 0;
+            let y = 0;
+            let colorIdx = -1;
+            let lastSize = -1;
+            
+            state.mathLogs.push({ text: `Start: ${state.A} × ${state.B}`, type: 'info' });
+            
+            while (w > 0 && h > 0) {
+                let size = Math.min(w, h);
+                let larger = Math.max(w, h);
+                
+                if (size !== lastSize) {
+                    colorIdx = (colorIdx + 1) % colors.length;
+                    lastSize = size;
+                    let quotient = Math.floor(larger / size);
+                    let remainder = larger % size;
+                    
+                    let eq = w >= h ? 
+                        `${w} = ${quotient}(${size}) + ${remainder}` : 
+                        `${h} = ${quotient}(${size}) + ${remainder}`;
+                        
+                    state.mathLogs.push({ text: eq, type: 'math', color: colors[colorIdx] });
+                }
+                
+                state.steps.push({ 
+                    x: x, y: y, size: size, 
+                    color: colors[colorIdx], 
+                    currentW: w, currentH: h 
+                });
+                
+                if (w >= h) {
+                    x += size;
+                    w -= size;
+                } else {
+                    y += size;
+                    h -= size;
+                }
+            }
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+        }
+
+        function draw() {
+            const canvasW = canvas.width / (window.devicePixelRatio || 1);
+            const canvasH = canvas.height / (window.devicePixelRatio || 1);
+            ctx.clearRect(0, 0, canvasW, canvasH);
+            
+            if (state.steps.length === 0) return;
+            
+            const margin = 30;
+            const availableW = canvasW - margin * 2;
+            const availableH = canvasH - margin * 2;
+            
+            const scaleX = availableW / state.A;
+            const scaleY = availableH / state.B;
+            const scale = Math.min(scaleX, scaleY);
+            
+            const scaledA = state.A * scale;
+            const scaledB = state.B * scale;
+            
+            const offsetX = (canvasW - scaledA) / 2;
+            const offsetY = (canvasH - scaledB) / 2;
+            
+            // Draw background boundary
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(offsetX, offsetY, scaledA, scaledB);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(offsetX, offsetY, scaledA, scaledB);
+            
+            // Draw steps up to current index
+            for (let i = 0; i < state.currentStepIndex; i++) {
+                const step = state.steps[i];
+                const sqX = offsetX + (step.x * scale);
+                const sqY = offsetY + (step.y * scale);
+                const sqSize = step.size * scale;
+                
+                ctx.fillStyle = step.color.bg;
+                ctx.fillRect(sqX, sqY, sqSize, sqSize);
+                ctx.strokeStyle = step.color.border;
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(sqX, sqY, sqSize, sqSize);
+                
+                // Label
+                if (sqSize > 25) {
+                    ctx.fillStyle = step.color.text;
+                    const fontSize = Math.min(22, Math.max(10, sqSize / 3));
+                    ctx.font = `600 ${fontSize}px "Inter", sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(step.size.toString(), sqX + sqSize / 2, sqY + sqSize / 2);
+                }
+            }
+            
+            // Highlight remaining area
+            if (state.currentStepIndex < state.steps.length && state.currentStepIndex > 0) {
+                 const step = state.steps[state.currentStepIndex];
+                 const remX = offsetX + (step.x * scale);
+                 const remY = offsetY + (step.y * scale);
+                 const remW = step.currentW * scale;
+                 const remH = step.currentH * scale;
+                 
+                 ctx.strokeStyle = '#4f46e5';
+                 ctx.lineWidth = 3;
+                 ctx.setLineDash([6, 4]);
+                 ctx.strokeRect(remX, remY, remW, remH);
+                 ctx.setLineDash([]);
+            }
+        }
+
+        function updateUI() {
+            prevBtn.disabled = state.currentStepIndex === 0 || state.isPlaying;
+            stepBtn.disabled = state.currentStepIndex === state.steps.length || state.isPlaying;
+            
+            stepIndicator.textContent = `${state.currentStepIndex} / ${state.steps.length}`;
+
+            // Update Status Text & Result Box
+            if (state.currentStepIndex === state.steps.length) {
+                resultBox.classList.remove('hidden');
+                setTimeout(() => resultBox.classList.remove('opacity-0'), 50);
+                
+                document.getElementById('resA').textContent = state.A;
+                document.getElementById('resB').textContent = state.B;
+                document.getElementById('resGCD').textContent = state.steps[state.steps.length - 1].size;
+                
+                statusText.innerHTML = `<p class="text-emerald-700 font-semibold mb-1">Algorithm Complete</p><p>The remaining area is perfectly tiled by <b>${state.steps[state.steps.length - 1].size} × ${state.steps[state.steps.length - 1].size}</b> squares.</p>`;
+            } else {
+                resultBox.classList.add('opacity-0');
+                setTimeout(() => resultBox.classList.add('hidden'), 300);
+
+                if (state.currentStepIndex === 0) {
+                    statusText.innerHTML = `Starting Rectangle: <b>${state.A} × ${state.B}</b>. Press play or step forward to begin cutting.`;
+                } else {
+                    const step = state.steps[state.currentStepIndex - 1];
+                    statusText.innerHTML = `Current Remaining Area: <b>${step.currentW} × ${step.currentH}</b>.<br>Subtracting squares of size <b>${step.size} × ${step.size}</b>.`;
+                }
+            }
+
+            // Update Math Log
+            mathLogContainer.innerHTML = '';
+            
+            // Determine which logs to show based on steps
+            let logsToShow = 1; // Always show "Start"
+            let colorCount = 0;
+            let lastColor = null;
+            
+            for (let i = 0; i < state.currentStepIndex; i++) {
+                if (state.steps[i].color !== lastColor) {
+                    colorCount++;
+                    lastColor = state.steps[i].color;
+                }
+            }
+            logsToShow += colorCount;
+            if (state.currentStepIndex === state.steps.length) logsToShow = state.mathLogs.length;
+
+            for (let i = 0; i < logsToShow; i++) {
+                if (i >= state.mathLogs.length) break;
+                const log = state.mathLogs[i];
+                const div = document.createElement('div');
+                div.className = 'p-2 rounded-md transition-colors flex items-center gap-3';
+                
+                if (log.type === 'info') {
+                    div.innerHTML = `<span class="font-semibold text-slate-500">${log.text}</span>`;
+                } else if (log.type === 'math') {
+                    div.innerHTML = `<div class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: ${log.color.bg}; border: 1px solid ${log.color.border}"></div> <span class="font-bold text-slate-800">${log.text}</span>`;
+                }
+                
+                // Highlight the active step
+                if (i === logsToShow - 1 && state.currentStepIndex !== state.steps.length && i !== 0) {
+                    div.classList.add('bg-slate-100', 'border', 'border-slate-200');
+                } else {
+                    div.classList.add('opacity-70');
+                }
+                
+                mathLogContainer.appendChild(div);
+            }
+            
+            mathLogContainer.scrollTop = mathLogContainer.scrollHeight;
+            draw();
+        }
+
+        // Animation Controls
+        function togglePlay() {
+            if (state.currentStepIndex === state.steps.length) state.currentStepIndex = 0;
+            
+            state.isPlaying = !state.isPlaying;
+            if (state.isPlaying) {
+                playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                playPauseBtn.classList.replace('btn-play', 'btn-secondary');
+                
+                state.playInterval = setInterval(() => {
+                    if (state.currentStepIndex < state.steps.length) {
+                        state.currentStepIndex++;
+                        updateUI();
+                    } else {
+                        pauseAnimation();
+                    }
+                }, 700);
+            } else {
+                pauseAnimation();
+            }
+            updateUI();
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Play Auto';
+            playPauseBtn.classList.replace('btn-secondary', 'btn-play');
+            clearInterval(state.playInterval);
+            updateUI();
+        }
+
+        function stepForward() {
+            pauseAnimation();
+            if (state.currentStepIndex < state.steps.length) {
+                state.currentStepIndex++;
+                updateUI();
+            }
+        }
+
+        function stepBack() {
+            pauseAnimation();
+            if (state.currentStepIndex > 0) {
+                state.currentStepIndex--;
+                updateUI();
+            }
+        }
+
+        function reset() {
+            pauseAnimation();
+            calculateSteps();
+            state.currentStepIndex = 0;
+            updateUI();
+        }
+
+        // Boot up
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

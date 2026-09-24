@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Multiplication Rule for Conditional Probability</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-text { user-select: none; transition: opacity 0.3s ease; }
+        .fade { transition: opacity 0.4s ease; }
+        
+        /* Highlight Animations */
+        @keyframes pulse-intersect {
+            0%, 100% { stroke-width: 2px; fill: rgba(16, 185, 129, 0.4); }
+            50% { stroke-width: 4px; fill: rgba(16, 185, 129, 0.7); }
+        }
+        .anim-intersect { animation: pulse-intersect 2s infinite; stroke: #059669; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-crop-simple text-indigo-600 text-2xl"></i> Visual Proof: Multiplication Rule
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Slicing the unit square to geometrically prove that $P(A \cap B) = P(A) \cdot P(B \mid A)$.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap flex items-center gap-2" id="live-equation">
+                <span class="text-slate-800">$\text{Area}(A \cap B) =$</span>
+                <span class="text-indigo-700">$P(A)$</span>
+                <span class="text-slate-800">$\times$</span>
+                <span class="text-emerald-700">$P(B \mid A)$</span>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow">
+                <!-- P(A) Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[200px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Event <span class="math-font text-sm normal-case text-indigo-600">A</span> Width</span>
+                        <span id="val-pa" class="text-indigo-600 text-lg font-mono">0.60</span>
+                    </div>
+                    <input type="range" id="slider-pa" value="0.6" min="0.1" max="0.9" step="0.05" class="w-full">
+                </div>
+
+                <!-- P(B|A) Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[200px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span><span class="math-font text-sm normal-case text-emerald-600">B|A</span> Height</span>
+                        <span id="val-pba" class="text-emerald-600 text-lg font-mono">0.50</span>
+                    </div>
+                    <input type="range" id="slider-pba" value="0.5" min="0.1" max="0.9" step="0.05" class="w-full">
+                </div>
+                
+                <!-- Live Probability Value -->
+                <div class="bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-sm text-sm font-medium flex flex-col items-center justify-center min-w-[150px]">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">$P(A \cap B)$ Area</span>
+                    <div class="flex items-center gap-2 font-mono font-bold text-lg text-emerald-700" id="val-pab-total">
+                        0.300
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Hatching patterns for intersection areas -->
+                        <pattern id="hatch-emerald" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#059669" stroke-width="2" opacity="0.6"/>
+                        </pattern>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes (Representing Probability Bounds 0 to 1) -->
+                    <line x1="40" y1="450" x2="480" y2="450" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <line x1="50" y1="460" x2="50" y2="20" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <text x="35" y="465" class="geom-text math-font" fill="#64748b" font-size="14">0</text>
+                    <text x="450" y="465" class="geom-text math-font" fill="#64748b" font-size="14">1</text>
+                    <text x="35" y="50" class="geom-text math-font" fill="#64748b" font-size="14" text-anchor="end">1</text>
+
+                    <!-- Geometry Group -->
+                    <g id="geometry-group">
+                        <!-- Background Unit Square (Sample Space Omega) -->
+                        <rect id="rect-omega" class="geom-rect" x="50" y="50" width="400" height="400" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="6,4" />
+                        <text id="lbl-omega" class="geom-text math-font font-bold" x="250" y="250" font-size="28" fill="#94a3b8" text-anchor="middle" dominant-baseline="middle" opacity="1">Sample Space Ω (Area = 1)</text>
+
+                        <!-- Event A -->
+                        <rect id="rect-a" class="geom-rect fade" fill="rgba(79, 70, 229, 0.15)" stroke="#4338ca" stroke-width="2" opacity="0" />
+                        <text id="lbl-a-text" class="geom-text math-font font-bold fade" font-size="24" fill="#4338ca" text-anchor="middle" opacity="0">Event A</text>
+
+                        <!-- Intersection A AND B -->
+                        <rect id="rect-b" class="geom-rect fade" fill="url(#hatch-emerald)" stroke="#059669" stroke-width="2" opacity="0" />
+                        <text id="lbl-b-text" class="geom-text math-font font-bold fade" font-size="22" fill="#064e3b" text-anchor="middle" dominant-baseline="middle" opacity="0">A ∩ B</text>
+                    </g>
+
+                    <!-- Dimensions Group -->
+                    <g id="dim-group" class="fade">
+                        <!-- Width Dimension P(A) -->
+                        <line id="dim-pa-line" class="geom-line fade" stroke="#4338ca" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-pa-dim" class="geom-text math-font font-bold fade" text-anchor="middle" font-size="18" fill="#4338ca" opacity="0">P(A)</text>
+
+                        <!-- Height Dimension P(B|A) -->
+                        <line id="dim-pba-line" class="geom-line fade" stroke="#059669" stroke-width="2" stroke-dasharray="4,2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-pba-dim" class="geom-text math-font font-bold fade" text-anchor="end" dominant-baseline="middle" font-size="16" fill="#059669" opacity="0">P(B|A)</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Sample Space ($\Omega$)</span>
+                            <span class="text-xs text-slate-600">We start with a $1 \times 1$ unit square. The total area equals $1$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Event $A$</span>
+                            <span class="text-xs text-slate-600">Slice the square vertically to form a strip of width $P(A)$. The area of this entire strip is $P(A) \times 1 = P(A)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-700 block mb-1">3. The Condition ($B \mid A$)</span>
+                            <span class="text-xs text-slate-600">Within the strip $A$, we look for event $B$. Event $B$ occupies a vertical fraction equal to $P(B \mid A)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-800 block mb-1">4. The Intersection ($A \cap B$)</span>
+                            <span class="text-xs text-slate-600">The resulting shaded rectangle is the intersection $A \cap B$, meaning both events occurred.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. The Area Calculation</span>
+                            <span class="text-xs text-slate-600">The area of this final rectangle is exactly its Width $\times$ Height: $P(A) \cdot P(B \mid A)$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the sliders for $P(A)$ and $P(B|A)$. Press <strong>Play</strong> to visualize the area of the intersection.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Algebraic Property</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Geometric Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Restricting the Sample Space</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        When we calculate $P(A)$, we evaluate the area of $A$ relative to the entire $1 \times 1$ sample space $\Omega$. This is represented by a vertical rectangle of width $P(A)$.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area}(A) = P(A) \times 1 = P(A) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        For conditional probability, we "restrict" our focus completely to this new sub-region $A$. We no longer care about anything outside the vertical strip.
+                    </p>
+                </div>
+
+                <!-- Right: Height as Conditional Probability -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Height as Conditional Probability</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Inside the restricted universe of $A$, the event $B$ occurs with a relative probability of $P(B \mid A)$. Geometrically, this means $B$ fills up a vertical fraction of $A$ equal to $P(B \mid A)$.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Height of } B \text{ within } A = P(B \mid A) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Because the intersection $A \cap B$ is simply the geometric region where both events overlap, its physical size is a rectangle bounded by width $P(A)$ and height $P(B \mid A)$.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: The Multiplication Rule</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    By formally taking the area of the highlighted sub-rectangle (Width $\times$ Height), we geometrically construct the Multiplication Rule for Conditional Probability:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ P(A \cap B) = P(A) \cdot P(B \mid A) $$
+                </div>
+                <p class="text-slate-700 leading-relaxed">
+                    This visual proof intuitively confirms that the probability of $A$ and $B$ both happening is the probability of $A$ happening, scaled by the fraction of $A$ where $B$ also occurs.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            pa: 0.60,
+            pba: 0.50,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG
+        const OX = 50;      // Origin X (Bottom Left)
+        const OY = 450;     // Origin Y (Bottom Left)
+        const SCALE = 400;  // 1 unit = 400 pixels (Unit square is 400x400)
+
+        // DOM Elements
+        const DOM = {
+            sliders: { 
+                pa: document.getElementById('slider-pa'), 
+                pba: document.getElementById('slider-pba')
+            },
+            vals: { 
+                pa: document.getElementById('val-pa'), 
+                pba: document.getElementById('val-pba'), 
+                pabTotal: document.getElementById('val-pab-total') 
+            },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                lblOmega: document.getElementById('lbl-omega'),
+                rectA: document.getElementById('rect-a'), lblA: document.getElementById('lbl-a-text'),
+                rectB: document.getElementById('rect-b'), lblB: document.getElementById('lbl-b-text'),
+                dimPA: document.getElementById('dim-pa-line'), lblPADim: document.getElementById('lbl-pa-dim'),
+                dimPBA: document.getElementById('dim-pba-line'), lblPBADim: document.getElementById('lbl-pba-dim')
+            }
+        };
+
+        const descriptions = [
+            "We start with a $1 \\times 1$ unit square. The total area equals $1$.",
+            "Slice the square vertically to form a strip of width $P(A)$. The area of this entire strip is $P(A) \\times 1 = P(A)$.",
+            "Within the strip $A$, we look for event $B$. Event $B$ occupies a vertical fraction equal to $P(B \\mid A)$.",
+            "The resulting shaded rectangle is the intersection $A \\cap B$, meaning both events occurred.",
+            "The area of this final rectangle is exactly its Width $\\times$ Height: $P(A) \\cdot P(B \\mid A)$."
+        ];
+
+        function init() {
+            // Slider events
+            DOM.sliders.pa.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.pa = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.sliders.pba.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.pba = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.pa = 0.6; state.pba = 0.5;
+                DOM.sliders.pa.value = 0.6; DOM.sliders.pba.value = 0.5; 
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { pa, pba, step } = state;
+            
+            const pabTotal = pa * pba;
+
+            // UI texts
+            DOM.vals.pa.textContent = pa.toFixed(2);
+            DOM.vals.pba.textContent = pba.toFixed(2);
+            DOM.vals.pabTotal.textContent = pabTotal.toFixed(3);
+
+            // Compute SVG Dimensions in pixels
+            const pxW = pa * SCALE;
+            const pxH = pba * SCALE;
+
+            // Helper to set rect easily
+            const setRect = (el, xPos, yPos, w, h) => {
+                el.setAttribute('x', xPos);
+                el.setAttribute('y', yPos);
+                el.setAttribute('width', w);
+                el.setAttribute('height', h);
+            };
+
+            // Partition A (Full Height)
+            setRect(DOM.svg.rectA, OX, OY - SCALE, pxW, SCALE);
+            DOM.svg.lblA.setAttribute('x', OX + pxW/2); DOM.svg.lblA.setAttribute('y', OY - SCALE + 30);
+
+            // Intersection B \cap A
+            setRect(DOM.svg.rectB, OX, OY - pxH, pxW, pxH);
+            DOM.svg.lblB.setAttribute('x', OX + pxW/2); DOM.svg.lblB.setAttribute('y', OY - pxH/2);
+
+            // Width Dimension
+            const dimY = OY + 25;
+            DOM.svg.dimPA.setAttribute('x1', OX); DOM.svg.dimPA.setAttribute('x2', OX + pxW); 
+            DOM.svg.dimPA.setAttribute('y1', dimY); DOM.svg.dimPA.setAttribute('y2', dimY);
+            DOM.svg.lblPADim.setAttribute('x', OX + pxW/2); DOM.svg.lblPADim.setAttribute('y', dimY + 20);
+
+            // Height Dimension
+            const setHDim = (line, lbl, xPos, h) => {
+                line.setAttribute('x1', xPos - 5); line.setAttribute('x2', xPos - 5);
+                line.setAttribute('y1', OY); line.setAttribute('y2', OY - h);
+                lbl.setAttribute('x', xPos - 12); lbl.setAttribute('y', OY - h/2);
+            };
+            setHDim(DOM.svg.dimPBA, DOM.svg.lblPBADim, OX + pxW, pxH);
+            
+            // Adjust label to be on the right side of the height line
+            DOM.svg.lblPBADim.setAttribute('x', OX + pxW + 10);
+            DOM.svg.lblPBADim.setAttribute('text-anchor', 'start');
+
+            applyStepLogic(step);
+        }
+
+        function applyStepLogic(step) {
+            const op = (el, val) => el.style.opacity = val;
+
+            // Sample Space Text fades out as steps progress
+            op(DOM.svg.lblOmega, step === 0 ? '1' : '0.1');
+
+            // Event A
+            const showA = step >= 1 ? '1' : '0';
+            op(DOM.svg.rectA, showA); op(DOM.svg.lblA, showA); op(DOM.svg.dimPA, showA); op(DOM.svg.lblPADim, showA);
+
+            // B conditional height
+            const showH = step >= 2 ? '1' : '0';
+            op(DOM.svg.dimPBA, showH); op(DOM.svg.lblPBADim, showH);
+
+            // B in A (Intersection)
+            const showB = step >= 3 ? '1' : '0';
+            op(DOM.svg.rectB, showB); op(DOM.svg.lblB, showB);
+            
+            if (step >= 3 && step <= 4) DOM.svg.rectB.classList.add('anim-intersect'); 
+            else DOM.svg.rectB.classList.remove('anim-intersect');
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            applyStepLogic(step);
+
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 400);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); 
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

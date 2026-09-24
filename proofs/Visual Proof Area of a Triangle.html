@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Area of a Triangle</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            --c-tri1-fill: rgba(56, 189, 248, 0.65);
+            --c-tri1-stroke: #0284c7;
+            --c-tri2-fill: rgba(251, 191, 36, 0.65);
+            --c-tri2-stroke: #d97706;
+            --c-sliver-fill: rgba(45, 212, 191, 0.75);
+            --c-sliver-stroke: #0d9488;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 720px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Shapes Styling */
+        .poly-tri1 {
+            fill: var(--c-tri1-fill);
+            stroke: var(--c-tri1-stroke);
+            stroke-width: 2.5;
+            stroke-linejoin: round;
+            transition: opacity 0.5s ease;
+        }
+
+        .poly-tri2 {
+            fill: var(--c-tri2-fill);
+            stroke: var(--c-tri2-stroke);
+            stroke-width: 2.5;
+            stroke-linejoin: round;
+            transform-origin: 360px 210px;
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease;
+        }
+
+        .poly-sliver {
+            fill: var(--c-sliver-fill);
+            stroke: var(--c-sliver-stroke);
+            stroke-width: 2.5;
+            stroke-linejoin: round;
+            transition: transform 1.2s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.6s ease;
+        }
+
+        .height-line {
+            stroke: #64748b;
+            stroke-width: 2;
+            stroke-dasharray: 6 4;
+            transition: opacity 0.5s ease;
+        }
+
+        .dim-line {
+            stroke: #475569;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .dim-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            fill: #334155;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+
+        /* Buttons Styling */
+        .btn-action {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #1d4ed8; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: $\text{Area of a Triangle} = \frac{1}{2} b h$
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-sky-50 text-sky-950 rounded-lg mb-6 shadow-sm border border-sky-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$\text{Area} = \frac{1}{2} b h$$
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-sky-700 font-bold text-lg bg-sky-100 px-3 py-1 rounded-md border border-sky-200">0 / 3</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button id="nextBtn" class="btn-action btn-play">
+                        ▶ Step-by-Step Animation
+                    </button>
+                    <button id="resetBtn" class="btn-action btn-secondary">
+                        ↺ Reset
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="visualization-area">
+            <div class="svg-container">
+                <svg id="proofSvg" viewBox="0 0 720 420">
+                    
+                    <!-- SVG Definitions for Markers -->
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                        </marker>
+                    </defs>
+
+                    <!-- Triangle 1 Main Parts (Base Triangle ABC) -->
+                    <!-- Points: A(150, 300), B(450, 300), C(270, 120) -->
+                    <!-- Midpoint M of BC: (360, 210) -->
+
+                    <!-- Full Original Triangle 1 (Visible initially) -->
+                    <polygon id="tri1-full" points="150,300 450,300 270,120" class="poly-tri1" />
+
+                    <!-- Split Trapezoid portion of Triangle 1 (DBC: D(270,300), B(450,300), C(270,120)) -->
+                    <polygon id="tri1-trap" points="270,300 450,300 270,120" class="poly-tri1" style="opacity: 0;" />
+
+                    <!-- Triangle 2 (Rotated Copy around Midpoint M(360, 210)) -->
+                    <!-- Initially placed over ABC, rotated 180 deg to form Parallelogram ABA'C -->
+                    <polygon id="tri2" points="150,300 450,300 270,120" class="poly-tri2" style="opacity: 0; transform: rotate(0deg);" />
+
+                    <!-- Triangular Sliver ADC (Cut from Left: A(150,300), D(270,300), C(270,120)) -->
+                    <polygon id="sliver" points="150,300 270,300 270,120" class="poly-sliver" style="opacity: 0; transform: translate(0px, 0px);" />
+
+                    <!-- Height Line (C to D: (270,120) -> (270,300)) -->
+                    <line id="heightLine" x1="270" y1="120" x2="270" y2="300" class="height-line" style="opacity: 0;" />
+                    <line id="cutLine" x1="270" y1="120" x2="270" y2="300" stroke="#ef4444" stroke-width="3" stroke-dasharray="6 4" style="opacity: 0; transition: opacity 0.5s;" />
+
+                    <!-- Midpoint Dot M(360, 210) -->
+                    <g id="midpointGroup" style="transition: opacity 0.5s;">
+                        <circle cx="360" cy="210" r="5" fill="#d97706" />
+                        <text x="375" y="210" class="dim-text" style="font-size: 14px; fill: #d97706;">M</text>
+                    </g>
+
+                    <!-- Base Bracket and Dimension b -->
+                    <g id="baseDimGroup">
+                        <path d="M 150 325 L 150 335 L 450 335 L 450 325" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="300" y="355" class="dim-text">b</text>
+                    </g>
+
+                    <!-- Rectangle Base Dimension b (Appears in Step 3 for Rectangle [270, 570]) -->
+                    <g id="rectBaseDimGroup" style="opacity: 0; transition: opacity 0.5s;">
+                        <path d="M 270 325 L 270 335 L 570 335 L 570 325" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="420" y="355" class="dim-text" style="fill: #0d9488;">b (Base)</text>
+                    </g>
+
+                    <!-- Height Dimension h -->
+                    <g id="heightDimGroup">
+                        <path d="M 125 120 L 115 120 L 115 300 L 125 300" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="90" y="210" class="dim-text">h</text>
+                    </g>
+
+                    <!-- Shape Labels -->
+                    <text id="lblTri1" x="290" y="240" class="dim-text" style="fill: #0284c7; opacity: 1; transition: opacity 0.5s;">Triangle 1</text>
+                    <text id="lblTri2" x="430" y="180" class="dim-text" style="fill: #d97706; opacity: 0; transition: opacity 0.5s;">Triangle 2</text>
+                    <text id="lblSliver" x="230" y="240" class="dim-text" style="fill: #0d9488; opacity: 0; transition: opacity 0.5s;">Sliver</text>
+
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-sky-50 border-l-4 border-sky-600 p-5 rounded-r-lg shadow-sm mb-6 min-h-[90px] flex items-center">
+            <p class="text-slate-800 text-lg leading-relaxed w-full transition-opacity duration-300" id="statusText">
+                Press <strong>Step-by-Step Animation</strong> to begin the visual proof.
+            </p>
+        </div>
+
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">How to understand this proof:</h3>
+            <ol class="list-decimal list-inside space-y-3 text-slate-700 text-lg">
+                <li>
+                    <strong>Start with a Triangle:</strong> We begin with an arbitrary triangle of base length $b$ and height $h$.
+                </li>
+                <li>
+                    <strong>Rotate an Identical Copy ($180^\circ$):</strong> By rotating a duplicate copy of the triangle $180^\circ$ around the midpoint $M$ of side $BC$, the two triangles join to form a <strong>parallelogram</strong> with base $b$ and height $h$.
+                </li>
+                <li>
+                    <strong>Transform Parallelogram into a Rectangle:</strong> By cutting a triangular sliver from the left side along the perpendicular height line and sliding (translating) it to the right, it fits perfectly on the opposite end to build a plain <strong>$b \times h$ rectangle</strong>.
+                </li>
+                <li>
+                    <strong>The Final Conclusion:</strong> The area of the entire newly formed rectangle is simply $\text{width} \times \text{height} = b \times h$. Since this rectangle was constructed from exactly 2 identical copies of our original triangle, the area of one triangle must be exactly half:
+                </li>
+            </ol>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto mt-6">
+                $$\text{Area of Triangle} = \frac{1}{2} \times b \times h$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentStep = 0;
+            const maxSteps = 3;
+
+            // DOM Elements
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const stepIndicator = document.getElementById('stepIndicator');
+            const statusText = document.getElementById('statusText');
+            const liveEq = document.getElementById('liveEq');
+
+            // SVG Elements
+            const tri1Full = document.getElementById('tri1-full');
+            const tri1Trap = document.getElementById('tri1-trap');
+            const tri2 = document.getElementById('tri2');
+            const sliver = document.getElementById('sliver');
+            const heightLine = document.getElementById('heightLine');
+            const cutLine = document.getElementById('cutLine');
+            const midpointGroup = document.getElementById('midpointGroup');
+            const baseDimGroup = document.getElementById('baseDimGroup');
+            const rectBaseDimGroup = document.getElementById('rectBaseDimGroup');
+
+            const lblTri1 = document.getElementById('lblTri1');
+            const lblTri2 = document.getElementById('lblTri2');
+            const lblSliver = document.getElementById('lblSliver');
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            function updateExplanation() {
+                let text = "";
+                let eq = "";
+
+                if (currentStep === 0) {
+                    text = "<strong>1. Initial Triangle:</strong> We start with a triangle with base $b$ and height $h$. We mark the midpoint $M$ on side $BC$.";
+                    eq = "$$\\text{Area of Triangle} = ?$$";
+                } else if (currentStep === 1) {
+                    text = "<strong>2. Rotate a Copy ($180^\\circ$):</strong> We duplicate the triangle and rotate it $180^\\circ$ around midpoint $M$. Together, the two identical triangles form a <strong>parallelogram</strong> of base $b$ and height $h$.";
+                    eq = "$$\\text{Area of Parallelogram} = 2 \\times \\text{Area of Triangle}$$";
+                } else if (currentStep === 2) {
+                    text = "<strong>3. Cut and Slide Sliver:</strong> Cut a triangular sliver from the left edge along height $h$. Sliding this sliver to the right side transforms the parallelogram into a rectangle!";
+                    eq = "$$\\text{Area of Parallelogram} = \\text{Area of Rectangle}$$";
+                } else {
+                    text = "<strong>4. Final Result (Q.E.D.):</strong> The rectangle has an area of $b \\times h$. Because it consists of 2 identical copies of our triangle, the area of one triangle is exactly $\\frac{1}{2} b h$.";
+                    eq = "$$\\text{Area of Triangle} = \\frac{1}{2} b h$$";
+                }
+
+                statusText.style.opacity = '0';
+                setTimeout(() => {
+                    statusText.innerHTML = text;
+                    statusText.style.opacity = '1';
+                    liveEq.innerHTML = eq;
+                    updateMathJax();
+                }, 150);
+            }
+
+            function applyStep(step) {
+                currentStep = step;
+                stepIndicator.textContent = `${currentStep} / ${maxSteps}`;
+
+                if (currentStep === 0) {
+                    // Step 0: Original Triangle
+                    tri1Full.style.opacity = '1';
+                    tri1Trap.style.opacity = '0';
+                    sliver.style.opacity = '0';
+                    sliver.style.transform = 'translate(0px, 0px)';
+                    
+                    tri2.style.opacity = '0';
+                    tri2.style.transform = 'rotate(0deg)';
+
+                    heightLine.style.opacity = '1';
+                    cutLine.style.opacity = '0';
+                    midpointGroup.style.opacity = '1';
+
+                    baseDimGroup.style.opacity = '1';
+                    rectBaseDimGroup.style.opacity = '0';
+
+                    lblTri1.style.opacity = '1';
+                    lblTri2.style.opacity = '0';
+                    lblSliver.style.opacity = '0';
+
+                    nextBtn.innerHTML = "▶ Step-by-Step Animation";
+                    nextBtn.classList.replace('btn-secondary', 'btn-play');
+
+                } else if (currentStep === 1) {
+                    // Step 1: Rotate Triangle 2 to form Parallelogram
+                    tri1Full.style.opacity = '1';
+                    tri1Trap.style.opacity = '0';
+                    sliver.style.opacity = '0';
+                    sliver.style.transform = 'translate(0px, 0px)';
+
+                    tri2.style.opacity = '1';
+                    tri2.style.transform = 'rotate(180deg)';
+
+                    heightLine.style.opacity = '1';
+                    cutLine.style.opacity = '0';
+                    midpointGroup.style.opacity = '1';
+
+                    baseDimGroup.style.opacity = '1';
+                    rectBaseDimGroup.style.opacity = '0';
+
+                    lblTri1.style.opacity = '1';
+                    lblTri2.style.opacity = '1';
+                    lblSliver.style.opacity = '0';
+
+                    nextBtn.innerHTML = "Next Step →";
+
+                } else if (currentStep === 2) {
+                    // Step 2: Cut & Slide Sliver rightwards (+300px)
+                    tri1Full.style.opacity = '0';
+                    tri1Trap.style.opacity = '1';
+                    
+                    sliver.style.opacity = '1';
+                    sliver.style.transform = 'translate(300px, 0px)';
+
+                    tri2.style.opacity = '1';
+                    tri2.style.transform = 'rotate(180deg)';
+
+                    heightLine.style.opacity = '0';
+                    cutLine.style.opacity = '1';
+                    midpointGroup.style.opacity = '0';
+
+                    baseDimGroup.style.opacity = '0';
+                    rectBaseDimGroup.style.opacity = '1';
+
+                    lblTri1.style.opacity = '0';
+                    lblTri2.style.opacity = '1';
+                    lblSliver.style.opacity = '1';
+
+                    nextBtn.innerHTML = "Next Step →";
+
+                } else if (currentStep === 3) {
+                    // Step 3: Highlight Rectangle & Conclusion
+                    tri1Full.style.opacity = '0';
+                    tri1Trap.style.opacity = '1';
+
+                    sliver.style.opacity = '1';
+                    sliver.style.transform = 'translate(300px, 0px)';
+
+                    tri2.style.opacity = '1';
+                    tri2.style.transform = 'rotate(180deg)';
+
+                    heightLine.style.opacity = '0';
+                    cutLine.style.opacity = '0';
+                    midpointGroup.style.opacity = '0';
+
+                    baseDimGroup.style.opacity = '0';
+                    rectBaseDimGroup.style.opacity = '1';
+
+                    lblTri1.style.opacity = '0';
+                    lblTri2.style.opacity = '0.5';
+                    lblSliver.style.opacity = '0.5';
+
+                    nextBtn.innerHTML = "↺ Reset Proof";
+                    nextBtn.classList.replace('btn-play', 'btn-secondary');
+                }
+
+                updateExplanation();
+            }
+
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < maxSteps) {
+                    applyStep(currentStep + 1);
+                } else {
+                    applyStep(0);
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                applyStep(0);
+            });
+
+            // Initial load
+            applyStep(0);
+        });
+    </script>
+</body>
+</html>

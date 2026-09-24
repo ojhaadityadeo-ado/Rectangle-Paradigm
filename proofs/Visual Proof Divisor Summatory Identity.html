@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual proof of the divisor summatory identity using lattice cells under a hyperbola." />
+  <title>Visual Proof: Divisor Summatory Identity</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #7c3aed;
+      --accent-2: #0891b2;
+      --gold: #d97706;
+      --green: #059669;
+      --rose: #e11d48;
+      --shadow: 0 16px 40px rgba(15,23,42,.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 15%, rgba(8,145,178,.06), transparent 26rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 60px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid rgba(124,58,237,.25);
+      border-radius: 999px;
+      color: #6d28d9;
+      background: rgba(124,58,237,.06);
+      font-size: .82rem;
+      font-weight: 760;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(2rem, 4vw, 3.35rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      margin: 0 auto;
+      max-width: 940px;
+      color: var(--muted);
+      font-size: clamp(.98rem, 1.8vw, 1.12rem);
+    }
+
+    .formula-banner {
+      margin: 22px auto 0;
+      max-width: 930px;
+      padding: 15px 18px;
+      border: 1px solid rgba(8,145,178,.20);
+      border-radius: 15px;
+      background: linear-gradient(180deg, rgba(8,145,178,.055), rgba(8,145,178,.018));
+      font-size: clamp(1.01rem, 2.05vw, 1.31rem);
+      overflow-x: auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(320px, .55fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .slider-box {
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+      border-radius: 14px;
+      min-width: 0;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: .88rem;
+    }
+
+    .slider-head strong {
+      color: #6d28d9;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 9px 13px;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+      transition: .18s ease;
+      font-weight: 720;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(124,58,237,.45);
+      background: rgba(124,58,237,.06);
+    }
+
+    .btn.primary {
+      border-color: rgba(124,58,237,.40);
+      background: linear-gradient(180deg, rgba(124,58,237,.12), rgba(124,58,237,.07));
+    }
+
+    .btn:disabled {
+      opacity: .42;
+      cursor: not-allowed;
+    }
+
+    .stage-shell {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.085) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.085) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 28px 28px;
+      min-height: 570px;
+    }
+
+    #proofSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 570px;
+      aspect-ratio: 1.3 / 1;
+    }
+
+    .stage-badge {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 2;
+      padding: 7px 10px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,.94);
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch {
+      width: 15px;
+      height: 15px;
+      border-radius: 4px;
+      border: 1px solid rgba(15,23,42,.18);
+    }
+
+    .swatch.valid { background: rgba(124,58,237,.38); }
+    .swatch.column { background: rgba(217,119,6,.62); }
+    .swatch.product { background: rgba(8,145,178,.62); }
+    .swatch.symmetry { background: rgba(5,150,105,.45); }
+
+    .side-card {
+      padding: 18px;
+      position: sticky;
+      top: 14px;
+    }
+
+    .step-kicker {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .step-title {
+      margin: 4px 0 8px;
+      font-size: 1.34rem;
+      line-height: 1.25;
+    }
+
+    .step-copy {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .equation-card {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid rgba(124,58,237,.20);
+      background: rgba(124,58,237,.045);
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .equation-label {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+    }
+
+    .dynamic-equation { min-width: max-content; }
+
+    .fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .fact {
+      padding: 11px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+      min-width: 0;
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      font-size: .98rem;
+      overflow-wrap: anywhere;
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border-left: 3px solid var(--accent-2);
+      border-radius: 8px 12px 12px 8px;
+      background: rgba(8,145,178,.045);
+      color: #334155;
+      font-size: .91rem;
+    }
+
+    .pair-box {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(15,23,42,.018);
+      color: #475569;
+      font-size: .9rem;
+    }
+
+    .pair-box strong { color: #0e7490; }
+
+    .below {
+      margin-top: 20px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .explain-card { padding: 22px; }
+
+    .explain-card h2,
+    .explain-card h3 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .explain-card p,
+    .explain-card li { color: #475569; }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-weight: 800;
+      font-size: .82rem;
+    }
+
+    .proof-step b { color: #0f172a; }
+
+    .final-box {
+      padding: 17px;
+      text-align: center;
+      border: 1px solid rgba(5,150,105,.24);
+      border-radius: 14px;
+      background: rgba(16,185,129,.055);
+      overflow-x: auto;
+    }
+
+    .final-box .big {
+      font-size: clamp(1.02rem, 2vw, 1.29rem);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .mini-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .mini-card h4 {
+      margin: 0 0 6px;
+      color: #0f172a;
+    }
+
+    .mini-card p { margin: 0; }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    /* SVG */
+    .axis {
+      stroke: #64748b;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .tile {
+      fill: #7c3aed;
+      fill-opacity: .25;
+      stroke: rgba(109,40,217,.30);
+      stroke-width: .65;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .tile-muted {
+      fill: #cbd5e1;
+      fill-opacity: .14;
+      stroke: rgba(100,116,139,.17);
+      stroke-width: .55;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .tile-column {
+      fill: #d97706;
+      fill-opacity: .65;
+      stroke: #b45309;
+      stroke-width: 1.1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .tile-product {
+      fill: #0891b2;
+      fill-opacity: .68;
+      stroke: #0e7490;
+      stroke-width: 1.2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .tile-symmetric {
+      fill: #059669;
+      fill-opacity: .38;
+      stroke: rgba(4,120,87,.55);
+      stroke-width: .75;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .tile-overlap {
+      fill: #d97706;
+      fill-opacity: .42;
+      stroke: rgba(180,83,9,.62);
+      stroke-width: .8;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .hyperbola {
+      fill: none;
+      stroke: #0f172a;
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .diagonal {
+      stroke: #059669;
+      stroke-width: 1.5;
+      stroke-dasharray: 6 5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .guide {
+      stroke: rgba(100,116,139,.38);
+      stroke-width: .8;
+      stroke-dasharray: 5 5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .svg-label {
+      fill: #334155;
+      font-weight: 780;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .axis-label {
+      fill: #64748b;
+      font-weight: 760;
+      text-anchor: middle;
+    }
+
+    .cell-text {
+      fill: #0f172a;
+      font-weight: 800;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+      paint-order: stroke;
+      stroke: rgba(255,255,255,.94);
+      stroke-width: 3px;
+    }
+
+    .gold-text { fill: #92400e; }
+    .cyan-text { fill: #0e7490; }
+    .green-text { fill: #047857; }
+
+    .callout {
+      fill: #ffffff;
+      fill-opacity: .95;
+      stroke: rgba(15,23,42,.13);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .bracket {
+      stroke: #b45309;
+      stroke-width: 2;
+      fill: none;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .animate-in {
+      animation: fadeIn .45s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: .08; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .side-card { position: static; }
+      .stage-shell, #proofSvg { min-height: 460px; }
+    }
+
+    @media (max-width: 720px) {
+      .control-grid { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; }
+      .button-row { width: 100%; }
+      .btn { flex: 1 1 auto; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 18px, 1180px); padding-top: 22px; }
+      .visual-card, .side-card, .explain-card { padding: 13px; }
+      .stage-shell, #proofSvg { min-height: 390px; }
+      .fact-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Proof • Number Theory</div>
+    <h1>The Divisor Summatory Identity as One Picture Counted Two Ways</h1>
+    <p class="subtitle">
+      Each tile represents an ordered pair of positive integers \((a,b)\) satisfying \(ab\le N\).
+      Count the same tiles by vertical columns and you get floor functions. Group them by their product
+      and you get divisor counts. Since the collection of tiles never changes, the two totals must be equal.
+    </p>
+
+    <div class="formula-banner">
+      \[
+        \boxed{\displaystyle
+        \sum_{k=1}^{N}\left\lfloor\frac{N}{k}\right\rfloor
+        =
+        \sum_{m=1}^{N} d(m)}
+      \]
+      where \(d(m)\) is the number of positive divisors of \(m\).
+    </div>
+  </header>
+
+  <section class="main-grid">
+    <div class="card visual-card">
+      <div class="control-grid">
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Choose \(N\)</span>
+            <strong id="nReadout">N = 24</strong>
+          </div>
+          <input id="nSlider" type="range" min="6" max="36" value="24" step="1"
+                 aria-label="Choose N">
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Inspect column \(k\)</span>
+            <strong id="kReadout">k = 5</strong>
+          </div>
+          <input id="kSlider" type="range" min="1" max="24" value="5" step="1"
+                 aria-label="Choose column k">
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Inspect product \(m\)</span>
+            <strong id="mReadout">m = 12</strong>
+          </div>
+          <input id="mSlider" type="range" min="1" max="24" value="12" step="1"
+                 aria-label="Choose product m">
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="button-row">
+          <button class="btn" id="resetBtn" type="button">↺ Reset</button>
+          <button class="btn" id="prevBtn" type="button">← Previous</button>
+        </div>
+        <div class="button-row">
+          <button class="btn primary" id="playBtn" type="button">▶ Play</button>
+          <button class="btn primary" id="nextBtn" type="button">Next →</button>
+        </div>
+      </div>
+
+      <div class="stage-shell">
+        <div class="stage-badge" id="stageBadge">Step 1 of 5</div>
+        <svg id="proofSvg" viewBox="0 0 960 650" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">Divisor summatory identity visualized by lattice tiles</title>
+          <desc id="svgDesc">
+            Tiles indexed by positive integer pairs a and b are shown when a times b is at most N.
+            Counting tiles by columns gives floor N over k. Counting tiles by product gives divisor counts.
+          </desc>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="swatch valid"></span> pair \((a,b)\) with \(ab\le N\)</span>
+        <span class="legend-item"><span class="swatch column"></span> selected column \(a=k\)</span>
+        <span class="legend-item"><span class="swatch product"></span> selected product \(ab=m\)</span>
+        <span class="legend-item"><span class="swatch symmetry"></span> symmetry used in the fast count</span>
+      </div>
+    </div>
+
+    <aside class="card side-card" aria-live="polite">
+      <div class="step-kicker" id="stepKicker">Step 1</div>
+      <h2 class="step-title" id="stepTitle">Build the lattice region \(ab\le N\)</h2>
+      <p class="step-copy" id="stepCopy"></p>
+
+      <div class="equation-card">
+        <div class="equation-label">What the picture says</div>
+        <div class="dynamic-equation" id="stepEquation"></div>
+      </div>
+
+      <div class="fact-grid">
+        <div class="fact">
+          <small>Number of valid tiles</small>
+          <strong id="factTotal">84</strong>
+        </div>
+        <div class="fact">
+          <small>Selected column height</small>
+          <strong id="factColumn">4</strong>
+        </div>
+        <div class="fact">
+          <small>\(d(m)\)</small>
+          <strong id="factDivisors">6</strong>
+        </div>
+        <div class="fact">
+          <small>\(\lfloor\sqrt N\rfloor\)</small>
+          <strong id="factRoot">4</strong>
+        </div>
+      </div>
+
+      <div class="pair-box" id="pairBox">
+        For \(m=12\), the factor pairs are highlighted here.
+      </div>
+
+      <div class="notice" id="notice"></div>
+    </aside>
+  </section>
+
+  <section class="below">
+    <article class="card explain-card">
+      <h2>The visual proof</h2>
+
+      <div class="proof-steps">
+        <div class="proof-step">
+          <b>Give every ordered pair \((a,b)\) one unit tile.</b>
+          Keep the tile exactly when
+          \[
+            ab\le N.
+          \]
+          So the whole staircase-like region represents all positive integer pairs whose product is at most \(N\).
+        </div>
+
+        <div class="proof-step">
+          <b>Count the tiles by columns.</b>
+          Fix \(a=k\). Then \(kb\le N\), which means
+          \[
+            b\le\frac Nk.
+          \]
+          Since \(b\) must be an integer, that column contains exactly
+          \[
+            \left\lfloor\frac Nk\right\rfloor
+          \]
+          tiles.
+        </div>
+
+        <div class="proof-step">
+          <b>Now count those same tiles by their product.</b>
+          Fix a product \(m\le N\). A tile has label \(m\) exactly when
+          \[
+            ab=m.
+          \]
+          Choosing \(a\) is the same thing as choosing a positive divisor of \(m\), because then \(b=m/a\).
+          Therefore there are exactly \(d(m)\) tiles whose product is \(m\).
+        </div>
+
+        <div class="proof-step">
+          <b>Sum the two different groupings.</b>
+          Counting every tile column-by-column gives
+          \[
+            \sum_{k=1}^{N}\left\lfloor\frac Nk\right\rfloor.
+          \]
+          Counting every tile product-by-product gives
+          \[
+            \sum_{m=1}^{N}d(m).
+          \]
+        </div>
+
+        <div class="proof-step">
+          <b>They count the identical set of tiles.</b>
+          Therefore
+          \[
+            \boxed{\displaystyle
+            \sum_{k=1}^{N}\left\lfloor\frac Nk\right\rfloor
+            =
+            \sum_{m=1}^{N}d(m)}.
+          \]
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>A concrete example: \(N=12\)</h3>
+      <p>
+        Counting by columns gives
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \left\lfloor\frac{12}{1}\right\rfloor+
+            \left\lfloor\frac{12}{2}\right\rfloor+\cdots+
+            \left\lfloor\frac{12}{12}\right\rfloor
+            =
+            12+6+4+3+2+2+1+1+1+1+1+1
+            =35.
+          \]
+        </div>
+      </div>
+
+      <p>
+        Counting instead by products gives
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            d(1)+d(2)+\cdots+d(12)=35.
+          \]
+        </div>
+      </div>
+
+      <p>
+        Nothing mysterious has happened: both expressions are simply counting the same \(35\) ordered factor pairs
+        \((a,b)\) with \(ab\le12\).
+      </p>
+    </article>
+
+    <article class="card explain-card">
+      <h3>Why \(d(m)\) really appears</h3>
+
+      <div class="two-col">
+        <div class="mini-card">
+          <h4>Example: \(m=12\)</h4>
+          <p>
+            The tiles satisfying \(ab=12\) are
+            \[
+              (1,12),(2,6),(3,4),(4,3),(6,2),(12,1).
+            \]
+            There are \(6\) of them, exactly \(d(12)=6\).
+          </p>
+        </div>
+
+        <div class="mini-card">
+          <h4>Example: \(m=16\)</h4>
+          <p>
+            The tiles are
+            \[
+              (1,16),(2,8),(4,4),(8,2),(16,1).
+            \]
+            There are \(5\), exactly \(d(16)=5\).
+          </p>
+        </div>
+      </div>
+
+      <p>
+        Ordered pairs matter here. Each divisor \(a\mid m\) produces exactly one tile
+        \[
+          (a,m/a).
+        \]
+        This is the direct bijection between divisors and lattice tiles of product \(m\).
+      </p>
+    </article>
+
+    <article class="card explain-card">
+      <h3>Bonus: the Dirichlet hyperbola shortcut</h3>
+      <p>
+        The picture is symmetric under swapping \(a\) and \(b\). Let
+        \[
+          q=\lfloor\sqrt N\rfloor.
+        \]
+        Every valid pair has either \(a\le q\) or \(b\le q\). Count the left part and reflect it.
+        The central \(q\times q\) square gets counted twice, so subtract it once:
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \boxed{\displaystyle
+            \sum_{m\le N}d(m)
+            =
+            2\sum_{k=1}^{q}\left\lfloor\frac Nk\right\rfloor-q^2,
+            \qquad q=\lfloor\sqrt N\rfloor.}
+          \]
+        </div>
+      </div>
+
+      <p>
+        The final animation step shows this symmetry directly. It is the elementary geometric idea behind
+        the classical Dirichlet hyperbola method.
+      </p>
+    </article>
+  </section>
+
+  <p class="footer-note">
+    Interactive visual proof by double-counting integer lattice tiles.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const svg = document.getElementById("proofSvg");
+
+  const nSlider = document.getElementById("nSlider");
+  const kSlider = document.getElementById("kSlider");
+  const mSlider = document.getElementById("mSlider");
+
+  const nReadout = document.getElementById("nReadout");
+  const kReadout = document.getElementById("kReadout");
+  const mReadout = document.getElementById("mReadout");
+
+  const resetBtn = document.getElementById("resetBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const playBtn = document.getElementById("playBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const stageBadge = document.getElementById("stageBadge");
+  const stepKicker = document.getElementById("stepKicker");
+  const stepTitle = document.getElementById("stepTitle");
+  const stepCopy = document.getElementById("stepCopy");
+  const stepEquation = document.getElementById("stepEquation");
+  const notice = document.getElementById("notice");
+
+  const factTotal = document.getElementById("factTotal");
+  const factColumn = document.getElementById("factColumn");
+  const factDivisors = document.getElementById("factDivisors");
+  const factRoot = document.getElementById("factRoot");
+  const pairBox = document.getElementById("pairBox");
+
+  let step = 1;
+  let timer = null;
+
+  function divisors(m) {
+    const ds = [];
+    for (let d=1; d<=m; d++) {
+      if (m % d === 0) ds.push(d);
+    }
+    return ds;
+  }
+
+  function divisorCount(m) {
+    return divisors(m).length;
+  }
+
+  function summatory(N) {
+    let total = 0;
+    for (let k=1; k<=N; k++) total += Math.floor(N/k);
+    return total;
+  }
+
+  function state() {
+    const N = Number(nSlider.value);
+
+    kSlider.max = String(N);
+    mSlider.max = String(N);
+
+    let k = Math.min(Number(kSlider.value), N);
+    let m = Math.min(Number(mSlider.value), N);
+
+    if (k < 1) k = 1;
+    if (m < 1) m = 1;
+
+    kSlider.value = String(k);
+    mSlider.value = String(m);
+
+    const q = Math.floor(Math.sqrt(N));
+    const total = summatory(N);
+    const colHeight = Math.floor(N/k);
+    const ds = divisors(m);
+
+    let half = 0;
+    for (let a=1; a<=q; a++) half += Math.floor(N/a);
+    const hyperbolaTotal = 2*half - q*q;
+
+    return {N,k,m,q,total,colHeight,ds,dm:ds.length,half,hyperbolaTotal};
+  }
+
+  function makeSvg(tag, attrs={}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([key,value]) => el.setAttribute(key,value));
+    return el;
+  }
+
+  function addText(x,y,text,cls,size,parent=svg,extra={}) {
+    const el = makeSvg("text",{x,y,class:cls,"font-size":size,...extra});
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  function clearSvg() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+  }
+
+  function renderSvg() {
+    clearSvg();
+    const {N,k,m,q,total,colHeight,dm,half,hyperbolaTotal} = state();
+
+    const W = 960;
+    const H = 650;
+    const left = 92;
+    const right = 58;
+    const top = 72;
+    const bottom = 94;
+
+    const usableW = W-left-right;
+    const usableH = H-top-bottom;
+
+    const cell = Math.min(usableW/N, usableH/N);
+    const board = cell*N;
+
+    const x0 = left;
+    const y0 = H-bottom;
+
+    const X = a => x0 + (a-1)*cell;
+    const Y = b => y0 - b*cell;
+
+    // Axis lines.
+    svg.appendChild(makeSvg("line",{
+      x1:x0,y1:y0,x2:x0+board+12,y2:y0,class:"axis"
+    }));
+    svg.appendChild(makeSvg("line",{
+      x1:x0,y1:y0,x2:x0,y2:y0-board-12,class:"axis"
+    }));
+
+    addText(x0+board+22,y0+5,"a","axis-label",16);
+    addText(x0-20,y0-board-18,"b","axis-label",16);
+
+    // All valid tiles.
+    for (let a=1; a<=N; a++) {
+      const height = Math.floor(N/a);
+
+      for (let b=1; b<=height; b++) {
+        const product = a*b;
+
+        let cls = "tile";
+        let extraClass = "";
+
+        if (step===2) {
+          cls = a===k ? "tile-column" : "tile-muted";
+        } else if (step===3) {
+          cls = product===m ? "tile-product" : "tile-muted";
+        } else if (step===4) {
+          cls = "tile";
+        } else if (step===5) {
+          const inLeft = a<=q;
+          const inBottom = b<=q;
+          if (inLeft && inBottom) cls="tile-overlap";
+          else if (inLeft || inBottom) cls="tile-symmetric";
+          else cls="tile-muted";
+        }
+
+        const rect = makeSvg("rect",{
+          x:X(a)+.7,
+          y:Y(b)+.7,
+          width:Math.max(1,cell-1.4),
+          height:Math.max(1,cell-1.4),
+          rx:Math.min(3,cell*.12),
+          class:`${cls} ${extraClass}`
+        });
+        svg.appendChild(rect);
+
+        // Product labels only when they remain readable.
+        if (step===3 && product===m && cell>=18) {
+          addText(
+            X(a)+cell/2,
+            Y(b)+cell/2,
+            String(m),
+            "cell-text",
+            Math.min(13,cell*.42)
+          );
+        }
+      }
+    }
+
+    // Hyperbola y=N/x drawn in board coordinates.
+    const pts = [];
+    const samples = 180;
+    for (let i=0; i<=samples; i++) {
+      const a = 1 + (N-1)*i/samples;
+      const b = N/a;
+      const px = x0 + (a-.5)*cell;
+      const py = y0 - (b-.5)*cell;
+      if (py >= y0-board-5 && py <= y0+5) pts.push([px,py]);
+    }
+    if (pts.length>1) {
+      const d = pts.map((p,i)=>(i===0?"M":"L")+p[0]+" "+p[1]).join(" ");
+      svg.appendChild(makeSvg("path",{d,class:"hyperbola"}));
+      addText(
+        x0+board*.69,
+        y0-board*.28,
+        `ab = ${N}`,
+        "svg-label",
+        15
+      );
+    }
+
+    // sparse axis labels
+    const labelEvery = N<=16 ? 1 : N<=28 ? 2 : 4;
+    for (let t=1;t<=N;t+=labelEvery) {
+      addText(X(t)+cell/2,y0+19,String(t),"axis-label",Math.max(10,Math.min(12,cell*.55)));
+      addText(x0-18,Y(t)+cell/2,String(t),"axis-label",Math.max(10,Math.min(12,cell*.55)));
+    }
+
+    if (step===1) {
+      const bw=390,bh=68,bx=x0+board*.44-bw/2,by=top+16;
+      svg.appendChild(makeSvg("rect",{x:bx,y:by,width:bw,height:bh,rx:"12",class:"callout"}));
+      addText(bx+bw/2,by+26,"one tile ↔ one ordered pair (a,b)","svg-label",16);
+      addText(bx+bw/2,by+50,`keep it exactly when a·b ≤ ${N}`,"svg-label",16);
+    }
+
+    if (step===2) {
+      const colX = X(k);
+      const topY = Y(colHeight);
+
+      // bracket next to selected column
+      const bx = colX + cell + 8;
+      const d = [
+        `M ${bx+7} ${y0}`,
+        `L ${bx} ${y0}`,
+        `L ${bx} ${topY}`,
+        `L ${bx+7} ${topY}`
+      ].join(" ");
+      svg.appendChild(makeSvg("path",{d,class:"bracket"}));
+
+      addText(
+        bx+16,
+        (y0+topY)/2,
+        `⌊${N}/${k}⌋ = ${colHeight}`,
+        "svg-label gold-text",
+        15,
+        svg,
+        {"text-anchor":"start"}
+      );
+
+      const bw=320,bh=62,bx2=x0+board*.62-bw/2,by=top+15;
+      svg.appendChild(makeSvg("rect",{x:bx2,y:by,width:bw,height:bh,rx:"12",class:"callout"}));
+      addText(bx2+bw/2,by+24,`fix a = k = ${k}`,"svg-label gold-text",16);
+      addText(bx2+bw/2,by+47,`${colHeight} choices for b`,"svg-label",15);
+    }
+
+    if (step===3) {
+      const factorPairs = divisors(m).map(d=>[d,m/d]);
+
+      // coordinate labels for highlighted cells if enough room
+      if (cell>=13) {
+        factorPairs.forEach(([a,b])=>{
+          if (a<=N && b<=N) {
+            const tx = X(a)+cell/2;
+            const ty = Y(b)+cell/2;
+            if (cell<18) {
+              svg.appendChild(makeSvg("circle",{
+                cx:tx,cy:ty,r:Math.max(2.5,cell*.17),
+                fill:"#0e7490"
+              }));
+            }
+          }
+        });
+      }
+
+      const bw=400,bh=66,bx=x0+board*.52-bw/2,by=top+15;
+      svg.appendChild(makeSvg("rect",{x:bx,y:by,width:bw,height:bh,rx:"12",class:"callout"}));
+      addText(bx+bw/2,by+25,`tiles with a·b = ${m}`,"svg-label cyan-text",17);
+      addText(bx+bw/2,by+49,`there are d(${m}) = ${dm} of them`,"svg-label",16);
+    }
+
+    if (step===4) {
+      const bw=520,bh=92,bx=x0+board*.52-bw/2,by=top+15;
+      svg.appendChild(makeSvg("rect",{x:bx,y:by,width:bw,height:bh,rx:"13",class:"callout"}));
+      addText(bx+bw/2,by+27,"same tiles, two different partitions","svg-label",18);
+      addText(bx+bw/2,by+55,`by columns: Σ⌊${N}/k⌋ = ${total}`,"svg-label gold-text",16);
+      addText(bx+bw/2,by+79,`by products: Σ d(m) = ${total}`,"svg-label cyan-text",16);
+    }
+
+    if (step===5) {
+      // diagonal a=b
+      svg.appendChild(makeSvg("line",{
+        x1:x0,y1:y0,
+        x2:x0+board,y2:y0-board,
+        class:"diagonal"
+      }));
+
+      // q by q overlap square
+      const qSize = q*cell;
+      svg.appendChild(makeSvg("rect",{
+        x:x0+.5,
+        y:y0-qSize+.5,
+        width:qSize-1,
+        height:qSize-1,
+        fill:"none",
+        stroke:"#b45309",
+        "stroke-width":"2",
+        "stroke-dasharray":"7 5",
+        "vector-effect":"non-scaling-stroke"
+      }));
+
+      addText(
+        x0+qSize/2,
+        y0-qSize/2,
+        `q×q = ${q*q}`,
+        "svg-label gold-text",
+        Math.max(13,Math.min(17,qSize*.09))
+      );
+
+      const bw=500,bh=88,bx=x0+board*.56-bw/2,by=top+10;
+      svg.appendChild(makeSvg("rect",{x:bx,y:by,width:bw,height:bh,rx:"13",class:"callout"}));
+      addText(bx+bw/2,by+26,`q = ⌊√${N}⌋ = ${q}`,"svg-label green-text",16);
+      addText(bx+bw/2,by+52,`2·${half} − ${q}² = ${hyperbolaTotal}`,"svg-label",17);
+      addText(bx+bw/2,by+76,"reflect one side, subtract the overlap once","svg-label",15);
+    }
+  }
+
+  function typesetMath() {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([
+        stepCopy,stepEquation,notice,pairBox
+      ]).catch(()=>{});
+    }
+  }
+
+  function renderText() {
+    const {N,k,m,q,total,colHeight,ds,dm,half,hyperbolaTotal}=state();
+
+    nReadout.textContent=`N = ${N}`;
+    kReadout.textContent=`k = ${k}`;
+    mReadout.textContent=`m = ${m}`;
+
+    factTotal.textContent=String(total);
+    factColumn.textContent=String(colHeight);
+    factDivisors.textContent=String(dm);
+    factRoot.textContent=String(q);
+
+    const pairs = ds.map(d=>`(${d},${m/d})`).join(", ");
+    pairBox.innerHTML=
+      `<strong>Product ${m}:</strong> ` +
+      `\\(${pairs || "—"}\\). ` +
+      `There ${dm===1?"is":"are"} \\(${dm}\\) tile${dm===1?"":"s"}, so \\(d(${m})=${dm}\\).`;
+
+    stageBadge.textContent=`Step ${step} of 5`;
+    stepKicker.textContent=`Step ${step}`;
+
+    if (step===1) {
+      stepTitle.textContent="Build all integer pairs below the hyperbola";
+      stepCopy.innerHTML=
+        `A tile in column \\(a\\) and row \\(b\\) represents the ordered pair \\((a,b)\\). ` +
+        `We keep it when \\(ab\\le ${N}\\). The staircase of tiles is the discrete region under \\(ab=${N}\\).`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `\\mathcal R_${N}=\\{(a,b)\\in\\mathbb Z_{>0}^2:ab\\le ${N}\\}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `Everything that follows counts this exact same collection \\(\\mathcal R_${N}\\). ` +
+        `The proof is a double count: the objects do not change—only the way we group them changes.`;
+    }
+
+    if (step===2) {
+      stepTitle.textContent="Count the same tiles by vertical columns";
+      stepCopy.innerHTML=
+        `Fix column \\(a=k=${k}\\). A tile is allowed when \\(${k}b\\le ${N}\\), so ` +
+        `\\(b\\le ${N}/${k}\\). There are exactly \\(\\lfloor ${N}/${k}\\rfloor=${colHeight}\\) integer choices for \\(b\\).`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `\\#\\{b:${k}b\\le ${N}\\}=\\left\\lfloor\\frac{${N}}{${k}}\\right\\rfloor=${colHeight}.` +
+        `\\]` +
+        `\\[` +
+        `|\\mathcal R_${N}|=\\sum_{k=1}^{${N}}\\left\\lfloor\\frac{${N}}{k}\\right\\rfloor=${total}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `Move the column slider. The orange stack always has height \\(\\lfloor N/k\\rfloor\\). ` +
+        `Adding all column heights counts every valid tile once.`;
+    }
+
+    if (step===3) {
+      stepTitle.textContent="Regroup the tiles by their product";
+      stepCopy.innerHTML=
+        `Now ignore columns. Highlight all tiles satisfying \\(ab=m=${m}\\). ` +
+        `For every divisor \\(a\\mid ${m}\\), there is exactly one partner \\(b=${m}/a\\).`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `ab=${m}\\quad\\Longleftrightarrow\\quad a\\mid ${m},\\;b=\\frac{${m}}a.` +
+        `\\]` +
+        `\\[` +
+        `\\#\\{(a,b):ab=${m}\\}=d(${m})=${dm}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `Move the product slider. Prime numbers light up only two tiles, squares have a central diagonal tile, ` +
+        `and highly composite numbers light up many tiles.`;
+    }
+
+    if (step===4) {
+      stepTitle.textContent="Two sums, one set of tiles";
+      stepCopy.innerHTML=
+        `Column grouping partitions \\(\\mathcal R_${N}\\) by the first coordinate \\(a\\). ` +
+        `Product grouping partitions the very same set by the value \\(m=ab\\). ` +
+        `Each valid tile belongs to exactly one column and exactly one product group.`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `\\underbrace{\\sum_{k=1}^{${N}}\\left\\lfloor\\frac{${N}}k\\right\\rfloor}_{\\text{count by columns}}` +
+        `=` +
+        `\\underbrace{\\sum_{m=1}^{${N}}d(m)}_{\\text{count by products}}` +
+        `=${total}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `This is the divisor summatory identity. Its proof is literally “count the same tiles in two ways.”`;
+    }
+
+    if (step===5) {
+      stepTitle.textContent="Bonus: exploit symmetry across a=b";
+      stepCopy.innerHTML=
+        `Swapping \\((a,b)\\) to \\((b,a)\\) preserves the condition \\(ab\\le N\\). ` +
+        `Let \\(q=\\lfloor\\sqrt N\\rfloor=${q}\\). Every valid pair has \\(a\\le q\\) or \\(b\\le q\\).`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `\\sum_{m\\le ${N}}d(m)` +
+        `=2\\sum_{k=1}^{${q}}\\left\\lfloor\\frac{${N}}k\\right\\rfloor-${q}^2` +
+        `=2(${half})-${q*q}=${hyperbolaTotal}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `The green halves mirror each other. Their overlap is the full \\(q\\times q\\) block, ` +
+        `which was counted twice, so subtract its \\(q^2\\) tiles once.`;
+    }
+
+    prevBtn.disabled=step===1;
+    nextBtn.disabled=step===5;
+
+    typesetMath();
+  }
+
+  function render() {
+    renderSvg();
+    renderText();
+  }
+
+  function stopPlay() {
+    if (timer) {
+      clearInterval(timer);
+      timer=null;
+    }
+    playBtn.textContent="▶ Play";
+  }
+
+  function togglePlay() {
+    if (timer) {
+      stopPlay();
+      return;
+    }
+
+    if (step===5) step=1;
+    playBtn.textContent="❚❚ Pause";
+    render();
+
+    timer=setInterval(()=>{
+      if (step>=5) {
+        stopPlay();
+        return;
+      }
+      step++;
+      render();
+    },1750);
+  }
+
+  nSlider.addEventListener("input",()=>{
+    stopPlay();
+
+    const N=Number(nSlider.value);
+    if (Number(kSlider.value)>N) kSlider.value=String(N);
+    if (Number(mSlider.value)>N) mSlider.value=String(N);
+
+    render();
+  });
+
+  kSlider.addEventListener("input",()=>{
+    stopPlay();
+    render();
+  });
+
+  mSlider.addEventListener("input",()=>{
+    stopPlay();
+    render();
+  });
+
+  resetBtn.addEventListener("click",()=>{
+    stopPlay();
+    step=1;
+    nSlider.value="24";
+    kSlider.value="5";
+    mSlider.value="12";
+    render();
+  });
+
+  prevBtn.addEventListener("click",()=>{
+    stopPlay();
+    if (step>1) {
+      step--;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener("click",()=>{
+    stopPlay();
+    if (step<5) {
+      step++;
+      render();
+    }
+  });
+
+  playBtn.addEventListener("click",togglePlay);
+
+  render();
+})();
+</script>
+</body>
+</html>

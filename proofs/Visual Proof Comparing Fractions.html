@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Comparing Fractions</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.4s ease-out; }
+        .geom-line { transition: opacity 0.5s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-chart-pie text-indigo-600 text-2xl"></i> Visual Proof: Comparing Fractions
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            A visual explanation of common denominators and cross-multiplication using the area of rectangles.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap flex items-center gap-4">
+                <span class="text-blue-700">$\frac{a}{b}$</span>
+                <span id="compare-symbol-header" class="text-slate-800 font-bold bg-white px-3 py-1 rounded shadow-sm border border-slate-200">?</span>
+                <span class="text-emerald-700">$\frac{c}{d}$</span>
+                <span class="text-slate-400 mx-2">$\iff$</span>
+                <span class="text-blue-700">$a \times d$</span>
+                <span id="compare-symbol-cross" class="text-slate-800 font-bold bg-white px-3 py-1 rounded shadow-sm border border-slate-200">?</span>
+                <span class="text-emerald-700">$b \times c$</span>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow max-w-3xl">
+                
+                <!-- Fraction 1 Controls -->
+                <div class="flex flex-col gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-sm">
+                    <div class="text-center font-bold text-blue-800 text-sm border-b border-blue-200 pb-2 mb-1">Left Fraction (a/b)</div>
+                    <!-- Numerator A -->
+                    <div class="flex flex-col gap-1 w-full">
+                        <div class="flex justify-between items-center text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                            <span>Numerator <span class="math-font text-sm normal-case">a</span></span>
+                            <span id="valA" class="font-mono text-sm">2</span>
+                        </div>
+                        <input type="range" id="sliderA" value="2" min="1" max="10" step="1" class="w-full accent-blue-600">
+                    </div>
+                    <!-- Denominator B -->
+                    <div class="flex flex-col gap-1 w-full">
+                        <div class="flex justify-between items-center text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                            <span>Denominator <span class="math-font text-sm normal-case">b</span></span>
+                            <span id="valB" class="font-mono text-sm">3</span>
+                        </div>
+                        <input type="range" id="sliderB" value="3" min="1" max="10" step="1" class="w-full accent-blue-600">
+                    </div>
+                </div>
+
+                <!-- Fraction 2 Controls -->
+                <div class="flex flex-col gap-3 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 shadow-sm">
+                    <div class="text-center font-bold text-emerald-800 text-sm border-b border-emerald-200 pb-2 mb-1">Right Fraction (c/d)</div>
+                    <!-- Numerator C -->
+                    <div class="flex flex-col gap-1 w-full">
+                        <div class="flex justify-between items-center text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+                            <span>Numerator <span class="math-font text-sm normal-case">c</span></span>
+                            <span id="valC" class="font-mono text-sm">3</span>
+                        </div>
+                        <input type="range" id="sliderC" value="3" min="1" max="10" step="1" class="w-full accent-emerald-600">
+                    </div>
+                    <!-- Denominator D -->
+                    <div class="flex flex-col gap-1 w-full">
+                        <div class="flex justify-between items-center text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+                            <span>Denominator <span class="math-font text-sm normal-case">d</span></span>
+                            <span id="valD" class="font-mono text-sm">4</span>
+                        </div>
+                        <input type="range" id="sliderD" value="4" min="1" max="10" step="1" class="w-full accent-emerald-600">
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[550px]" viewBox="0 0 900 500" preserveAspectRatio="xMidYMid meet">
+                    
+                    <!-- LEFT SQUARE (a/b) -->
+                    <g transform="translate(50, 80)">
+                        <text x="175" y="-30" class="geom-text math-font font-bold text-2xl text-blue-700" text-anchor="middle">Fraction 1: a/b</text>
+                        <text id="lbl-frac1" x="175" y="-5" class="geom-text font-bold text-lg text-slate-600" text-anchor="middle">2 / 3</text>
+                        
+                        <!-- Base Outline -->
+                        <rect x="0" y="0" width="350" height="350" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3" />
+                        
+                        <!-- Shaded Region (Rows) -->
+                        <rect id="rect-left-fill" class="geom-rect" x="0" y="0" width="350" height="233.33" fill="rgba(37, 99, 235, 0.4)" stroke="none" />
+                        
+                        <!-- Primary Grid Lines (Horizontal for b) -->
+                        <g id="grid-left-primary"></g>
+                        
+                        <!-- Secondary Grid Lines (Vertical for d) - Hidden initially -->
+                        <g id="grid-left-secondary" class="fade" opacity="0"></g>
+
+                        <!-- Box Outline on top -->
+                        <rect x="0" y="0" width="350" height="350" fill="none" stroke="#1e293b" stroke-width="3" />
+
+                        <!-- Tiny Block Math Label -->
+                        <rect id="highlight-left" class="fade geom-rect" x="0" y="0" width="0" height="0" fill="none" stroke="#f59e0b" stroke-width="4" opacity="0" />
+                        <text id="lbl-math-left" class="geom-text math-font font-bold text-xl text-blue-800 fade" x="175" y="380" text-anchor="middle" opacity="0">Area = a × d blocks</text>
+                    </g>
+
+                    <!-- Comparison Symbol Center -->
+                    <g transform="translate(450, 255)">
+                        <circle cx="0" cy="0" r="25" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2" />
+                        <text id="svg-compare-symbol" x="0" y="0" class="geom-text font-bold text-2xl text-slate-800" text-anchor="middle" dominant-baseline="middle">?</text>
+                    </g>
+
+                    <!-- RIGHT SQUARE (c/d) -->
+                    <g transform="translate(500, 80)">
+                        <text x="175" y="-30" class="geom-text math-font font-bold text-2xl text-emerald-700" text-anchor="middle">Fraction 2: c/d</text>
+                        <text id="lbl-frac2" x="175" y="-5" class="geom-text font-bold text-lg text-slate-600" text-anchor="middle">3 / 4</text>
+                        
+                        <!-- Base Outline -->
+                        <rect x="0" y="0" width="350" height="350" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3" />
+                        
+                        <!-- Shaded Region (Columns) -->
+                        <rect id="rect-right-fill" class="geom-rect" x="0" y="0" width="262.5" height="350" fill="rgba(16, 185, 129, 0.4)" stroke="none" />
+                        
+                        <!-- Primary Grid Lines (Vertical for d) -->
+                        <g id="grid-right-primary"></g>
+                        
+                        <!-- Secondary Grid Lines (Horizontal for b) - Hidden initially -->
+                        <g id="grid-right-secondary" class="fade" opacity="0"></g>
+
+                        <!-- Box Outline on top -->
+                        <rect x="0" y="0" width="350" height="350" fill="none" stroke="#1e293b" stroke-width="3" />
+
+                        <!-- Tiny Block Math Label -->
+                        <rect id="highlight-right" class="fade geom-rect" x="0" y="0" width="0" height="0" fill="none" stroke="#f59e0b" stroke-width="4" opacity="0" />
+                        <text id="lbl-math-right" class="geom-text math-font font-bold text-xl text-emerald-800 fade" x="175" y="380" text-anchor="middle" opacity="0">Area = b × c blocks</text>
+                    </g>
+
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Fractions</span>
+                            <span class="text-xs text-slate-600">We want to compare two fractions, $a/b$ and $c/d$. We represent them as shaded areas in two identical squares.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. Slicing the Squares</span>
+                            <span class="text-xs text-slate-600">The left square is sliced horizontally into <strong class="text-blue-600">$b$ rows</strong>. The right square is sliced vertically into <strong class="text-emerald-600">$d$ columns</strong>. They are currently hard to compare because the pieces are different shapes.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-amber-600 block mb-1">3. The Common Grid</span>
+                            <span class="text-xs text-slate-600">To make them comparable, we slice the left square vertically into $d$ columns, and the right square horizontally into $b$ rows. Both squares are now composed of exactly <strong>$b \times d$ tiny equal rectangles!</strong></span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-slate-800 block mb-1">4. Counting the Pieces</span>
+                            <span class="text-xs text-slate-600">Since all tiny rectangles are identical, we just count them. The left shape has <strong class="text-blue-700">$a \times d$</strong> shaded rectangles. The right shape has <strong class="text-emerald-700">$b \times c$</strong> shaded rectangles.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-indigo-700 block mb-1">5. The Conclusion</span>
+                            <span class="text-xs text-slate-600">This is exactly why cross-multiplication works! Comparing $a/b$ to $c/d$ is physically identical to comparing $ad$ to $bc$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Context Box -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the numerators and denominators. Press <strong>Play</strong> to see how the common denominator works.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Mathematical Formulation</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Common Denominators -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">1. Creating a Common Denominator</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        In order to compare two fractions $\frac{a}{b}$ and $\frac{c}{d}$, they must share the same "base size" or denominator. We achieve this by multiplying the top and bottom of each fraction by the opposite fraction's denominator.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \frac{a}{b} = \frac{a \times d}{b \times d} \quad \text{and} \quad \frac{c}{d} = \frac{c \times b}{d \times b} $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Visually, multiplying the denominators $(b \times d)$ corresponds to imposing the <strong>Common Grid</strong> on both squares, resulting in $bd$ total tiny rectangles in each whole.
+                    </p>
+                </div>
+
+                <!-- Right: Cross Multiplication -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Cross-Multiplication Rule</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Once both fractions share the common denominator $bd$, we only need to compare their new numerators. 
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{If } \frac{ad}{bd} > \frac{bc}{bd} \text{ , then } ad > bc \implies \frac{a}{b} > \frac{c}{d} $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        In our visual proof, $ad$ is exactly the number of shaded blocks in the left square, and $bc$ is the number of shaded blocks in the right square. The cross-multiplication "trick" is just comparing areas on a common grid!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            a: 2, b: 3,
+            c: 3, d: 4,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        const SIZE = 350; // SVG Square Size
+
+        // DOM Elements
+        const DOM = {
+            sliders: {
+                a: document.getElementById('sliderA'), b: document.getElementById('sliderB'),
+                c: document.getElementById('sliderC'), d: document.getElementById('sliderD')
+            },
+            vals: {
+                a: document.getElementById('valA'), b: document.getElementById('valB'),
+                c: document.getElementById('valC'), d: document.getElementById('valD')
+            },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { 
+                stepInd: document.getElementById('stepIndicator'), 
+                status: document.getElementById('statusText'),
+                symHeader: document.getElementById('compare-symbol-header'),
+                symCross: document.getElementById('compare-symbol-cross'),
+                symSvg: document.getElementById('svg-compare-symbol')
+            },
+            svg: {
+                fillLeft: document.getElementById('rect-left-fill'),
+                fillRight: document.getElementById('rect-right-fill'),
+                gridLPrim: document.getElementById('grid-left-primary'),
+                gridLSec: document.getElementById('grid-left-secondary'),
+                gridRPrim: document.getElementById('grid-right-primary'),
+                gridRSec: document.getElementById('grid-right-secondary'),
+                lblFrac1: document.getElementById('lbl-frac1'),
+                lblFrac2: document.getElementById('lbl-frac2'),
+                hlLeft: document.getElementById('highlight-left'),
+                hlRight: document.getElementById('highlight-right'),
+                mathLeft: document.getElementById('lbl-math-left'),
+                mathRight: document.getElementById('lbl-math-right')
+            }
+        };
+
+        const descriptions = [
+            "We want to compare two fractions, $a/b$ and $c/d$. We represent them as shaded areas in two identical squares.",
+            "The left square is sliced horizontally into <strong>$b$ rows</strong>. The right square is sliced vertically into <strong>$d$ columns</strong>. They are currently hard to compare because the pieces are different shapes.",
+            "To make them comparable, we slice the left square vertically into $d$ columns, and the right square horizontally into $b$ rows. Both squares are now composed of exactly <strong>$b \\times d$ tiny equal rectangles!</strong>",
+            "Since all tiny rectangles are identical, we just count them. The left shape has <strong>$a \\times d$</strong> shaded rectangles. The right shape has <strong>$b \\times c$</strong> shaded rectangles.",
+            "This is exactly why cross-multiplication works! Comparing $a/b$ to $c/d$ is physically identical to comparing $ad$ to $bc$."
+        ];
+
+        function init() {
+            // Enforce logic constraints (a <= b, c <= d)
+            const validateA = () => { if (state.a > state.b) { state.a = state.b; DOM.sliders.a.value = state.a; } };
+            const validateB = () => { if (state.b < state.a) { state.b = state.a; DOM.sliders.b.value = state.b; } };
+            const validateC = () => { if (state.c > state.d) { state.c = state.d; DOM.sliders.c.value = state.c; } };
+            const validateD = () => { if (state.d < state.c) { state.d = state.c; DOM.sliders.d.value = state.d; } };
+
+            DOM.sliders.a.addEventListener('input', (e) => { pauseAnimation(); state.a = parseInt(e.target.value); validateA(); updateGeometry(); });
+            DOM.sliders.b.addEventListener('input', (e) => { pauseAnimation(); state.b = parseInt(e.target.value); validateB(); updateGeometry(); });
+            DOM.sliders.c.addEventListener('input', (e) => { pauseAnimation(); state.c = parseInt(e.target.value); validateC(); updateGeometry(); });
+            DOM.sliders.d.addEventListener('input', (e) => { pauseAnimation(); state.d = parseInt(e.target.value); validateD(); updateGeometry(); });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.a = 2; state.b = 3; state.c = 3; state.d = 4;
+                DOM.sliders.a.value = 2; DOM.sliders.b.value = 3; DOM.sliders.c.value = 3; DOM.sliders.d.value = 4;
+                setStep(0);
+                updateGeometry();
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        // Generate lines for the grid
+        function generateLines(count, isHorizontal) {
+            let html = '';
+            for (let i = 1; i < count; i++) {
+                const pos = (i / count) * SIZE;
+                if (isHorizontal) {
+                    html += `<line x1="0" y1="${pos}" x2="${SIZE}" y2="${pos}" stroke="#94a3b8" stroke-width="1.5" class="geom-line" />`;
+                } else {
+                    html += `<line x1="${pos}" y1="0" x2="${pos}" y2="${SIZE}" stroke="#94a3b8" stroke-width="1.5" class="geom-line" />`;
+                }
+            }
+            return html;
+        }
+
+        function updateGeometry() {
+            const { a, b, c, d, step } = state;
+            
+            // Math computations
+            const val1 = a / b;
+            const val2 = c / d;
+            const ad = a * d;
+            const bc = b * c;
+            
+            // Symbol Evaluation
+            let symbol = "=";
+            let colorClass = "text-slate-800";
+            if (ad > bc) { symbol = ">"; colorClass = "text-blue-600"; }
+            else if (ad < bc) { symbol = "<"; colorClass = "text-emerald-600"; }
+            
+            const symbolText = step >= 3 ? symbol : "?";
+            DOM.ui.symHeader.textContent = symbolText;
+            DOM.ui.symHeader.className = `font-bold bg-white px-3 py-1 rounded shadow-sm border border-slate-200 ${step >=3 ? colorClass : 'text-slate-800'}`;
+            DOM.ui.symCross.textContent = symbolText;
+            DOM.ui.symCross.className = `font-bold bg-white px-3 py-1 rounded shadow-sm border border-slate-200 ${step >=3 ? colorClass : 'text-slate-800'}`;
+            DOM.ui.symSvg.textContent = symbolText;
+            DOM.ui.symSvg.setAttribute('fill', step >=3 ? (ad > bc ? '#2563eb' : (ad < bc ? '#059669' : '#1e293b')) : '#1e293b');
+
+            // UI Texts
+            DOM.vals.a.textContent = a; DOM.vals.b.textContent = b;
+            DOM.vals.c.textContent = c; DOM.vals.d.textContent = d;
+            
+            DOM.svg.lblFrac1.textContent = `${a} / ${b}`;
+            DOM.svg.lblFrac2.textContent = `${c} / ${d}`;
+
+            // Shaded Areas
+            // Left is shaded top-down by rows
+            DOM.svg.fillLeft.setAttribute('height', (a / b) * SIZE);
+            // Right is shaded left-right by columns
+            DOM.svg.fillRight.setAttribute('width', (c / d) * SIZE);
+
+            // Grid Lines
+            DOM.svg.gridLPrim.innerHTML = generateLines(b, true); // b horizontal rows
+            DOM.svg.gridRPrim.innerHTML = generateLines(d, false); // d vertical columns
+            
+            DOM.svg.gridLSec.innerHTML = generateLines(d, false); // d vertical columns overlaid
+            DOM.svg.gridRSec.innerHTML = generateLines(b, true); // b horizontal rows overlaid
+
+            // Dynamic Math Labels for Step 3/4
+            DOM.svg.mathLeft.textContent = `${a} × ${d} = ${ad} blocks`;
+            DOM.svg.mathRight.textContent = `${b} × ${c} = ${bc} blocks`;
+
+            // Ghost Highlights for tiny blocks
+            if (step >= 3) {
+                // Highlight the shaded region to show the blocks explicitly
+                DOM.svg.hlLeft.setAttribute('width', SIZE);
+                DOM.svg.hlLeft.setAttribute('height', (a/b) * SIZE);
+                
+                DOM.svg.hlRight.setAttribute('width', (c/d) * SIZE);
+                DOM.svg.hlRight.setAttribute('height', SIZE);
+            }
+
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => { if(el) el.style.opacity = val; };
+
+            // Grid Visibility
+            op(DOM.svg.gridLPrim, step >= 1 ? 1 : 0);
+            op(DOM.svg.gridRPrim, step >= 1 ? 1 : 0);
+            
+            op(DOM.svg.gridLSec, step >= 2 ? 1 : 0);
+            op(DOM.svg.gridRSec, step >= 2 ? 1 : 0);
+
+            // Math Block Labels
+            op(DOM.svg.mathLeft, step >= 3 ? 1 : 0);
+            op(DOM.svg.mathRight, step >= 3 ? 1 : 0);
+            op(DOM.svg.hlLeft, step >= 3 ? 1 : 0);
+            op(DOM.svg.hlRight, step >= 3 ? 1 : 0);
+        }
+
+        function setStep(stepVal) {
+            state.step = stepVal;
+            DOM.ui.stepInd.textContent = `${stepVal} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === stepVal) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            applyStepOpacities(stepVal);
+            
+            // Call updateGeometry to refresh logic based on new step (e.g. comparison symbols)
+            updateGeometry();
+
+            // Text Update
+            DOM.ui.status.innerHTML = descriptions[stepVal];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (stepVal >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

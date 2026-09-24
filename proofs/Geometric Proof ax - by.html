@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometric Proof: ax - by</title>
+    
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            --c-blue: #3b82f6;
+            --c-blue-fill: #bfdbfe;
+            --c-green: #22c55e;
+            --c-green-fill: #bbf7d0;
+            --c-red: #ef4444;
+            --c-red-fill: #fecaca;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* SVG Element Styles */
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+            margin: 0 auto;
+        }
+
+        .solid-t1 { fill: var(--c-blue-fill); stroke: var(--c-blue); stroke-width: 2.5; }
+        .clone-t1 { fill: rgba(191, 219, 254, 0.4); stroke: var(--c-blue); stroke-width: 2.5; stroke-dasharray: 6 4; }
+        
+        .solid-t2 { fill: var(--c-green-fill); stroke: var(--c-green); stroke-width: 2.5; }
+        .clone-t2 { fill: rgba(187, 247, 208, 0.4); stroke: var(--c-green); stroke-width: 2.5; stroke-dasharray: 6 4; }
+        
+        .solid-by { fill: var(--c-red-fill); stroke: var(--c-red); stroke-width: 2.5; }
+        
+        .cut-line { stroke: #64748b; stroke-width: 3.5; stroke-dasharray: 8 6; stroke-linecap: round; }
+        .bracket-line { stroke: #94a3b8; stroke-width: 2; fill: none; }
+        
+        .shape-lbl { font-family: 'Times New Roman', serif; font-style: italic; font-size: 20px; fill: #1e293b; text-anchor: middle; dominant-baseline: central; font-weight: bold; }
+        .area-lbl { font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; fill: #334155; text-anchor: middle; }
+
+        /* Animation Classes */
+        .anim-group { transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease; }
+        .anim-clone { transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease; }
+        .fade { transition: opacity 0.5s ease; }
+
+        /* Button styling */
+        .btn-action {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-play {
+            background-color: var(--c-blue);
+            color: white;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 10px rgba(59, 130, 246, 0.3); }
+        .btn-play:disabled { background-color: #94a3b8; cursor: not-allowed; opacity: 0.8; box-shadow: none; }
+
+        .btn-reset {
+            background-color: #e2e8f0;
+            color: #475569;
+        }
+        .btn-reset:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-reset:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Custom Sliders */
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #475569;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Visual Proof of Area Identity</h1>
+
+        <!-- Live Math Equation -->
+        <div class="text-center text-lg md:text-xl font-bold p-4 bg-slate-50 text-slate-800 rounded-lg mb-6 shadow-sm border border-slate-200">
+            $$ax - by = \frac{1}{2}(a + b)(x - y) + \frac{1}{2}(a - b)(x + y)$$
+        </div>
+
+        <!-- Controls Area -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="flex flex-col">
+                    <label class="font-semibold text-sm text-slate-600 mb-1 flex justify-between">
+                        <span>Width $a$</span> <span id="val-a" class="text-blue-600">8.0</span>
+                    </label>
+                    <input type="range" id="slider-a" min="4" max="10" step="0.1" value="8.0">
+                </div>
+                <div class="flex flex-col">
+                    <label class="font-semibold text-sm text-slate-600 mb-1 flex justify-between">
+                        <span>Height $x$</span> <span id="val-x" class="text-green-600">6.0</span>
+                    </label>
+                    <input type="range" id="slider-x" min="4" max="8" step="0.1" value="6.0">
+                </div>
+                <div class="flex flex-col">
+                    <label class="font-semibold text-sm text-slate-600 mb-1 flex justify-between">
+                        <span>Width $b$</span> <span id="val-b" class="text-red-500">3.0</span>
+                    </label>
+                    <input type="range" id="slider-b" min="1" max="9" step="0.1" value="3.0">
+                </div>
+                <div class="flex flex-col">
+                    <label class="font-semibold text-sm text-slate-600 mb-1 flex justify-between">
+                        <span>Height $y$</span> <span id="val-y" class="text-red-500">2.0</span>
+                    </label>
+                    <input type="range" id="slider-y" min="1" max="7" step="0.1" value="2.0">
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanation Box -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg shadow-sm mb-6 min-h-[80px] flex items-center">
+            <p class="text-slate-700 text-lg leading-relaxed w-full transition-opacity duration-300" id="status-text">
+                Adjust sliders to configure the geometry, or press <strong>Step-by-Step Animation</strong> to begin the visual proof.
+            </p>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-center gap-4 mb-8">
+            <button id="play-btn" class="btn-action btn-play" onclick="playAnimation()">
+                ▶ Step-by-Step Animation
+            </button>
+            <button id="reset-btn" class="btn-action btn-reset" onclick="resetAnimation()" disabled>
+                ↺ Reset
+            </button>
+        </div>
+
+        <!-- Visualization Board -->
+        <div class="bg-slate-100 rounded-lg border border-slate-200 overflow-hidden shadow-inner p-4">
+            <svg id="anim-svg" viewBox="0 0 1000 550">
+                <g id="main-canvas" transform="translate(500, 275)">
+                    
+                    <!-- Initial outer brackets for ax -->
+                    <g id="g-initial-labels" class="anim-element fade">
+                        <path id="bracket-a" class="bracket-line" />
+                        <text id="lbl-a" class="shape-lbl">a</text>
+                        <path id="bracket-x" class="bracket-line" />
+                        <text id="lbl-x" class="shape-lbl">x</text>
+                        <text id="lbl-ax-center" class="area-lbl" style="font-size: 24px; fill: #475569;">Total Area = ax</text>
+                    </g>
+
+                    <!-- Trapezoid 1 (Top / Blue) -->
+                    <g id="g-t1" class="anim-element anim-group">
+                        <polygon id="t1-poly" class="solid-t1" />
+                        <polygon id="t1-clone" class="anim-element anim-clone clone-t1" opacity="0" />
+                        
+                        <text id="lbl-t1-a" class="shape-lbl t-internal-lbl anim-element fade">a</text>
+                        <text id="lbl-t1-b" class="shape-lbl t-internal-lbl anim-element fade">b</text>
+                        <text id="lbl-t1-xy" class="shape-lbl t-internal-lbl anim-element fade">x-y</text>
+                        
+                        <!-- Final Rectangle Brackets & Labels for T1 -->
+                        <path id="bracket-t1-width" class="bracket-line anim-element fade" opacity="0" />
+                        <text id="lbl-t1-width" class="shape-lbl anim-element fade" opacity="0">a+b</text>
+                        <text id="lbl-t1-area" class="area-lbl anim-element fade" opacity="0">Area = ½(a+b)(x-y)</text>
+                    </g>
+
+                    <!-- Trapezoid 2 (Left / Green) -->
+                    <g id="g-t2" class="anim-element anim-group">
+                        <polygon id="t2-poly" class="solid-t2" />
+                        <polygon id="t2-clone" class="anim-element anim-clone clone-t2" opacity="0" />
+                        
+                        <text id="lbl-t2-x" class="shape-lbl t-internal-lbl anim-element fade">x</text>
+                        <text id="lbl-t2-y" class="shape-lbl t-internal-lbl anim-element fade">y</text>
+                        <text id="lbl-t2-ab" class="shape-lbl t-internal-lbl anim-element fade">a-b</text>
+                        
+                        <!-- Final Rectangle Brackets & Labels for T2 -->
+                        <path id="bracket-t2-height" class="bracket-line anim-element fade" opacity="0" />
+                        <text id="lbl-t2-height" class="shape-lbl anim-element fade" opacity="0">x+y</text>
+                        <text id="lbl-t2-area" class="area-lbl anim-element fade" opacity="0">Area = ½(a-b)(x+y)</text>
+                    </g>
+
+                    <!-- The 'by' subtraction block (Red) -->
+                    <g id="g-by" class="anim-element anim-group">
+                        <polygon id="by-poly" class="solid-by" />
+                        <text id="lbl-by" class="shape-lbl">by</text>
+                    </g>
+
+                    <!-- Diagonal Cut Line -->
+                    <line id="cut-line" class="cut-line anim-element fade" opacity="0" />
+                </g>
+            </svg>
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">How to understand this proof:</h3>
+            <ol class="list-decimal list-inside space-y-3 text-slate-700 text-lg">
+                <li><strong>Start with the target area:</strong> We start with a large blue rectangle with dimensions $a$ by $x$, giving it a total area of $ax$.</li>
+                <li><strong>Remove the corner:</strong> We want to subtract the red corner area ($by$). What remains is an L-shape that has exactly the area of $ax - by$.</li>
+                <li><strong>Partition the L-Shape:</strong> By cutting the L-shape diagonally, we split it into two separate trapezoids.</li>
+                <li><strong>Duplicate and Rotate:</strong> To easily find the area of these trapezoidal shapes, we duplicate them. Rotating identical trapezoids and snapping them together forms perfect rectangles!</li>
+                <li><strong>The Final Result:</strong> The top shape becomes a rectangle of width $(a+b)$ and height $(x-y)$. The left shape becomes a rectangle of width $(a-b)$ and height $(x+y)$. Because we <em>duplicated</em> the pieces to make these rectangles, our original area ($ax - by$) is exactly <strong>half</strong> of their combined area.</li>
+            </ol>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto mt-6">
+                $$ax - by = \frac{1}{2}(a + b)(x - y) + \frac{1}{2}(a - b)(x + y)$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const s = 25; // Drawing scale multiplier
+        let isAnimating = false;
+        let animController = null;
+
+        // Utilities
+        const getVal = (id) => parseFloat(document.getElementById(id).value);
+        const setStyle = (id, styles) => Object.assign(document.getElementById(id).style, styles);
+        
+        function updateMathJax() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise().catch((err) => console.log(err.message));
+            }
+        }
+
+        function updateMsg(text) {
+            const el = document.getElementById('status-text');
+            el.style.opacity = '0';
+            setTimeout(() => { 
+                el.innerHTML = text; 
+                el.style.opacity = '1'; 
+                updateMathJax(); // Re-render MathJax if the new text has math in it
+            }, 300);
+        }
+
+        function wait(ms, signal) {
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(resolve, ms);
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timer);
+                    reject(new Error('Aborted'));
+                });
+            });
+        }
+
+        // Geometric calculations based on sliders
+        function updateShapes() {
+            let a = getVal('slider-a');
+            let b = getVal('slider-b');
+            let x = getVal('slider-x');
+            let y = getVal('slider-y');
+
+            // Force constraints so shapes don't invert
+            if (b >= a) { b = a - 0.5; document.getElementById('slider-b').value = b; }
+            if (y >= x) { y = x - 0.5; document.getElementById('slider-y').value = y; }
+
+            // Update UI Labels
+            document.getElementById('val-a').textContent = a.toFixed(1);
+            document.getElementById('val-b').textContent = b.toFixed(1);
+            document.getElementById('val-x').textContent = x.toFixed(1);
+            document.getElementById('val-y').textContent = y.toFixed(1);
+
+            // Calculate center offset for the main assembly
+            const ox = 500 - (a*s)/2;
+            const oy = 275 - (x*s)/2;
+            document.getElementById('main-canvas').setAttribute('transform', `translate(${ox}, ${oy})`);
+
+            // T1: Top Trapezoid
+            const t1Pts = `0,0 ${a*s},0 ${a*s},${(x-y)*s} ${(a-b)*s},${(x-y)*s}`;
+            document.getElementById('t1-poly').setAttribute('points', t1Pts);
+            document.getElementById('t1-clone').setAttribute('points', t1Pts);
+            
+            document.getElementById('lbl-t1-a').setAttribute('x', a*s/2);
+            document.getElementById('lbl-t1-a').setAttribute('y', -12);
+            document.getElementById('lbl-t1-b').setAttribute('x', a*s - (b*s)/2);
+            document.getElementById('lbl-t1-b').setAttribute('y', (x-y)*s + 15);
+            document.getElementById('lbl-t1-xy').setAttribute('x', a*s + 20);
+            document.getElementById('lbl-t1-xy').setAttribute('y', (x-y)*s/2);
+
+            // T2: Left Trapezoid
+            const t2Pts = `0,0 ${(a-b)*s},${(x-y)*s} ${(a-b)*s},${x*s} 0,${x*s}`;
+            document.getElementById('t2-poly').setAttribute('points', t2Pts);
+            document.getElementById('t2-clone').setAttribute('points', t2Pts);
+
+            document.getElementById('lbl-t2-x').setAttribute('x', -15);
+            document.getElementById('lbl-t2-x').setAttribute('y', x*s/2);
+            document.getElementById('lbl-t2-ab').setAttribute('x', (a-b)*s/2);
+            document.getElementById('lbl-t2-ab').setAttribute('y', x*s + 15);
+            document.getElementById('lbl-t2-y').setAttribute('x', (a-b)*s + 18);
+            document.getElementById('lbl-t2-y').setAttribute('y', x*s - y*s/2);
+
+            // BY block (Red Corner)
+            const byPts = `${(a-b)*s},${(x-y)*s} ${a*s},${(x-y)*s} ${a*s},${x*s} ${(a-b)*s},${x*s}`;
+            document.getElementById('by-poly').setAttribute('points', byPts);
+            document.getElementById('lbl-by').setAttribute('x', a*s - (b*s)/2);
+            document.getElementById('lbl-by').setAttribute('y', x*s - (y*s)/2);
+
+            // Initial Brackets & Center label
+            document.getElementById('bracket-a').setAttribute('d', `M 0 -25 L 0 -35 L ${a*s} -35 L ${a*s} -25`);
+            document.getElementById('lbl-a').setAttribute('x', a*s/2);
+            document.getElementById('lbl-a').setAttribute('y', -48);
+            document.getElementById('bracket-x').setAttribute('d', `M -25 0 L -35 0 L -35 ${x*s} L -25 ${x*s}`);
+            document.getElementById('lbl-x').setAttribute('x', -48);
+            document.getElementById('lbl-x').setAttribute('y', x*s/2);
+            document.getElementById('lbl-ax-center').setAttribute('x', a*s/2);
+            document.getElementById('lbl-ax-center').setAttribute('y', x*s + 75);
+
+            // Diagonal Cut Line
+            document.getElementById('cut-line').setAttribute('x1', 0);
+            document.getElementById('cut-line').setAttribute('y1', 0);
+            document.getElementById('cut-line').setAttribute('x2', (a-b)*s);
+            document.getElementById('cut-line').setAttribute('y2', (x-y)*s);
+
+            // Rotation Midpoints (Same for both clones since they share the cut edge!)
+            const midX = ((a-b)/2) * s;
+            const midY = ((x-y)/2) * s;
+            document.getElementById('t1-clone').style.transformOrigin = `${midX}px ${midY}px`;
+            document.getElementById('t2-clone').style.transformOrigin = `${midX}px ${midY}px`;
+
+            // Final Area Labels & Brackets
+            document.getElementById('bracket-t1-width').setAttribute('d', `M ${-b*s} -30 L ${-b*s} -40 L ${a*s} -40 L ${a*s} -30`);
+            document.getElementById('lbl-t1-width').setAttribute('x', midX);
+            document.getElementById('lbl-t1-width').setAttribute('y', -52);
+            document.getElementById('lbl-t1-area').setAttribute('x', midX);
+            document.getElementById('lbl-t1-area').setAttribute('y', (x-y)*s + 35);
+
+            document.getElementById('bracket-t2-height').setAttribute('d', `M -30 ${-y*s} L -40 ${-y*s} L -40 ${x*s} L -30 ${x*s}`);
+            document.getElementById('lbl-t2-height').setAttribute('x', -60);
+            document.getElementById('lbl-t2-height').setAttribute('y', midY);
+            document.getElementById('lbl-t2-area').setAttribute('x', midX);
+            document.getElementById('lbl-t2-area').setAttribute('y', x*s + 35);
+        }
+
+        // Force a reset without transitions playing
+        function forceNoTransitions(callback) {
+            const els = document.querySelectorAll('.anim-element');
+            els.forEach(el => el.style.transition = 'none');
+            callback();
+            document.getElementById('main-canvas').offsetHeight; // Force reflow
+            setTimeout(() => els.forEach(el => el.style.transition = ''), 30);
+        }
+
+        function resetAnimation() {
+            if(animController) animController.abort();
+            isAnimating = false;
+            
+            document.getElementById('play-btn').disabled = false;
+            document.getElementById('reset-btn').disabled = true;
+
+            forceNoTransitions(() => {
+                setStyle('g-t1', { transform: 'translate(0,0)' });
+                setStyle('g-t2', { transform: 'translate(0,0)' });
+                setStyle('g-by', { transform: 'translate(0,0)', opacity: '1' });
+                
+                setStyle('t1-clone', { transform: 'rotate(0deg)', opacity: '0' });
+                setStyle('t2-clone', { transform: 'rotate(0deg)', opacity: '0' });
+
+                setStyle('cut-line', { opacity: '0' });
+                setStyle('g-initial-labels', { opacity: '1' });
+                
+                document.querySelectorAll('.t-internal-lbl').forEach(el => el.style.opacity = '1');
+                
+                ['bracket-t1-width', 'lbl-t1-width', 'lbl-t1-area', 'bracket-t2-height', 'lbl-t2-height', 'lbl-t2-area'].forEach(id => {
+                    setStyle(id, { opacity: '0' });
+                });
+            });
+
+            updateMsg("Adjust sliders to configure the geometry, or press <strong>Step-by-Step Animation</strong> to begin the visual proof.");
+        }
+
+        async function playAnimation() {
+            if(isAnimating) return;
+            isAnimating = true;
+            document.getElementById('play-btn').disabled = true;
+            document.getElementById('reset-btn').disabled = false;
+
+            animController = new AbortController();
+            const signal = animController.signal;
+
+            try {
+                // Ensure we start from a clean state
+                resetAnimation();
+                isAnimating = true; 
+                document.getElementById('reset-btn').disabled = false;
+                await wait(600, signal);
+
+                // Step 1: Remove 'by'
+                updateMsg("<strong>Step 1:</strong> Remove area $by$ from the corner. The remainder is the L-shape $(ax - by)$.");
+                setStyle('g-initial-labels', { opacity: '0' });
+                setStyle('g-by', { transform: 'translate(50px, 100px) rotate(10deg)', opacity: '0' });
+                await wait(2200, signal);
+
+                // Step 2: Cut Line
+                updateMsg("<strong>Step 2:</strong> Draw a diagonal line to cut the L-shape into two trapezoidal regions.");
+                setStyle('cut-line', { opacity: '1' });
+                await wait(2200, signal);
+
+                // Step 3: Split
+                updateMsg("<strong>Step 3:</strong> Separate the two regions. (Their combined area is still exactly $ax - by$).");
+                setStyle('cut-line', { opacity: '0' });
+                setStyle('g-t1', { transform: 'translate(140px, -80px)' });
+                setStyle('g-t2', { transform: 'translate(-140px, 80px)' });
+                await wait(2200, signal);
+
+                // Step 4: Clone
+                updateMsg("<strong>Step 4:</strong> Algebraically duplicate each region. (We must divide by $\\frac{1}{2}$ at the end to balance this).");
+                setStyle('t1-clone', { opacity: '1' });
+                setStyle('t2-clone', { opacity: '1' });
+                await wait(2200, signal);
+
+                // Step 5: Rotate
+                updateMsg("<strong>Step 5:</strong> Rotating the duplicates proves they perfectly fit together to form full rectangles!");
+                document.querySelectorAll('.t-internal-lbl').forEach(el => el.style.opacity = '0');
+                setStyle('t1-clone', { transform: 'rotate(180deg)' });
+                setStyle('t2-clone', { transform: 'rotate(180deg)' });
+                await wait(2200, signal);
+
+                // Step 6: Final Labels
+                updateMsg("<strong>Final Step:</strong> The original area $(ax - by)$ is exactly half the sum of these two new rectangles. Proof Complete!");
+                ['bracket-t1-width', 'lbl-t1-width', 'lbl-t1-area', 'bracket-t2-height', 'lbl-t2-height', 'lbl-t2-area'].forEach(id => {
+                    setStyle(id, { opacity: '1' });
+                });
+                
+                isAnimating = false;
+                document.getElementById('play-btn').disabled = false;
+
+            } catch (err) {
+                // Animation was aborted by reset, do nothing.
+            }
+        }
+
+        // Attach listeners to sliders
+        ['a', 'b', 'x', 'y'].forEach(v => {
+            document.getElementById('slider-' + v).addEventListener('input', () => {
+                updateShapes();
+                resetAnimation();
+            });
+        });
+
+        // Initialize on page load
+        window.onload = () => {
+            updateShapes();
+            resetAnimation();
+            updateMathJax();
+        };
+    </script>
+</body>
+</html>

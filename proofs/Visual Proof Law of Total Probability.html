@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Law of Total Probability</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-text { user-select: none; transition: opacity 0.3s ease; }
+        .fade { transition: opacity 0.4s ease; }
+        
+        /* Highlight Animations */
+        @keyframes pulse-intersect {
+            0%, 100% { stroke-width: 2px; }
+            50% { stroke-width: 4px; }
+        }
+        .anim-intersect { animation: pulse-intersect 2s infinite; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-chart-pie text-indigo-600 text-2xl"></i> Visual Proof: Law of Total Probability
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Partitioning the unit square to geometrically prove that $P(B) = \sum P(A_i) P(B \mid A_i)$.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap flex items-center gap-2" id="live-equation">
+                <span class="text-slate-800">$\text{Area}(B) =$</span>
+                <span class="text-indigo-700">$P(A_1)P(B|A_1)$</span>
+                <span class="text-slate-800">$+$</span>
+                <span class="text-emerald-700">$P(A_2)P(B|A_2)$</span>
+                <span class="text-slate-800">$+$</span>
+                <span class="text-amber-600">$P(A_3)P(B|A_3)$</span>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow">
+                <!-- P(A1) Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[160px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span><span class="math-font text-sm normal-case text-indigo-600">A₁</span> Width</span>
+                        <span id="val-pa1" class="text-indigo-600 text-lg font-mono">0.30</span>
+                    </div>
+                    <input type="range" id="slider-pa1" value="0.3" min="0.1" max="0.7" step="0.05" class="w-full">
+                </div>
+
+                <!-- P(B|A1) Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[160px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span><span class="math-font text-sm normal-case text-indigo-600">B|A₁</span> Height</span>
+                        <span id="val-pb1" class="text-indigo-600 text-lg font-mono">0.80</span>
+                    </div>
+                    <input type="range" id="slider-pb1" value="0.8" min="0.1" max="0.9" step="0.05" class="w-full">
+                </div>
+                
+                <!-- P(B|A2) Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[160px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span><span class="math-font text-sm normal-case text-emerald-600">B|A₂</span> Height</span>
+                        <span id="val-pb2" class="text-emerald-600 text-lg font-mono">0.40</span>
+                    </div>
+                    <input type="range" id="slider-pb2" value="0.4" min="0.1" max="0.9" step="0.05" class="w-full">
+                </div>
+
+                <!-- P(B|A3) Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[160px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span><span class="math-font text-sm normal-case text-amber-600">B|A₃</span> Height</span>
+                        <span id="val-pb3" class="text-amber-600 text-lg font-mono">0.60</span>
+                    </div>
+                    <input type="range" id="slider-pb3" value="0.6" min="0.1" max="0.9" step="0.05" class="w-full">
+                </div>
+                
+                <!-- Live Probability Value -->
+                <div class="bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-sm text-sm font-medium flex flex-col items-center justify-center min-w-[140px]">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">$P(B)$ Total Area</span>
+                    <div class="flex items-center gap-2 font-mono font-bold text-lg text-slate-800" id="val-pb-total">
+                        0.576
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Hatching patterns for intersection areas -->
+                        <pattern id="hatch-indigo" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#4338ca" stroke-width="2" opacity="0.6"/>
+                        </pattern>
+                        <pattern id="hatch-emerald" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#059669" stroke-width="2" opacity="0.6"/>
+                        </pattern>
+                        <pattern id="hatch-amber" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#d97706" stroke-width="2" opacity="0.6"/>
+                        </pattern>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes (Representing Probability Bounds 0 to 1) -->
+                    <line x1="40" y1="450" x2="480" y2="450" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <line x1="50" y1="460" x2="50" y2="20" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <text x="35" y="465" class="geom-text math-font" fill="#64748b" font-size="14">0</text>
+                    <text x="450" y="465" class="geom-text math-font" fill="#64748b" font-size="14">1</text>
+                    <text x="35" y="50" class="geom-text math-font" fill="#64748b" font-size="14" text-anchor="end">1</text>
+
+                    <!-- Geometry Group -->
+                    <g id="geometry-group">
+                        <!-- Background Unit Square (Sample Space Omega) -->
+                        <rect id="rect-omega" class="geom-rect" x="50" y="50" width="400" height="400" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="6,4" />
+                        <text id="lbl-omega" class="geom-text math-font font-bold" x="250" y="250" font-size="28" fill="#94a3b8" text-anchor="middle" dominant-baseline="middle" opacity="1">Sample Space Ω (Area = 1)</text>
+
+                        <!-- Partition A1 -->
+                        <rect id="rect-a1" class="geom-rect fade" fill="rgba(79, 70, 229, 0.1)" stroke="#cbd5e1" stroke-width="1.5" opacity="0" />
+                        <text id="lbl-a1-text" class="geom-text math-font font-bold fade" font-size="20" fill="#4338ca" text-anchor="middle" opacity="0">A₁</text>
+
+                        <!-- Partition A2 -->
+                        <rect id="rect-a2" class="geom-rect fade" fill="rgba(16, 185, 129, 0.1)" stroke="#cbd5e1" stroke-width="1.5" opacity="0" />
+                        <text id="lbl-a2-text" class="geom-text math-font font-bold fade" font-size="20" fill="#059669" text-anchor="middle" opacity="0">A₂</text>
+
+                        <!-- Partition A3 -->
+                        <rect id="rect-a3" class="geom-rect fade" fill="rgba(245, 158, 11, 0.1)" stroke="#cbd5e1" stroke-width="1.5" opacity="0" />
+                        <text id="lbl-a3-text" class="geom-text math-font font-bold fade" font-size="20" fill="#d97706" text-anchor="middle" opacity="0">A₃</text>
+                        
+                        <!-- Event B interesections -->
+                        <rect id="rect-b1" class="geom-rect fade" fill="url(#hatch-indigo)" stroke="#4338ca" stroke-width="2" opacity="0" />
+                        <text id="lbl-b1-text" class="geom-text math-font font-bold fade" font-size="18" fill="#312e81" text-anchor="middle" dominant-baseline="middle" opacity="0">B ∩ A₁</text>
+
+                        <rect id="rect-b2" class="geom-rect fade" fill="url(#hatch-emerald)" stroke="#059669" stroke-width="2" opacity="0" />
+                        <text id="lbl-b2-text" class="geom-text math-font font-bold fade" font-size="18" fill="#064e3b" text-anchor="middle" dominant-baseline="middle" opacity="0">B ∩ A₂</text>
+
+                        <rect id="rect-b3" class="geom-rect fade" fill="url(#hatch-amber)" stroke="#d97706" stroke-width="2" opacity="0" />
+                        <text id="lbl-b3-text" class="geom-text math-font font-bold fade" font-size="18" fill="#78350f" text-anchor="middle" dominant-baseline="middle" opacity="0">B ∩ A₃</text>
+                    </g>
+
+                    <!-- Dimensions Group -->
+                    <g id="dim-group" class="fade">
+                        <!-- Width Dimensions -->
+                        <line id="dim-pa1-line" class="geom-line fade" stroke="#4338ca" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-pa1-dim" class="geom-text math-font font-bold fade" text-anchor="middle" font-size="16" fill="#4338ca" opacity="0">P(A₁)</text>
+                        
+                        <line id="dim-pa2-line" class="geom-line fade" stroke="#059669" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-pa2-dim" class="geom-text math-font font-bold fade" text-anchor="middle" font-size="16" fill="#059669" opacity="0">P(A₂)</text>
+
+                        <line id="dim-pa3-line" class="geom-line fade" stroke="#d97706" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-pa3-dim" class="geom-text math-font font-bold fade" text-anchor="middle" font-size="16" fill="#d97706" opacity="0">P(A₃)</text>
+
+                        <!-- Height Dimensions -->
+                        <line id="dim-pb1-line" class="geom-line fade" stroke="#4338ca" stroke-width="1.5" stroke-dasharray="4,2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-pb1-dim" class="geom-text math-font font-bold fade" text-anchor="end" dominant-baseline="middle" font-size="14" fill="#4338ca" opacity="0">P(B|A₁)</text>
+
+                        <line id="dim-pb2-line" class="geom-line fade" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-pb2-dim" class="geom-text math-font font-bold fade" text-anchor="end" dominant-baseline="middle" font-size="14" fill="#059669" opacity="0">P(B|A₂)</text>
+
+                        <line id="dim-pb3-line" class="geom-line fade" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-pb3-dim" class="geom-text math-font font-bold fade" text-anchor="end" dominant-baseline="middle" font-size="14" fill="#d97706" opacity="0">P(B|A₃)</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Sample Space ($\Omega$)</span>
+                            <span class="text-xs text-slate-600">We start with a $1 \times 1$ unit square. Total area equals $1$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. Partition the Space ($A_i$)</span>
+                            <span class="text-xs text-slate-600">Slice the square vertically into mutually exclusive and exhaustive events $A_1, A_2, A_3$. Their widths sum to $1$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-indigo-700 block mb-1">3. Intersection $B \cap A_1$</span>
+                            <span class="text-xs text-slate-600">Event $B$ occupies a fraction of $A_1$ equal to its conditional probability $P(B|A_1)$. Area is $P(A_1) \cdot P(B|A_1)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-slate-800 block mb-1">4. Evaluate all Intersections</span>
+                            <span class="text-xs text-slate-600">Repeat this process for $A_2$ and $A_3$, identifying the area of $B$ in each vertical strip.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. The Total Area of $B$</span>
+                            <span class="text-xs text-slate-600">The total area of $B$ across the entire sample space is simply the geometric sum of all these sub-rectangular slices.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the sliders to set partition widths and conditional heights. Press <strong>Play</strong> to visualize the area sum.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Algebraic Property</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Geometric Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Partitioning the Space</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The vertical strips represent a set of mutually exclusive and exhaustive events $A_1, A_2, \dots, A_n$. Because they cover the entire sample space without overlapping, their widths sum perfectly to $1$:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \sum_{i=1}^{n} P(A_i) = 1 $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        This forms the base width for our entire calculation.
+                    </p>
+                </div>
+
+                <!-- Right: Sum of Rectangles -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Summing the Rectangular Slices</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        To find the total probability of event $B$, we look at its area within each strip. The multiplication rule defines the area of the rectangle in strip $i$ as:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \text{Area}_i = \text{Width}_i \times \text{Height}_i = P(A_i) \cdot P(B \mid A_i) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Because event $B$ only exists within these discrete non-overlapping strips, its total area is the sum of these rectangular parts.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: The Law of Total Probability</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    By calculating the area of event $B$ piece by piece across the partition, we visually arrive at the standard formula for the Law of Total Probability:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ P(B) = \sum_{i=1}^{n} P(A_i) P(B \mid A_i) $$
+                </div>
+                <p class="text-slate-700 leading-relaxed">
+                    This geometric representation makes it immediately obvious why we multiply the conditional probability (the vertical height) by the partition probability (the horizontal width) and add them together.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            pa1: 0.30,
+            pb1: 0.80,
+            pb2: 0.40,
+            pb3: 0.60,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG
+        const OX = 50;      // Origin X (Bottom Left)
+        const OY = 450;     // Origin Y (Bottom Left)
+        const SCALE = 400;  // 1 unit = 400 pixels (Unit square is 400x400)
+
+        // DOM Elements
+        const DOM = {
+            sliders: { 
+                pa1: document.getElementById('slider-pa1'), 
+                pb1: document.getElementById('slider-pb1'),
+                pb2: document.getElementById('slider-pb2'),
+                pb3: document.getElementById('slider-pb3')
+            },
+            vals: { 
+                pa1: document.getElementById('val-pa1'), 
+                pb1: document.getElementById('val-pb1'), 
+                pb2: document.getElementById('val-pb2'), 
+                pb3: document.getElementById('val-pb3'), 
+                pbTotal: document.getElementById('val-pb-total') 
+            },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                lblOmega: document.getElementById('lbl-omega'),
+                rectA1: document.getElementById('rect-a1'), lblA1: document.getElementById('lbl-a1-text'),
+                rectA2: document.getElementById('rect-a2'), lblA2: document.getElementById('lbl-a2-text'),
+                rectA3: document.getElementById('rect-a3'), lblA3: document.getElementById('lbl-a3-text'),
+                rectB1: document.getElementById('rect-b1'), lblB1: document.getElementById('lbl-b1-text'),
+                rectB2: document.getElementById('rect-b2'), lblB2: document.getElementById('lbl-b2-text'),
+                rectB3: document.getElementById('rect-b3'), lblB3: document.getElementById('lbl-b3-text'),
+                dimPA1: document.getElementById('dim-pa1-line'), lblPA1Dim: document.getElementById('lbl-pa1-dim'),
+                dimPA2: document.getElementById('dim-pa2-line'), lblPA2Dim: document.getElementById('lbl-pa2-dim'),
+                dimPA3: document.getElementById('dim-pa3-line'), lblPA3Dim: document.getElementById('lbl-pa3-dim'),
+                dimPB1: document.getElementById('dim-pb1-line'), lblPB1Dim: document.getElementById('lbl-pb1-dim'),
+                dimPB2: document.getElementById('dim-pb2-line'), lblPB2Dim: document.getElementById('lbl-pb2-dim'),
+                dimPB3: document.getElementById('dim-pb3-line'), lblPB3Dim: document.getElementById('lbl-pb3-dim')
+            }
+        };
+
+        const descriptions = [
+            "We start with a $1 \\times 1$ unit square. Total area equals $1$.",
+            "Slice the square vertically into mutually exclusive and exhaustive events $A_1, A_2, A_3$. Their widths sum to $1$.",
+            "Event $B$ occupies a fraction of $A_1$ equal to its conditional probability $P(B|A_1)$. Area is $P(A_1) \\cdot P(B|A_1)$.",
+            "Repeat this process for $A_2$ and $A_3$, identifying the area of $B$ in each vertical strip.",
+            "The total area of $B$ across the entire sample space is simply the geometric sum of all these sub-rectangular slices."
+        ];
+
+        function init() {
+            // Slider events
+            DOM.sliders.pa1.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.pa1 = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.sliders.pb1.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.pb1 = parseFloat(e.target.value);
+                updateGeometry();
+            });
+            
+            DOM.sliders.pb2.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.pb2 = parseFloat(e.target.value);
+                updateGeometry();
+            });
+            
+            DOM.sliders.pb3.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.pb3 = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.pa1 = 0.3; state.pb1 = 0.8; state.pb2 = 0.4; state.pb3 = 0.6;
+                DOM.sliders.pa1.value = 0.3; DOM.sliders.pb1.value = 0.8; 
+                DOM.sliders.pb2.value = 0.4; DOM.sliders.pb3.value = 0.6;
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { pa1, pb1, pb2, pb3, step } = state;
+            
+            // Calculate proportional widths for A2 and A3 based on A1
+            const rem = 1.0 - pa1;
+            const pa2 = rem * 0.6; // Distribute remainder 60% to A2
+            const pa3 = rem * 0.4; // Distribute remainder 40% to A3
+            
+            const pbTotal = (pa1 * pb1) + (pa2 * pb2) + (pa3 * pb3);
+
+            // UI texts
+            DOM.vals.pa1.textContent = pa1.toFixed(2);
+            DOM.vals.pb1.textContent = pb1.toFixed(2);
+            DOM.vals.pb2.textContent = pb2.toFixed(2);
+            DOM.vals.pb3.textContent = pb3.toFixed(2);
+            DOM.vals.pbTotal.textContent = pbTotal.toFixed(3);
+
+            // Compute SVG Dimensions in pixels
+            const pxW1 = pa1 * SCALE;
+            const pxW2 = pa2 * SCALE;
+            const pxW3 = pa3 * SCALE;
+            const pxH1 = pb1 * SCALE;
+            const pxH2 = pb2 * SCALE;
+            const pxH3 = pb3 * SCALE;
+
+            // X Coordinates
+            const x1 = OX;
+            const x2 = OX + pxW1;
+            const x3 = OX + pxW1 + pxW2;
+
+            // Helper to set rect easily
+            const setRect = (el, xPos, yPos, w, h) => {
+                el.setAttribute('x', xPos);
+                el.setAttribute('y', yPos);
+                el.setAttribute('width', w);
+                el.setAttribute('height', h);
+            };
+
+            // Partitions A (Full Height)
+            setRect(DOM.svg.rectA1, x1, OY - SCALE, pxW1, SCALE);
+            DOM.svg.lblA1.setAttribute('x', x1 + pxW1/2); DOM.svg.lblA1.setAttribute('y', OY - SCALE + 20);
+
+            setRect(DOM.svg.rectA2, x2, OY - SCALE, pxW2, SCALE);
+            DOM.svg.lblA2.setAttribute('x', x2 + pxW2/2); DOM.svg.lblA2.setAttribute('y', OY - SCALE + 20);
+
+            setRect(DOM.svg.rectA3, x3, OY - SCALE, pxW3, SCALE);
+            DOM.svg.lblA3.setAttribute('x', x3 + pxW3/2); DOM.svg.lblA3.setAttribute('y', OY - SCALE + 20);
+
+            // Partitions B \cap A
+            setRect(DOM.svg.rectB1, x1, OY - pxH1, pxW1, pxH1);
+            DOM.svg.lblB1.setAttribute('x', x1 + pxW1/2); DOM.svg.lblB1.setAttribute('y', OY - pxH1/2);
+
+            setRect(DOM.svg.rectB2, x2, OY - pxH2, pxW2, pxH2);
+            DOM.svg.lblB2.setAttribute('x', x2 + pxW2/2); DOM.svg.lblB2.setAttribute('y', OY - pxH2/2);
+
+            setRect(DOM.svg.rectB3, x3, OY - pxH3, pxW3, pxH3);
+            DOM.svg.lblB3.setAttribute('x', x3 + pxW3/2); DOM.svg.lblB3.setAttribute('y', OY - pxH3/2);
+
+            // Width Dimensions
+            const dimY = OY + 25;
+            DOM.svg.dimPA1.setAttribute('x1', x1); DOM.svg.dimPA1.setAttribute('x2', x2); 
+            DOM.svg.dimPA1.setAttribute('y1', dimY); DOM.svg.dimPA1.setAttribute('y2', dimY);
+            DOM.svg.lblPA1Dim.setAttribute('x', x1 + pxW1/2); DOM.svg.lblPA1Dim.setAttribute('y', dimY + 20);
+
+            DOM.svg.dimPA2.setAttribute('x1', x2); DOM.svg.dimPA2.setAttribute('x2', x3); 
+            DOM.svg.dimPA2.setAttribute('y1', dimY); DOM.svg.dimPA2.setAttribute('y2', dimY);
+            DOM.svg.lblPA2Dim.setAttribute('x', x2 + pxW2/2); DOM.svg.lblPA2Dim.setAttribute('y', dimY + 20);
+
+            DOM.svg.dimPA3.setAttribute('x1', x3); DOM.svg.dimPA3.setAttribute('x2', OX + SCALE); 
+            DOM.svg.dimPA3.setAttribute('y1', dimY); DOM.svg.dimPA3.setAttribute('y2', dimY);
+            DOM.svg.lblPA3Dim.setAttribute('x', x3 + pxW3/2); DOM.svg.lblPA3Dim.setAttribute('y', dimY + 20);
+
+            // Height Dimensions
+            const setHDim = (line, lbl, xPos, h) => {
+                line.setAttribute('x1', xPos - 5); line.setAttribute('x2', xPos - 5);
+                line.setAttribute('y1', OY); line.setAttribute('y2', OY - h);
+                lbl.setAttribute('x', xPos - 12); lbl.setAttribute('y', OY - h/2);
+            };
+            setHDim(DOM.svg.dimPB1, DOM.svg.lblPB1Dim, x1, pxH1);
+            setHDim(DOM.svg.dimPB2, DOM.svg.lblPB2Dim, x2, pxH2);
+            setHDim(DOM.svg.dimPB3, DOM.svg.lblPB3Dim, x3, pxH3);
+
+            applyStepLogic(step);
+        }
+
+        function applyStepLogic(step) {
+            const op = (el, val) => el.style.opacity = val;
+
+            // Sample Space Text fades out as steps progress
+            op(DOM.svg.lblOmega, step === 0 ? '1' : '0.1');
+
+            // Partitions A
+            const showA = step >= 1 ? '1' : '0';
+            op(DOM.svg.rectA1, showA); op(DOM.svg.lblA1, showA); op(DOM.svg.dimPA1, showA); op(DOM.svg.lblPA1Dim, showA);
+            op(DOM.svg.rectA2, showA); op(DOM.svg.lblA2, showA); op(DOM.svg.dimPA2, showA); op(DOM.svg.lblPA2Dim, showA);
+            op(DOM.svg.rectA3, showA); op(DOM.svg.lblA3, showA); op(DOM.svg.dimPA3, showA); op(DOM.svg.lblPA3Dim, showA);
+
+            // B in A1
+            const showB1 = step >= 2 ? '1' : '0';
+            op(DOM.svg.rectB1, showB1); op(DOM.svg.lblB1, showB1); op(DOM.svg.dimPB1, showB1); op(DOM.svg.lblPB1Dim, showB1);
+            if (step >= 2 && step <= 4) DOM.svg.rectB1.classList.add('anim-intersect'); else DOM.svg.rectB1.classList.remove('anim-intersect');
+
+            // B in A2 & A3
+            const showB23 = step >= 3 ? '1' : '0';
+            op(DOM.svg.rectB2, showB23); op(DOM.svg.lblB2, showB23); op(DOM.svg.dimPB2, showB23); op(DOM.svg.lblPB2Dim, showB23);
+            op(DOM.svg.rectB3, showB23); op(DOM.svg.lblB3, showB23); op(DOM.svg.dimPB3, showB23); op(DOM.svg.lblPB3Dim, showB23);
+            if (step >= 3 && step <= 4) {
+                DOM.svg.rectB2.classList.add('anim-intersect');
+                DOM.svg.rectB3.classList.add('anim-intersect');
+            } else {
+                DOM.svg.rectB2.classList.remove('anim-intersect');
+                DOM.svg.rectB3.classList.remove('anim-intersect');
+            }
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            applyStepLogic(step);
+
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 400);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); 
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

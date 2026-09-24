@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: 1/p + 1/q ≥ 4</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* SVG Geometry Transitions */
+        .geom-rect { transition: all 0.1s linear; }
+        .geom-hole { transition: all 0.1s linear; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: $\frac{1}{p} + \frac{1}{q} \ge 4$
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$\text{Given } p+q=1, \text{ we have } \frac{1}{p} + \frac{1}{q} = \dots \ge 4$$
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            <div class="flex items-center gap-6 w-full md:w-auto flex-grow max-w-md">
+                <div class="flex flex-col gap-2 w-full">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Ratio <span class="math-font text-sm normal-case text-sky-600">p</span></span>
+                        <span>Ratio <span class="math-font text-sm normal-case text-emerald-600">q</span></span>
+                    </div>
+                    <input type="range" id="sliderP" value="0.75" min="0.05" max="0.95" step="0.01" class="w-full">
+                    <div class="flex justify-between items-center text-sm font-bold mt-1">
+                        <span id="valP" class="text-sky-600">0.75</span>
+                        <span class="text-slate-400 font-medium">p + q = 1</span>
+                        <span id="valQ" class="text-emerald-600">0.25</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play Auto</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+            
+            <!-- SVG Viewport (Spans 3 cols) -->
+            <div class="lg:col-span-3 svg-container p-4 flex items-center justify-center min-h-[400px]">
+                <svg id="proofSvg" viewBox="-80 -80 560 560" class="w-full max-w-[420px] h-auto overflow-visible">
+                    <defs>
+                        <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#fef3c7" stroke-width="4" />
+                        </pattern>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 2 L 10 5 L 0 8 z" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Background Boundary (Area = 1) -->
+                    <rect x="0" y="0" width="400" height="400" fill="#f8fafc" stroke="#334155" stroke-width="3" />
+
+                    <!-- 4 Rectangles -->
+                    <rect id="rect1" class="geom-rect" fill="#e0e7ff" stroke="#4f46e5" stroke-width="2" /> <!-- Top-Left -->
+                    <rect id="rect2" class="geom-rect" fill="#d1fae5" stroke="#059669" stroke-width="2" /> <!-- Top-Right -->
+                    <rect id="rect3" class="geom-rect" fill="#d1fae5" stroke="#059669" stroke-width="2" /> <!-- Bottom-Left -->
+                    <rect id="rect4" class="geom-rect" fill="#e0e7ff" stroke="#4f46e5" stroke-width="2" /> <!-- Bottom-Right -->
+                    
+                    <!-- Central Hole -->
+                    <rect id="centerHole" class="geom-hole" fill="url(#diagonalHatch)" stroke="#d97706" stroke-width="2" stroke-dasharray="6,4" />
+
+                    <!-- Dimension Lines & Labels -->
+                    <g id="dimLines">
+                        <!-- Top width P (corresponds to q) -->
+                        <path id="dimTopP" d="M 0 -15 L 0 -25 L 300 -25 L 300 -15" stroke="#64748b" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text id="lblTopP" x="150" y="-35" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="24" fill="#059669" text-anchor="middle" paint-order="stroke fill" stroke="white" stroke-width="4">q</text>
+                        
+                        <!-- Top width Q (corresponds to p) -->
+                        <path id="dimTopQ" d="M 300 -15 L 300 -25 L 400 -25 L 400 -15" stroke="#64748b" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text id="lblTopQ" x="350" y="-35" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="24" fill="#0284c7" text-anchor="middle" paint-order="stroke fill" stroke="white" stroke-width="4">p</text>
+                        
+                        <!-- Left height P (corresponds to p) -->
+                        <path id="dimLeftP" d="M -15 0 L -25 0 L -25 300 L -15 300" stroke="#64748b" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text id="lblLeftP" x="-35" y="150" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="24" fill="#0284c7" text-anchor="end" dominant-baseline="middle" paint-order="stroke fill" stroke="white" stroke-width="4">p</text>
+                        
+                        <!-- Left height Q (corresponds to q) -->
+                        <path id="dimLeftQ" d="M -15 300 L -25 300 L -25 400 L -15 400" stroke="#64748b" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text id="lblLeftQ" x="-35" y="350" font-family="Times New Roman" font-style="italic" font-weight="bold" font-size="24" fill="#059669" text-anchor="end" dominant-baseline="middle" paint-order="stroke fill" stroke="white" stroke-width="4">q</text>
+
+                        <!-- Center Hole Area Label -->
+                        <text id="lblHole" x="200" y="200" font-family="Inter" font-weight="600" font-size="16" fill="#b45309" text-anchor="middle" dominant-baseline="middle" paint-order="stroke fill" stroke="white" stroke-width="4">Gap: (p-q)²</text>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col">
+                <h2 class="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3 mb-4">Geometric Breakdown</h2>
+                
+                <div class="space-y-4 text-sm flex-grow">
+                    <!-- Step 1 -->
+                    <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                        <p class="font-bold text-slate-800 mb-1">1. The Outer Square</p>
+                        <p class="text-slate-600 mb-2">The side length is $p + q$. Since we are given $p + q = 1$, the total area of the bounding box is exactly $1$.</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="p-3 rounded-lg bg-indigo-50/50 border border-indigo-100">
+                        <p class="font-bold text-indigo-900 mb-1">2. The Four Inner Rectangles</p>
+                        <p class="text-slate-600 mb-2">We place 4 shaded rectangles in a pinwheel. Each rectangle has dimensions $p \times q$.</p>
+                        <div class="flex justify-between items-center text-xs font-mono bg-white p-2 rounded border border-indigo-200 text-indigo-700 font-semibold">
+                            <span>Area = 4pq</span>
+                            <span>4(<span id="txtP1">0.75</span>)(<span id="txtQ1">0.25</span>) = <span id="txtArea1">0.750</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-100">
+                        <p class="font-bold text-emerald-900 mb-1">3. The Geometric Inequality</p>
+                        <p class="text-slate-600 mb-2">The 4 rectangles fit entirely inside the unit square, leaving an empty central gap. Therefore, their area must be $\le 1$.</p>
+                        <div class="flex justify-between items-center text-sm font-mono bg-white p-2 rounded border border-emerald-200 text-emerald-700 font-bold">
+                            <span>$4pq \le 1$</span>
+                            <span><span id="txtArea2">0.750</span> $\le 1$</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">Algebraic Substitution</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        The visual proves undeniably that $4pq \le 1$. We can transform this simple observation into our target inequality using basic algebra.
+                    </p>
+                    <p class="mb-4">
+                        Since $p$ and $q$ are positive fractions, their product $pq$ is positive. We can divide both sides of our inequality by $pq$:
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">Transforming the Expression</h3>
+                    <p class="text-sm mb-2 text-center">$$ 4pq \le 1 \implies 4 \le \frac{1}{pq} $$</p>
+                    <p class="text-sm mb-2">Because we were given the constraint that $p + q = 1$, we can ingeniously substitute $1$ with $(p+q)$ in the numerator!</p>
+                    <p class="text-sm text-center font-semibold text-indigo-700 my-3">$$ 4 \le \frac{p+q}{pq} $$</p>
+                    <p class="text-sm mb-2">Splitting the fraction gives us the final elegant result:</p>
+                    <p class="text-sm text-center font-semibold text-indigo-700 my-3">$$ 4 \le \frac{p}{pq} + \frac{q}{pq} \implies 4 \le \frac{1}{q} + \frac{1}{p} $$</p>
+                </div>
+            </div>
+            
+            <div class="text-center p-6 border border-indigo-200 bg-indigo-50 rounded-xl mt-6">
+                <p class="text-sm mt-2 max-w-2xl mx-auto mb-3 text-slate-700">
+                    Equality ($1/p + 1/q = 4$) occurs strictly when the central gap vanishes. As seen in the interactive visual, the gap area $(p-q)^2$ only vanishes when $p = q = 0.5$.
+                </p>
+                <p class="text-2xl font-bold text-indigo-800 mt-4 overflow-x-auto">
+                    $$ \frac{1}{p} + \frac{1}{q} \ge 4 $$
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            p: 0.75,
+            isPlaying: false,
+            animTime: 0,
+            animDir: 1
+        };
+
+        const SIZE = 400;
+
+        // DOM Elements
+        const sliderP = document.getElementById('sliderP');
+        const valP = document.getElementById('valP');
+        const valQ = document.getElementById('valQ');
+        
+        const txtP1 = document.getElementById('txtP1');
+        const txtQ1 = document.getElementById('txtQ1');
+        const txtArea1 = document.getElementById('txtArea1');
+        const txtArea2 = document.getElementById('txtArea2');
+        
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const liveEq = document.getElementById('liveEq');
+        
+        // SVG Elements
+        const rect1 = document.getElementById('rect1');
+        const rect2 = document.getElementById('rect2');
+        const rect3 = document.getElementById('rect3');
+        const rect4 = document.getElementById('rect4');
+        const centerHole = document.getElementById('centerHole');
+        const lblHole = document.getElementById('lblHole');
+        
+        const dimTopP = document.getElementById('dimTopP');
+        const lblTopP = document.getElementById('lblTopP');
+        const dimTopQ = document.getElementById('dimTopQ');
+        const lblTopQ = document.getElementById('lblTopQ');
+        const dimLeftP = document.getElementById('dimLeftP');
+        const lblLeftP = document.getElementById('lblLeftP');
+        const dimLeftQ = document.getElementById('dimLeftQ');
+        const lblLeftQ = document.getElementById('lblLeftQ');
+
+        function init() {
+            sliderP.addEventListener('input', (e) => { 
+                state.p = parseFloat(e.target.value); 
+                pauseAnimation(); 
+                updateVisuals(); 
+            });
+            
+            playPauseBtn.addEventListener('click', togglePlay);
+            resetBtn.addEventListener('click', () => { 
+                pauseAnimation(); 
+                state.p = 0.5; 
+                sliderP.value = 0.5; 
+                updateVisuals(); 
+            });
+            
+            updateVisuals(); 
+            requestAnimationFrame(renderLoop);
+        }
+
+        function updateVisuals() {
+            const p = state.p;
+            const q = 1 - p;
+            const px = p * SIZE;
+            const qx = q * SIZE;
+
+            // UI Text Updates
+            sliderP.value = p;
+            valP.textContent = p.toFixed(2);
+            valQ.textContent = q.toFixed(2);
+            
+            txtP1.textContent = p.toFixed(2);
+            txtQ1.textContent = q.toFixed(2);
+            
+            const area = (4 * p * q).toFixed(3);
+            txtArea1.textContent = area;
+            txtArea2.textContent = area;
+
+            // MathJax Banner Update
+            const total = (1/p + 1/q).toFixed(2);
+            liveEq.innerHTML = `$$\\frac{1}{${p.toFixed(2)}} + \\frac{1}{${q.toFixed(2)}} = ${total} \\ge 4$$`;
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.texReset();
+                MathJax.typesetPromise([liveEq]).catch((err) => console.log(err.message));
+            }
+
+            // SVG Updates
+            // Top-Left (q x p)
+            rect1.setAttribute('x', 0); rect1.setAttribute('y', 0);
+            rect1.setAttribute('width', qx); rect1.setAttribute('height', px);
+
+            // Top-Right (p x q)
+            rect2.setAttribute('x', qx); rect2.setAttribute('y', 0);
+            rect2.setAttribute('width', px); rect2.setAttribute('height', qx);
+
+            // Bottom-Left (p x q)
+            rect3.setAttribute('x', 0); rect3.setAttribute('y', px);
+            rect3.setAttribute('width', px); rect3.setAttribute('height', qx);
+
+            // Bottom-Right (q x p)
+            rect4.setAttribute('x', px); rect4.setAttribute('y', qx);
+            rect4.setAttribute('width', qx); rect4.setAttribute('height', px);
+
+            // Center Hole
+            const minSize = Math.min(px, qx);
+            const holeSize = Math.abs(px - qx);
+            centerHole.setAttribute('x', minSize);
+            centerHole.setAttribute('y', minSize);
+            centerHole.setAttribute('width', holeSize);
+            centerHole.setAttribute('height', holeSize);
+
+            // Hide hole label if it gets squished
+            if (holeSize < 50) {
+                lblHole.style.opacity = 0;
+            } else {
+                lblHole.style.opacity = 1;
+                lblHole.setAttribute('x', minSize + holeSize/2);
+                lblHole.setAttribute('y', minSize + holeSize/2);
+            }
+
+            // Dimension Brackets & Labels
+            // Top P (which corresponds to qx width)
+            dimTopP.setAttribute('d', `M 0 -15 L 0 -25 L ${qx} -25 L ${qx} -15`);
+            lblTopP.setAttribute('x', qx/2);
+            lblTopP.textContent = 'q';
+
+            // Top Q (which corresponds to px width)
+            dimTopQ.setAttribute('d', `M ${qx} -15 L ${qx} -25 L ${SIZE} -25 L ${SIZE} -15`);
+            lblTopQ.setAttribute('x', qx + px/2);
+            lblTopQ.textContent = 'p';
+
+            // Left P (corresponds to px height)
+            dimLeftP.setAttribute('d', `M -15 0 L -25 0 L -25 ${px} L -15 ${px}`);
+            lblLeftP.setAttribute('y', px/2);
+            lblLeftP.textContent = 'p';
+
+            // Left Q (corresponds to qx height)
+            dimLeftQ.setAttribute('d', `M -15 ${px} L -25 ${px} L -25 ${SIZE} L -15 ${SIZE}`);
+            lblLeftQ.setAttribute('y', px + qx/2);
+            lblLeftQ.textContent = 'q';
+        }
+
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            if (state.isPlaying) {
+                playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                playPauseBtn.classList.replace('btn-play', 'btn-secondary');
+            } else {
+                playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Play Auto';
+                playPauseBtn.classList.replace('btn-secondary', 'btn-play');
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Play Auto';
+            playPauseBtn.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        function renderLoop() {
+            if (state.isPlaying) {
+                const speed = 0.003;
+                state.p += speed * state.animDir;
+                
+                if (state.p >= 0.95) {
+                    state.p = 0.95;
+                    state.animDir = -1;
+                } else if (state.p <= 0.05) {
+                    state.p = 0.05;
+                    state.animDir = 1;
+                }
+                
+                updateVisuals();
+            }
+            requestAnimationFrame(renderLoop);
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

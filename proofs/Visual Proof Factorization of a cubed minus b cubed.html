@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Factorization of a³ - b³</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container-custom {
+            max-width: 980px;
+            width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* SVG / Canvas Visualization Area */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            width: 100%;
+            max-width: 850px;
+            aspect-ratio: 16 / 9;
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #0284c7;
+            color: white;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #0369a1; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Sliders */
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #0284c7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Factorization of $a^3 - b^3$
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-sky-50 text-sky-950 rounded-lg mb-6 shadow-sm border border-sky-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$\text{Remaining Area} = a^3 - b^3$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-col md:flex-row items-center justify-between gap-6">
+            
+            <div class="flex items-center gap-6 w-full md:w-auto">
+                <div class="flex flex-col w-32">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase mb-1">
+                        <span>Base $(a)$</span>
+                        <span id="val-a" class="text-sky-700">5.0</span>
+                    </div>
+                    <input type="range" id="inputA" min="3" max="7" step="0.5" value="5">
+                </div>
+                
+                <div class="flex flex-col w-32">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase mb-1">
+                        <span>Cutout $(b)$</span>
+                        <span id="val-b" class="text-sky-700">2.0</span>
+                    </div>
+                    <input type="range" id="inputB" min="1" max="4" step="0.5" value="2">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-4">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-sky-700 font-bold text-lg bg-sky-100 px-3 py-1 rounded-md border border-sky-200">0 / 4</span>
+                </div>
+                <button id="btnPrev" class="btn-action btn-secondary" disabled>← Back</button>
+                <button id="btnNext" class="btn-action btn-play">Next Step →</button>
+                <button id="btnReset" class="btn-action btn-secondary ml-2">↺ Reset</button>
+            </div>
+        </div>
+
+        <!-- Visualization Area -->
+        <div class="visualization-area">
+            <div class="canvas-container">
+                <canvas id="proofCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Explanation Box -->
+        <div class="bg-sky-50 border-l-4 border-sky-600 p-5 rounded-r-lg shadow-sm mb-6 min-h-[90px] flex items-center">
+            <p class="text-slate-800 text-lg leading-relaxed w-full transition-opacity duration-300" id="statusText">
+                Start with a rectangle of area $a^3$ (dimensions $a^2 \times a$) and subtract a corner of area $b^3$ (dimensions $b^2 \times b$).
+            </p>
+        </div>
+
+        <!-- Written Mathematical Explanation -->
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">How this 2D Proof Works</h3>
+            <p class="text-slate-700 text-lg mb-4">
+                We can elegantly prove 3D volume identities using 2D geometry by representing cubed values as rectangles: $a^3 = a^2 \times a$.
+            </p>
+            <ol class="list-decimal list-inside space-y-3 text-slate-700 text-lg mb-6">
+                <li>
+                    <strong>The Setup:</strong> We start with a large $a^2 \times a$ block and remove a $b^2 \times b$ cutout from the corner. The remaining area is exactly $a^3 - b^3$.
+                </li>
+                <li>
+                    <strong>Partitioning:</strong> This remaining L-shape naturally splits into a Top rectangle ($a^2 \times (a-b)$) and a Bottom rectangle ($(a^2-b^2) \times b$).
+                </li>
+                <li>
+                    <strong>Constant Area Reshaping:</strong> The bottom rectangle has an area of $b(a^2-b^2)$. Since $a^2-b^2$ factors to $(a-b)(a+b)$, the area can be written as $b(a-b)(a+b)$. We visually reshape this block into a new rectangle with height $(a-b)$ and width $ab + b^2$.
+                </li>
+                <li>
+                    <strong>The Final Combination:</strong> Because the reshaped bottom block now shares the exact same height $(a-b)$ as the top block, they slide together perfectly to form one unified rectangle!
+                </li>
+            </ol>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto mt-6">
+                $$\text{Total Width} = a^2 + ab + b^2$$
+                $$a^3 - b^3 = (a-b)(a^2 + ab + b^2)$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('proofCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const btnNext = document.getElementById('btnNext');
+            const btnPrev = document.getElementById('btnPrev');
+            const btnReset = document.getElementById('btnReset');
+            const stepIndicator = document.getElementById('stepIndicator');
+            const statusText = document.getElementById('statusText');
+            const liveEq = document.getElementById('liveEq');
+            const inputA = document.getElementById('inputA');
+            const inputB = document.getElementById('inputB');
+            const valA = document.getElementById('val-a');
+            const valB = document.getElementById('val-b');
+
+            // Internal resolution for crisp rendering
+            let cw, ch;
+            
+            // State
+            let a = 5;
+            let b = 2;
+            let currentStep = 0;
+            const maxSteps = 4;
+            
+            let currentProgress = 0;
+            let targetProgress = 0;
+            let isAnimating = false;
+            let animFrameId;
+
+            // Map UI steps to geometric progress [0 to 1]
+            const stepTargets = [0.0, 0.2, 0.55, 0.75, 1.0];
+            
+            const stepExplanations = [
+                {
+                    text: "Start with a rectangle of area $a^3$ (dimensions $a^2 \\times a$) and subtract a corner of area $b^3$ (dimensions $b^2 \\times b$).",
+                    eq: "$$\\text{Remaining Area} = a^3 - b^3$$"
+                },
+                {
+                    text: "Partition the L-shape horizontally. The Top area is $a^2(a-b)$. The Bottom area is $(a^2-b^2)b$.",
+                    eq: "$$a^3 - b^3 = a^2(a-b) + (a^2-b^2)b$$"
+                },
+                {
+                    text: "Slide the bottom piece out so we can manipulate it.",
+                    eq: "$$a^3 - b^3 = a^2(a-b) + (a^2-b^2)b$$"
+                },
+                {
+                    text: "Reshape the bottom piece. Its area $b(a^2-b^2)$ equals $b(a-b)(a+b)$. We reshape it to a height of $(a-b)$ and width of $ab+b^2$.",
+                    eq: "$$\\text{Reshaped Area} = (a-b)(ab+b^2)$$"
+                },
+                {
+                    text: "Slide it up! It shares the same height $(a-b)$ as the top piece, seamlessly combining into a single rectangle of width $(a^2 + ab + b^2)$.",
+                    eq: "$$a^3 - b^3 = (a-b)(a^2 + ab + b^2)$$"
+                }
+            ];
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise().catch((err) => console.log(err.message));
+                }
+            }
+
+            function resize() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                cw = rect.width * dpr;
+                ch = rect.height * dpr;
+                canvas.width = cw;
+                canvas.height = ch;
+                ctx.scale(dpr, dpr);
+                draw();
+            }
+            window.addEventListener('resize', resize);
+
+            // Helpers
+            function drawBracket(x, y, width, label, isTop = true) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 2;
+                let dir = isTop ? -1 : 1;
+                ctx.moveTo(x, y + (8 * dir));
+                ctx.lineTo(x, y);
+                ctx.lineTo(x + width, y);
+                ctx.lineTo(x + width, y + (8 * dir));
+                ctx.stroke();
+                
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 14px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = isTop ? 'bottom' : 'top';
+                ctx.fillText(label, x + width / 2, y + (12 * dir));
+            }
+
+            function drawVertBracket(x, y, height, label, isLeft = true) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 2;
+                let dir = isLeft ? -1 : 1;
+                ctx.moveTo(x + (8 * dir), y);
+                ctx.lineTo(x, y);
+                ctx.lineTo(x, y + height);
+                ctx.lineTo(x + (8 * dir), y + height);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 14px Inter, sans-serif';
+                ctx.textAlign = isLeft ? 'right' : 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, x + (12 * dir), y + height / 2);
+            }
+
+            function draw() {
+                const drawW = canvas.width / (window.devicePixelRatio || 1);
+                const drawH = canvas.height / (window.devicePixelRatio || 1);
+                ctx.clearRect(0, 0, drawW, drawH);
+
+                const a_sq = a * a;
+                const b_sq = b * b;
+
+                // Scaling logic to keep geometry centered and sized correctly
+                const paddingX = 80;
+                const paddingY = 80;
+                const availableW = drawW - paddingX * 2;
+                const availableH = drawH - paddingY * 2;
+
+                const maxW = a_sq + (a * b) + b_sq;
+                const maxH = a;
+
+                const scaleX = availableW / maxW;
+                const scaleY = availableH / maxH;
+
+                const originX = paddingX;
+                const originY = paddingY + (availableH - (a * scaleY)) / 2;
+
+                const tX = (val) => val * scaleX;
+                const tY = (val) => val * scaleY;
+
+                const p = currentProgress;
+
+                /* --- 1. Background Outline & Hole --- */
+                const hole_x = originX;
+                const hole_y = originY + tY(a - b);
+                const hole_w = tX(b_sq);
+                const hole_h = tY(b);
+
+                // Dashed outline for original a^3
+                ctx.strokeStyle = '#cbd5e1'; 
+                ctx.lineWidth = 2; 
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(originX, originY, tX(a_sq), tY(a));
+                
+                // Cutout representation
+                ctx.fillStyle = '#f8fafc'; 
+                ctx.fillRect(hole_x, hole_y, hole_w, hole_h);
+                ctx.strokeStyle = '#94a3b8'; 
+                ctx.strokeRect(hole_x, hole_y, hole_w, hole_h);
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = '#94a3b8'; 
+                ctx.font = 'italic 13px "Times New Roman", serif'; 
+                ctx.textAlign = 'center'; 
+                ctx.textBaseline = 'middle';
+                if (hole_w > 40) ctx.fillText('b² × b removed', hole_x + hole_w/2, hole_y + hole_h/2);
+
+                /* --- 2. Top Rectangle (Fixed) --- */
+                const top_x = originX;
+                const top_y = originY;
+                const top_w = tX(a_sq);
+                const top_h = tY(a - b);
+
+                ctx.fillStyle = 'rgba(14, 165, 233, 0.2)'; // Sky Blue
+                ctx.fillRect(top_x, top_y, top_w, top_h);
+                ctx.strokeStyle = '#0284c7'; 
+                ctx.lineWidth = 2;
+                ctx.strokeRect(top_x, top_y, top_w, top_h);
+
+                ctx.fillStyle = '#0369a1'; 
+                ctx.font = 'bold 15px Inter, sans-serif';
+                if (p >= 0.1) {
+                    ctx.fillText('a² × (a-b)', top_x + top_w/2, top_y + top_h/2);
+                }
+
+                /* --- 3. Bottom-Right Rectangle (Animated) --- */
+                let bot_x = originX + tX(b_sq);
+                let bot_y = originY + tY(a - b);
+                let math_w = a_sq - b_sq;
+                let math_h = b;
+                let botText = '(a²-b²) × b';
+
+                // Map absolute progress (0 to 1) to the specific animation phases
+                if (p > 0.2) {
+                    // Phase 1: Slide Right (0.2 to 0.55)
+                    let p1 = Math.min(1, Math.max(0, (p - 0.2) / 0.35));
+                    bot_x = originX + tX(b_sq) + (tX(a_sq) - tX(b_sq)) * p1;
+                    
+                    // Phase 2: Morph shape (0.55 to 0.75)
+                    if (p > 0.55) {
+                        let p2 = Math.min(1, Math.max(0, (p - 0.55) / 0.2));
+                        let end_math_w = (a * b) + b_sq; // ab + b^2
+                        math_w = (a_sq - b_sq) * (1 - p2) + end_math_w * p2;
+                        math_h = (b * (a_sq - b_sq)) / math_w; // Area preserved mathematically
+                        
+                        if (p2 > 0.5) botText = '(ab+b²) × (a-b)';
+                        else botText = 'Reshaping...';
+                    }
+
+                    // Phase 3: Slide Up (0.75 to 1.0)
+                    if (p > 0.75) {
+                        let p3 = Math.min(1, Math.max(0, (p - 0.75) / 0.25));
+                        bot_y = originY + tY(a - b) * (1 - p3);
+                    }
+                }
+
+                // Render Bottom Rectangle
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.25)'; // Emerald
+                ctx.fillRect(bot_x, bot_y, tX(math_w), tY(math_h));
+                ctx.strokeStyle = '#059669'; 
+                ctx.lineWidth = 2;
+                ctx.strokeRect(bot_x, bot_y, tX(math_w), tY(math_h));
+                
+                ctx.fillStyle = '#065f46'; 
+                ctx.font = 'bold 15px Inter, sans-serif';
+                if (p >= 0.1 && tX(math_w) > 80) {
+                    ctx.fillText(botText, bot_x + tX(math_w)/2, bot_y + tY(math_h)/2);
+                }
+
+                /* --- 4. Brackets and Dimensions --- */
+                
+                // Left Bracket for Height (a-b)
+                if (p >= 0.1) {
+                    drawVertBracket(originX - 10, originY, tY(a-b), 'a-b', true);
+                }
+
+                // Top Bracket for Top Rectangle (a^2)
+                if (p >= 0.1) {
+                    drawBracket(originX, originY - 10, tX(a_sq), 'a²', true);
+                }
+
+                // Final Combined Brackets
+                if (p > 0.9) {
+                    let opacity = Math.min(1, (p - 0.9) / 0.1);
+                    ctx.globalAlpha = opacity;
+                    
+                    let reshaped_w = tX((a*b) + b_sq);
+                    drawBracket(originX + tX(a_sq), originY - 10, reshaped_w, 'ab + b²', true);
+
+                    let total_w = tX(a_sq + (a*b) + b_sq);
+                    let finalBracketY = originY + tY(a) + 20; 
+                    drawBracket(originX, finalBracketY, total_w, 'Total Width = a² + ab + b²', false);
+                    
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+
+            function animate() {
+                if (!isAnimating) return;
+                
+                const speed = 0.015;
+                const diff = targetProgress - currentProgress;
+                
+                if (Math.abs(diff) < 0.01) {
+                    currentProgress = targetProgress;
+                    isAnimating = false;
+                    updateUI();
+                } else {
+                    currentProgress += Math.sign(diff) * speed;
+                }
+                
+                draw();
+                
+                if (isAnimating) {
+                    animFrameId = requestAnimationFrame(animate);
+                }
+            }
+
+            function setStep(step) {
+                if (isAnimating) return;
+                currentStep = step;
+                targetProgress = stepTargets[currentStep];
+                
+                stepIndicator.textContent = `${currentStep} / ${maxSteps}`;
+                
+                statusText.style.opacity = '0';
+                setTimeout(() => {
+                    statusText.innerHTML = stepExplanations[currentStep].text;
+                    liveEq.innerHTML = stepExplanations[currentStep].eq;
+                    statusText.style.opacity = '1';
+                    updateMathJax();
+                }, 150);
+
+                isAnimating = true;
+                updateUI();
+                animate();
+            }
+
+            function updateUI() {
+                btnPrev.disabled = currentStep === 0 || isAnimating;
+                
+                if (currentStep >= maxSteps) {
+                    btnNext.innerHTML = "Finish";
+                    btnNext.classList.replace('btn-play', 'btn-secondary');
+                    btnNext.disabled = true;
+                } else {
+                    btnNext.innerHTML = "Next Step →";
+                    btnNext.classList.replace('btn-secondary', 'btn-play');
+                    btnNext.disabled = isAnimating;
+                }
+            }
+
+            // Input handling
+            function updateInputs() {
+                let newA = parseFloat(inputA.value);
+                let newB = parseFloat(inputB.value);
+                
+                if (newB >= newA) {
+                    newB = newA - 0.5;
+                    inputB.value = newB;
+                }
+                
+                a = newA;
+                b = newB;
+                valA.textContent = a.toFixed(1).replace('.0', '');
+                valB.textContent = b.toFixed(1).replace('.0', '');
+                
+                // Jump to current state immediately without animation
+                isAnimating = false;
+                currentProgress = stepTargets[currentStep];
+                draw();
+            }
+
+            inputA.addEventListener('input', updateInputs);
+            inputB.addEventListener('input', updateInputs);
+
+            btnNext.addEventListener('click', () => {
+                if (currentStep < maxSteps) setStep(currentStep + 1);
+            });
+
+            btnPrev.addEventListener('click', () => {
+                if (currentStep > 0) setStep(currentStep - 1);
+            });
+
+            btnReset.addEventListener('click', () => {
+                cancelAnimationFrame(animFrameId);
+                isAnimating = false;
+                setStep(0);
+            });
+
+            // Initialize
+            resize();
+            setStep(0);
+            updateMathJax();
+        });
+    </script>
+</body>
+</html>

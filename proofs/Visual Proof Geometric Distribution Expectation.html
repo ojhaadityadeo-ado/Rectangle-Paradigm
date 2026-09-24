@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Geometric Distribution Expectation</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-line { transition: all 0.5s ease-in-out; }
+        .geom-text { user-select: none; transition: opacity 0.4s ease; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-chart-bar text-indigo-600 text-2xl"></i> Visual Proof: Expected Value
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Slicing the area of a geometric distribution horizontally to prove $E[X] = 1/p$.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap flex items-center gap-2" id="live-equation">
+                <span class="text-slate-800">$E[X] = \sum_{k=1}^{\infty} k \cdot p(1-p)^{k-1} =$</span>
+                <span class="text-emerald-700">$\frac{1}{p}$</span>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow">
+                <!-- p Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[200px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Probability <span class="math-font text-sm normal-case text-indigo-600">p</span></span>
+                        <span id="val-p" class="text-indigo-600 text-lg font-mono">0.20</span>
+                    </div>
+                    <input type="range" id="slider-p" value="0.20" min="0.10" max="0.50" step="0.05" class="w-full">
+                </div>
+
+                <!-- N Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[200px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Terms Plotted (<span class="math-font text-sm normal-case text-emerald-600">N</span>)</span>
+                        <span id="val-n" class="text-emerald-600 text-lg font-mono">20</span>
+                    </div>
+                    <input type="range" id="slider-n" value="20" min="5" max="30" step="1" class="w-full">
+                </div>
+                
+                <!-- Live Expected Value -->
+                <div class="bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-sm text-sm font-medium flex flex-col items-center justify-center min-w-[150px]">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">$E[X]$ (Area)</span>
+                    <div class="flex items-center gap-2 font-mono font-bold text-lg text-emerald-700" id="val-ex">
+                        5.00
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes -->
+                    <g id="axes">
+                        <!-- X-axis -->
+                        <line x1="40" y1="450" x2="480" y2="450" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <text x="50" y="470" class="geom-text math-font" fill="#64748b" font-size="14" text-anchor="middle">0</text>
+                        <text x="450" y="470" class="geom-text math-font" fill="#64748b" font-size="14" text-anchor="middle">1.0 (Sum of P)</text>
+                        
+                        <!-- Y-axis -->
+                        <line x1="50" y1="460" x2="50" y2="30" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <text x="35" y="450" class="geom-text math-font" fill="#64748b" font-size="14" text-anchor="end">0</text>
+                        <text x="35" y="50" class="geom-text math-font" fill="#64748b" font-size="14" text-anchor="end">10</text>
+                        <text x="35" y="250" class="geom-text math-font font-bold" fill="#64748b" font-size="14" text-anchor="end" transform="rotate(-90 25 250)">Value (k)</text>
+                    </g>
+
+                    <!-- Dynamic SVG content will be injected here -->
+                    <g id="dynamic-rects"></g>
+                    
+                    <!-- Dynamic Annotations -->
+                    <g id="dynamic-annotations"></g>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. Probability Mass (Widths)</span>
+                            <span class="text-xs text-slate-600">The total probability is 1. We divide the horizontal axis into segments of width $P(X=k) = p(1-p)^{k-1}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. Expected Value (Verticals)</span>
+                            <span class="text-xs text-slate-600">To find $E[X]$, we multiply each width by its value $k$. Geometrically, we extrude each column to height $k$. Total Area = $E[X]$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-700 block mb-1">3. Recomposing as Layers</span>
+                            <span class="text-xs text-slate-600">Instead of summing vertical columns, we can slice the exact same area into horizontal layers of height 1.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-800 block mb-1">4. Area of Each Layer</span>
+                            <span class="text-xs text-slate-600">Layer 1 has width 1. Layer 2 has width $(1-p)$. Layer 3 has width $(1-p)^2$. Each layer forms a geometric sequence.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. The Infinite Sum</span>
+                            <span class="text-xs text-slate-600">Summing these horizontal layers yields a simple geometric series: $\sum (1-p)^{k-1} = \frac{1}{1 - (1-p)} = \frac{1}{p}$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust $p$ to change the distribution shape. Press <strong>Play</strong> to decompose the area into layers.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Expectation Geometrically</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Standard Definition -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. The Standard Definition</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        The expected value of a discrete random variable is the sum of each outcome multiplied by its probability. For a Geometric distribution (the number of trials to get the first success):
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$E[X] = \sum_{k=1}^{\infty} k \cdot P(X=k)$$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Visually, this represents the sum of the areas of the <strong>vertical columns</strong>. The width of column $k$ is $P(X=k)$, and its height is $k$. Evaluating this infinite sum algebraically usually involves tricky derivatives.
+                    </p>
+                </div>
+
+                <!-- Right: Fubini's Slicing -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Horizontal Slicing (Fubini's Theorem)</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Because the columns perfectly stack next to each other, we can calculate the exact same area by slicing the shape into <strong>horizontal layers</strong>.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$\text{Area} = \sum_{k=1}^{\infty} (\text{Width of layer } k) \times 1$$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        The $k$-th horizontal layer spans across all columns from $k$ to $\infty$. Thus, its width is simply the tail probability $P(X \ge k)$.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: The Geometric Series</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    For a Geometric distribution, the probability of needing $\ge k$ trials is the probability of failing the first $k-1$ times: $P(X \ge k) = (1-p)^{k-1}$. Summing the areas of these layers forms a fundamental geometric series:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$E[X] = \sum_{k=1}^{\infty} P(X \ge k) = \sum_{k=1}^{\infty} (1-p)^{k-1}$$
+                </div>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    Using the standard sum for an infinite geometric series $S = \frac{a}{1-r}$ with $a=1$ and $r=(1-p)$, the expected value collapses beautifully:
+                </p>
+                <div class="text-center text-xl font-bold text-emerald-700 my-4 overflow-x-auto min-w-0">
+                    $$E[X] = \frac{1}{1 - (1-p)} = \frac{1}{p}$$
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            p: 0.20,
+            n: 20,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG
+        const OX = 50;      // Origin X 
+        const OY = 450;     // Origin Y (Bottom Left)
+        const SCALE_X = 400; // 1 probability unit = 400 pixels
+        const SCALE_Y = 40;  // 1 value unit = 40 pixels (Max Y = 10)
+
+        // DOM Elements
+        const DOM = {
+            sliders: { 
+                p: document.getElementById('slider-p'), 
+                n: document.getElementById('slider-n')
+            },
+            vals: { 
+                p: document.getElementById('val-p'), 
+                n: document.getElementById('val-n'), 
+                ex: document.getElementById('val-ex') 
+            },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                rects: document.getElementById('dynamic-rects'),
+                annotations: document.getElementById('dynamic-annotations')
+            }
+        };
+
+        const descriptions = [
+            "The total probability is 1. We divide the horizontal axis into segments of width $P(X=k) = p(1-p)^{k-1}$.",
+            "To find $E[X]$, we multiply each width by $k$. Geometrically, we extrude each column to height $k$. Total Area = $E[X]$.",
+            "Instead of summing vertical columns, we can slice the exact same area into horizontal layers of height 1.",
+            "Layer 1 has width $1$. Layer 2 has width $(1-p)$. Layer 3 has width $(1-p)^2$. Each layer forms a geometric sequence.",
+            "Summing these horizontal layers yields a simple geometric series: $\\sum (1-p)^{k-1} = \\frac{1}{p}$."
+        ];
+
+        function init() {
+            // Slider events
+            DOM.sliders.p.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.p = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.sliders.n.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.n = parseInt(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.p = 0.20; state.n = 20;
+                DOM.sliders.p.value = 0.20; DOM.sliders.n.value = 20; 
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { p, n, step } = state;
+            
+            const ex = 1 / p;
+
+            // UI texts
+            DOM.vals.p.textContent = p.toFixed(2);
+            DOM.vals.n.textContent = n;
+            DOM.vals.ex.textContent = ex.toFixed(2);
+
+            let rectsHTML = '';
+            let annHTML = '';
+            
+            const q = 1 - p;
+
+            // Opacity control logic based on step
+            const colOpacity = (step <= 1) ? 1.0 : 0.15;
+            const layOpacity = (step >= 2) ? 1.0 : 0.0;
+            const hMult = (step === 0) ? 1 : 1; // Used if we want to animate height, handled differently below
+            
+            // Build groups
+            rectsHTML += `<g id="col-group" style="transition: opacity 0.5s ease; opacity: ${colOpacity}">`;
+            let currentX = 0;
+            for(let k=1; k<=n; k++) {
+                const width = p * Math.pow(q, k-1) * SCALE_X;
+                const height = (step === 0 ? 1 : k) * SCALE_Y;
+                
+                rectsHTML += `<rect class="geom-rect" x="${OX + currentX}" y="${OY - height}" width="${width}" height="${height}" fill="rgba(79, 70, 229, 0.4)" stroke="#4338ca" stroke-width="1.5" />`;
+                
+                // Labels for first few columns
+                if(step <= 1 && width > 20 && k <= 3) {
+                    annHTML += `<text class="geom-text fade" x="${OX + currentX + width/2}" y="${OY + 15}" font-size="12" fill="#4338ca" text-anchor="middle">P(${k})</text>`;
+                }
+                
+                currentX += width;
+            }
+            rectsHTML += `</g>`;
+
+            rectsHTML += `<g id="lay-group" style="transition: opacity 0.5s ease; opacity: ${layOpacity}">`;
+            for(let k=1; k<=Math.min(n, 10); k++) { // Only draw up to Y max
+                const startX = OX + (1 - Math.pow(q, k-1)) * SCALE_X;
+                const width = Math.pow(q, k-1) * SCALE_X;
+                const height = SCALE_Y;
+                
+                rectsHTML += `<rect class="geom-rect" x="${startX}" y="${OY - k*SCALE_Y}" width="${width}" height="${height}" fill="rgba(16, 185, 129, 0.4)" stroke="#059669" stroke-width="1.5" />`;
+                
+                // Labels for layers
+                if (step >= 3 && k <= 3) {
+                    let label = "1";
+                    if (k === 2) label = "(1-p)";
+                    if (k === 3) label = "(1-p)²";
+                    
+                    annHTML += `<line class="geom-line fade" x1="${startX}" y1="${OY - k*SCALE_Y + height/2}" x2="${startX + width}" y2="${OY - k*SCALE_Y + height/2}" stroke="#064e3b" stroke-width="1.5" stroke-dasharray="4,2"/>`;
+                    annHTML += `<text class="geom-text fade" x="${startX + width/2}" y="${OY - k*SCALE_Y + height/2 - 5}" font-size="14" fill="#064e3b" text-anchor="middle" font-weight="bold">${label}</text>`;
+                }
+            }
+            rectsHTML += `</g>`;
+
+            DOM.svg.rects.innerHTML = rectsHTML;
+            DOM.svg.annotations.innerHTML = annHTML;
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            updateGeometry();
+
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 400);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); 
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

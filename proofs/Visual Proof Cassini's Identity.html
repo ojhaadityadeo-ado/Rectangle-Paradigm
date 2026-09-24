@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual area proof of Cassini's identity for Fibonacci numbers." />
+  <title>Visual Proof: Cassini's Identity</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #7c3aed;
+      --accent-2: #0891b2;
+      --gold: #d97706;
+      --green: #059669;
+      --rose: #e11d48;
+      --shadow: 0 16px 40px rgba(15,23,42,.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 15%, rgba(8,145,178,.06), transparent 26rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 60px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid rgba(124,58,237,.25);
+      border-radius: 999px;
+      color: #6d28d9;
+      background: rgba(124,58,237,.06);
+      font-size: .82rem;
+      font-weight: 760;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      margin: 0 auto;
+      max-width: 920px;
+      color: var(--muted);
+      font-size: clamp(.98rem, 1.8vw, 1.12rem);
+    }
+
+    .formula-banner {
+      margin: 22px auto 0;
+      max-width: 900px;
+      padding: 15px 18px;
+      border: 1px solid rgba(8,145,178,.20);
+      border-radius: 15px;
+      background: linear-gradient(180deg, rgba(8,145,178,.055), rgba(8,145,178,.018));
+      font-size: clamp(1.03rem, 2.1vw, 1.35rem);
+      overflow-x: auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.42fr) minmax(320px, .58fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .controls-top {
+      display: grid;
+      grid-template-columns: minmax(220px,1fr) auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .slider-box {
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+      border-radius: 14px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: .9rem;
+    }
+
+    .slider-head strong { color: #6d28d9; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 9px 13px;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+      transition: .18s ease;
+      font-weight: 720;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(124,58,237,.45);
+      background: rgba(124,58,237,.06);
+    }
+
+    .btn.primary {
+      border-color: rgba(124,58,237,.40);
+      background: linear-gradient(180deg, rgba(124,58,237,.12), rgba(124,58,237,.07));
+    }
+
+    .btn:disabled { opacity: .42; cursor: not-allowed; }
+
+    .stage-shell {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.095) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.095) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 28px 28px;
+      min-height: 550px;
+    }
+
+    #proofSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 550px;
+      aspect-ratio: 1.3 / 1;
+    }
+
+    .stage-badge {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 2;
+      padding: 7px 10px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,.93);
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch {
+      width: 15px;
+      height: 15px;
+      border-radius: 4px;
+      border: 1px solid rgba(15,23,42,.18);
+    }
+
+    .swatch.common { background: rgba(217,119,6,.55); }
+    .swatch.square { background: rgba(124,58,237,.58); }
+    .swatch.rect { background: rgba(8,145,178,.55); }
+    .swatch.unit { background: rgba(5,150,105,.65); }
+
+    .side-card {
+      padding: 18px;
+      position: sticky;
+      top: 14px;
+    }
+
+    .step-kicker {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .step-title {
+      margin: 4px 0 8px;
+      font-size: 1.34rem;
+      line-height: 1.25;
+    }
+
+    .step-copy {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .equation-card {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid rgba(124,58,237,.20);
+      background: rgba(124,58,237,.045);
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .equation-label {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+    }
+
+    .dynamic-equation { min-width: max-content; }
+
+    .fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .fact {
+      padding: 11px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      font-size: 1rem;
+      overflow-wrap: anywhere;
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border-left: 3px solid var(--accent-2);
+      border-radius: 8px 12px 12px 8px;
+      background: rgba(8,145,178,.045);
+      color: #334155;
+      font-size: .91rem;
+    }
+
+    .parity-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 12px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: .83rem;
+      font-weight: 800;
+      border: 1px solid var(--border);
+    }
+
+    .parity-pill.plus {
+      color: #047857;
+      background: rgba(5,150,105,.07);
+      border-color: rgba(5,150,105,.20);
+    }
+
+    .parity-pill.minus {
+      color: #be123c;
+      background: rgba(225,29,72,.06);
+      border-color: rgba(225,29,72,.18);
+    }
+
+    .below {
+      margin-top: 20px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .explain-card { padding: 22px; }
+
+    .explain-card h2,
+    .explain-card h3 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .explain-card p,
+    .explain-card li { color: #475569; }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-weight: 800;
+      font-size: .82rem;
+    }
+
+    .proof-step b { color: #0f172a; }
+
+    .final-box {
+      padding: 17px;
+      text-align: center;
+      border: 1px solid rgba(5,150,105,.24);
+      border-radius: 14px;
+      background: rgba(16,185,129,.055);
+      overflow-x: auto;
+    }
+
+    .final-box .big {
+      font-size: clamp(1.03rem, 2vw, 1.31rem);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .mini-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .mini-card h4 {
+      margin: 0 0 6px;
+      color: #0f172a;
+    }
+
+    .mini-card p { margin: 0; }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    /* SVG */
+    .shape-outline {
+      fill: none;
+      stroke: rgba(15,23,42,.9);
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .common-piece {
+      fill: #d97706;
+      fill-opacity: .30;
+      stroke: rgba(180,83,9,.78);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .leftover-square {
+      fill: #7c3aed;
+      fill-opacity: .42;
+      stroke: rgba(109,40,217,.8);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .leftover-rect {
+      fill: #0891b2;
+      fill-opacity: .38;
+      stroke: rgba(14,116,144,.82);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .ghost-piece {
+      fill: rgba(148,163,184,.08);
+      stroke: rgba(100,116,139,.34);
+      stroke-width: 1;
+      stroke-dasharray: 5 4;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .dim-line {
+      stroke: #5b21b6;
+      stroke-width: .85;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .dim-text {
+      fill: #5b21b6;
+      font-weight: 850;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+    }
+
+    .svg-label {
+      fill: #334155;
+      font-weight: 780;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+    }
+
+    .piece-label {
+      fill: #0f172a;
+      font-weight: 850;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      paint-order: stroke;
+      stroke: rgba(255,255,255,.94);
+      stroke-width: 5px;
+    }
+
+    /* Math inside SVG is rendered with MathJax through <foreignObject>.
+       This avoids fake Unicode subscripts such as Fₙ₋₁ and gives the same
+       notation quality inside and outside the diagram. */
+    .svg-math {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #334155;
+      font-weight: 760;
+      line-height: 1.05;
+      overflow: visible;
+      white-space: nowrap;
+    }
+
+    .svg-math mjx-container {
+      margin: 0 !important;
+      overflow: visible !important;
+    }
+
+    .svg-math.piece-math {
+      color: #0f172a;
+      font-weight: 850;
+    }
+
+    .svg-math.dimension-math {
+      color: #5b21b6;
+      font-weight: 850;
+    }
+
+    .svg-math.result-math {
+      color: #334155;
+      font-weight: 850;
+    }
+
+    .intuition-card {
+      margin-top: 14px;
+      padding: 13px 14px;
+      border: 1px solid rgba(5,150,105,.18);
+      border-radius: 13px;
+      background: rgba(5,150,105,.045);
+      color: #334155;
+      font-size: .9rem;
+    }
+
+    .intuition-card b {
+      display: block;
+      margin-bottom: 4px;
+      color: #047857;
+    }
+
+    .cancel-x {
+      stroke: #e11d48;
+      stroke-width: 3;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .arrow {
+      stroke: #64748b;
+      stroke-width: 1.6;
+      fill: none;
+      marker-end: url(#arrowHead);
+      vector-effect: non-scaling-stroke;
+    }
+
+    .unit-square {
+      fill: #059669;
+      fill-opacity: .65;
+      stroke: #047857;
+      stroke-width: 1.4;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .trail-box {
+      fill: #fff;
+      stroke: rgba(15,23,42,.13);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .trail-plus {
+      fill: rgba(5,150,105,.09);
+      stroke: rgba(5,150,105,.32);
+    }
+
+    .trail-minus {
+      fill: rgba(225,29,72,.07);
+      stroke: rgba(225,29,72,.28);
+    }
+
+    .trail-text {
+      fill: #334155;
+      font-weight: 800;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .animate-in {
+      animation: fadeIn .5s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: .08; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 880px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .side-card { position: static; }
+      .stage-shell, #proofSvg { min-height: 450px; }
+    }
+
+    @media (max-width: 650px) {
+      .controls-top { grid-template-columns: 1fr; }
+      .button-row { justify-content: flex-start; }
+      .btn { flex: 1 1 auto; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 18px, 1180px); padding-top: 22px; }
+      .visual-card, .side-card, .explain-card { padding: 13px; }
+      .stage-shell, #proofSvg { min-height: 380px; }
+      .fact-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Proof • Fibonacci Numbers</div>
+    <h1>Cassini's Identity: Why the Difference Is Always Exactly One</h1>
+    <p class="subtitle">
+      Compare a Fibonacci rectangle \(F_{n-1}\times F_{n+1}\) with the square
+      \(F_n\times F_n\). Both contain the same large rectangular piece. Remove that common area,
+      and the previous Cassini comparison reappears in reverse—so the difference changes sign.
+    </p>
+
+    <div class="formula-banner">
+      \[
+        \boxed{F_{n-1}F_{n+1}-F_n^2=(-1)^n}
+      \]
+    </div>
+  </header>
+
+  <section class="main-grid">
+    <div class="card visual-card">
+      <div class="controls-top">
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Choose Fibonacci index \(n\)</span>
+            <strong id="nReadout">n = 6</strong>
+          </div>
+          <input id="nSlider" type="range" min="3" max="10" value="6" step="1"
+                 aria-label="Choose Fibonacci index n">
+        </div>
+
+        <div class="button-row">
+          <button class="btn" id="resetBtn" type="button">↺ Reset</button>
+          <button class="btn" id="prevBtn" type="button">← Previous</button>
+          <button class="btn primary" id="playBtn" type="button">▶ Play</button>
+          <button class="btn primary" id="nextBtn" type="button">Next →</button>
+        </div>
+      </div>
+
+      <div class="stage-shell">
+        <div class="stage-badge" id="stageBadge">Step 1 of 5</div>
+        <svg id="proofSvg" viewBox="0 0 940 620" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">Cassini's identity as an area comparison</title>
+          <desc id="svgDesc">
+            A rectangle with sides F n minus 1 and F n plus 1 is compared with a square of side F n.
+            Both are split to remove an identical F n by F n minus 1 rectangle. The remaining comparison
+            is the previous Cassini comparison with reversed order, causing the sign to alternate.
+          </desc>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="swatch common"></span> identical piece that cancels</span>
+        <span class="legend-item"><span class="swatch square"></span> leftover square \(F_{n-1}^2\)</span>
+        <span class="legend-item"><span class="swatch rect"></span> leftover rectangle \(F_{n-2}F_n\)</span>
+        <span class="legend-item"><span class="swatch unit"></span> final one-unit difference</span>
+      </div>
+    </div>
+
+    <aside class="card side-card" aria-live="polite">
+      <div class="step-kicker" id="stepKicker">Step 1</div>
+      <h2 class="step-title" id="stepTitle">Compare two almost-equal areas</h2>
+      <p class="step-copy" id="stepCopy"></p>
+
+      <div class="equation-card">
+        <div class="equation-label">Area calculation</div>
+        <div class="dynamic-equation" id="stepEquation"></div>
+      </div>
+
+      <div class="fact-grid">
+        <div class="fact">
+          <small>\(F_{n-1},F_n,F_{n+1}\)</small>
+          <strong id="factFib">5, 8, 13</strong>
+        </div>
+        <div class="fact">
+          <small>Rectangle area</small>
+          <strong id="factRect">65</strong>
+        </div>
+        <div class="fact">
+          <small>Square area</small>
+          <strong id="factSquare">64</strong>
+        </div>
+        <div class="fact">
+          <small>Difference \(D_n\)</small>
+          <strong id="factDiff">+1</strong>
+        </div>
+      </div>
+
+      <div id="parityPill" class="parity-pill plus">Even \(n\): rectangle has 1 more unit</div>
+
+      <div class="intuition-card">
+        <b>What is happening?</b>
+        Compare the Fibonacci rectangle with the neighboring Fibonacci square.
+        Split both using the Fibonacci recurrence. They contain one identical gold
+        rectangle, so that common area can be ignored. The two leftover shapes are
+        exactly the previous Cassini comparison, but in reverse order—so the sign
+        flips. Repeating this eventually reaches a one-square-unit difference.
+      </div>
+
+      <div class="notice" id="notice"></div>
+    </aside>
+  </section>
+
+  <section class="below">
+    <article class="card explain-card">
+      <h2>The rectangle-area proof</h2>
+
+      <div class="proof-steps">
+        <div class="proof-step">
+          <b>Name the area difference.</b>
+          Let
+          \[
+            D_n=F_{n-1}F_{n+1}-F_n^2.
+          \]
+          This is “area of the Fibonacci rectangle minus area of the Fibonacci square.”
+        </div>
+
+        <div class="proof-step">
+          <b>Split the rectangle using \(F_{n+1}=F_n+F_{n-1}\).</b>
+          The \(F_{n-1}\times F_{n+1}\) rectangle breaks into an
+          \(F_{n-1}\times F_n\) rectangle plus an \(F_{n-1}\times F_{n-1}\) square.
+        </div>
+
+        <div class="proof-step">
+          <b>Split the square using \(F_n=F_{n-1}+F_{n-2}\).</b>
+          The \(F_n\times F_n\) square breaks into the same
+          \(F_{n-1}\times F_n\) rectangle plus an \(F_{n-2}\times F_n\) rectangle.
+        </div>
+
+        <div class="proof-step">
+          <b>Cancel the identical pieces.</b>
+          What remains is
+          \[
+            D_n=F_{n-1}^2-F_{n-2}F_n.
+          \]
+          But the right side is exactly the negative of \(D_{n-1}\). Therefore
+          \[
+            \boxed{D_n=-D_{n-1}}.
+          \]
+        </div>
+
+        <div class="proof-step">
+          <b>Finish at the base case.</b>
+          At \(n=2\),
+          \[
+            D_2=F_1F_3-F_2^2=1\cdot2-1^2=1.
+          \]
+          Every step flips the sign but keeps the magnitude, so
+          \[
+            D_n=(-1)^n.
+          \]
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>Why the sign alternates</h3>
+
+      <div class="two-col">
+        <div class="mini-card">
+          <h4>Even \(n\)</h4>
+          <p>
+            The rectangle \(F_{n-1}\times F_{n+1}\) has one more unit of area than the square:
+            \[
+              F_{n-1}F_{n+1}=F_n^2+1.
+            \]
+          </p>
+        </div>
+
+        <div class="mini-card">
+          <h4>Odd \(n\)</h4>
+          <p>
+            The square has one more unit of area than the rectangle:
+            \[
+              F_n^2=F_{n-1}F_{n+1}+1.
+            \]
+          </p>
+        </div>
+      </div>
+
+      <p>
+        The alternating sign is not an extra algebraic trick. It comes directly from the geometry:
+        after cancelling the common rectangle, the two remaining shapes switch roles.
+      </p>
+    </article>
+
+    <article class="card explain-card">
+      <h3>The whole identity in one chain</h3>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+          \begin{aligned}
+          D_n
+          &=F_{n-1}F_{n+1}-F_n^2\\
+          &=F_{n-1}(F_n+F_{n-1})-F_n(F_{n-1}+F_{n-2})\\
+          &=F_{n-1}^2-F_nF_{n-2}\\
+          &=-D_{n-1}.
+          \end{aligned}
+          \]
+        </div>
+      </div>
+
+      <p>
+        Since \(D_2=1\), repeated sign reversal gives
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \boxed{F_{n-1}F_{n+1}-F_n^2=(-1)^n}.
+          \]
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>Connection with the famous “missing square” puzzle</h3>
+      <p>
+        For \(n=6\), Cassini says
+        \[
+          5\cdot13-8^2=65-64=1.
+        \]
+        This is the numerical source of the classic Fibonacci dissection illusion in which an
+        \(8\times8\) square seems to rearrange into a \(5\times13\) rectangle. They cannot truly have
+        the same area: the rectangle has exactly one extra square unit.
+      </p>
+    </article>
+  </section>
+
+  <p class="footer-note">
+    Interactive visual proof using only Fibonacci recurrence and rectangle areas.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const MAX_N = 11;
+  const fib = Array(MAX_N + 1).fill(0);
+  fib[0] = 0;
+  fib[1] = 1;
+  for (let i = 2; i <= MAX_N; i++) fib[i] = fib[i-1] + fib[i-2];
+
+  const svg = document.getElementById("proofSvg");
+  const nSlider = document.getElementById("nSlider");
+  const nReadout = document.getElementById("nReadout");
+  const resetBtn = document.getElementById("resetBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const playBtn = document.getElementById("playBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const stageBadge = document.getElementById("stageBadge");
+  const stepKicker = document.getElementById("stepKicker");
+  const stepTitle = document.getElementById("stepTitle");
+  const stepCopy = document.getElementById("stepCopy");
+  const stepEquation = document.getElementById("stepEquation");
+  const notice = document.getElementById("notice");
+
+  const factFib = document.getElementById("factFib");
+  const factRect = document.getElementById("factRect");
+  const factSquare = document.getElementById("factSquare");
+  const factDiff = document.getElementById("factDiff");
+  const parityPill = document.getElementById("parityPill");
+
+  let step = 1;
+  let timer = null;
+
+  function state() {
+    const n = Number(nSlider.value);
+    const fm2 = fib[n-2];
+    const fm1 = fib[n-1];
+    const fn = fib[n];
+    const fp1 = fib[n+1];
+    const rectArea = fm1 * fp1;
+    const squareArea = fn * fn;
+    const diff = rectArea - squareArea;
+    return { n, fm2, fm1, fn, fp1, rectArea, squareArea, diff };
+  }
+
+  function makeSvg(tag, attrs={}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v));
+    return el;
+  }
+
+  function addText(x,y,text,cls,size,parent=svg,extra={}) {
+    const el = makeSvg("text",{x,y,class:cls,"font-size":size,...extra});
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  // Proper mathematical labels inside SVG.
+  // MathJax cannot typeset a normal <text> node reliably, so place XHTML
+  // inside SVG <foreignObject> and let MathJax render the LaTeX there.
+  function addMathLabel(x, y, width, height, latex, size=18, parent=svg, extraClass="") {
+    const fo = makeSvg("foreignObject", {
+      x: x - width/2,
+      y: y - height/2,
+      width,
+      height
+    });
+
+    const div = document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+    div.setAttribute("class", `svg-math ${extraClass}`.trim());
+    div.style.fontSize = `${size}px`;
+    div.innerHTML = `\\(${latex}\\)`;
+
+    fo.appendChild(div);
+    parent.appendChild(fo);
+    return fo;
+  }
+
+  function clearSvg() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+  }
+
+  function addDefs() {
+    const defs = makeSvg("defs");
+    const marker = makeSvg("marker",{
+      id:"arrowHead",
+      markerWidth:"8",
+      markerHeight:"8",
+      refX:"7",
+      refY:"4",
+      orient:"auto",
+      markerUnits:"strokeWidth"
+    });
+    marker.appendChild(makeSvg("path",{d:"M0,0 L8,4 L0,8 Z",fill:"#64748b"}));
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+  }
+
+  function addDimension(x1,y1,x2,y2,label,vertical=false) {
+    const g = makeSvg("g");
+    g.appendChild(makeSvg("line",{x1,y1,x2,y2,class:"dim-line"}));
+    const tick = 6;
+
+    if (!vertical) {
+      g.appendChild(makeSvg("line",{x1,y1:y1-tick,x2:x1,y2:y1+tick,class:"dim-line"}));
+      g.appendChild(makeSvg("line",{x1:x2,y1:y2-tick,x2,y2:y2+tick,class:"dim-line"}));
+      addMathLabel((x1+x2)/2, y1+24, 180, 34, label, 15, g, "dimension-math");
+    } else {
+      g.appendChild(makeSvg("line",{x1:x1-tick,y1,x2:x1+tick,y2:y1,class:"dim-line"}));
+      g.appendChild(makeSvg("line",{x1:x2-tick,y1:y2,x2:x2+tick,y2:y2,class:"dim-line"}));
+
+      // Keep vertical dimension text horizontal for easier reading.
+      const onRight = x1 > 470;
+      const labelX = x1 + (onRight ? 62 : -62);
+      addMathLabel(labelX, (y1+y2)/2, 126, 36, label, 15, g, "dimension-math");
+    }
+
+    svg.appendChild(g);
+  }
+
+  function drawCross(cx,cy,size=15) {
+    svg.appendChild(makeSvg("line",{
+      x1:cx-size,y1:cy-size,x2:cx+size,y2:cy+size,class:"cancel-x"
+    }));
+    svg.appendChild(makeSvg("line",{
+      x1:cx-size,y1:cy+size,x2:cx+size,y2:cy-size,class:"cancel-x"
+    }));
+  }
+
+  function drawInitialComparison(s) {
+    const {fm1,fn,fp1,rectArea,squareArea} = s;
+
+    const W=940, H=620;
+    const top=115;
+    const baseY=405;
+    const gap=85;
+    const availableW=760;
+    const maxH=260;
+
+    const rawW = fp1 + fn;
+    const scale = Math.min(availableW/rawW, maxH/Math.max(fm1,fn));
+
+    const rectW=fp1*scale;
+    const rectH=fm1*scale;
+    const sq=fn*scale;
+
+    const totalW=rectW+gap+sq;
+    const startX=(W-totalW)/2;
+
+    const rx=startX;
+    const ry=baseY-rectH;
+    const sx=startX+rectW+gap;
+    const sy=baseY-sq;
+
+    addMathLabel(rx+rectW/2,top-35,260,42,`F_{n-1}\\times F_{n+1}=${rectArea}`,18,svg,"result-math");
+    addMathLabel(sx+sq/2,top-35,220,42,`F_n\\times F_n=${squareArea}`,18,svg,"result-math");
+
+    svg.appendChild(makeSvg("rect",{
+      x:rx,y:ry,width:rectW,height:rectH,
+      fill:"rgba(8,145,178,.12)",class:"shape-outline"
+    }));
+
+    svg.appendChild(makeSvg("rect",{
+      x:sx,y:sy,width:sq,height:sq,
+      fill:"rgba(124,58,237,.10)",class:"shape-outline"
+    }));
+
+    addDimension(rx,baseY+28,rx+rectW,baseY+28,`F_{n+1}=${fp1}`,false);
+    addDimension(rx-28,ry,rx-28,baseY,`F_{n-1}=${fm1}`,true);
+
+    addDimension(sx,baseY+28,sx+sq,baseY+28,`F_n=${fn}`,false);
+    addDimension(sx+sq+28,sy,sx+sq+28,baseY,`F_n=${fn}`,true);
+
+    return {rx,ry,rectW,rectH,sx,sy,sq,scale,baseY};
+  }
+
+  function drawSplitComparison(s) {
+    const {fm2,fm1,fn,fp1} = s;
+
+    const W=940, H=620;
+    const baseY=430;
+    const gap=80;
+    const availableW=770;
+    const maxH=290;
+
+    const scale=Math.min(
+      availableW/(fp1+fn),
+      maxH/Math.max(fm1,fn)
+    );
+
+    const rectW=fp1*scale, rectH=fm1*scale;
+    const sq=fn*scale;
+    const totalW=rectW+gap+sq;
+    const startX=(W-totalW)/2;
+
+    const rx=startX, ry=baseY-rectH;
+    const sx=startX+rectW+gap, sy=baseY-sq;
+
+    // Rectangle split: width Fn + F_{n-1}
+    const commonW=fn*scale;
+    const leftSqW=fm1*scale;
+
+    svg.appendChild(makeSvg("rect",{
+      x:rx,y:ry,width:commonW,height:rectH,
+      class:"common-piece animate-in"
+    }));
+    svg.appendChild(makeSvg("rect",{
+      x:rx+commonW,y:ry,width:leftSqW,height:rectH,
+      class:"leftover-square animate-in"
+    }));
+    svg.appendChild(makeSvg("rect",{
+      x:rx,y:ry,width:rectW,height:rectH,class:"shape-outline"
+    }));
+
+    // Square split horizontally: top common height F_{n-1}, bottom F_{n-2}
+    const commonH=fm1*scale;
+    const leftoverH=fm2*scale;
+
+    svg.appendChild(makeSvg("rect",{
+      x:sx,y:sy,width:sq,height:commonH,
+      class:"common-piece animate-in"
+    }));
+    svg.appendChild(makeSvg("rect",{
+      x:sx,y:sy+commonH,width:sq,height:leftoverH,
+      class:"leftover-rect animate-in"
+    }));
+    svg.appendChild(makeSvg("rect",{
+      x:sx,y:sy,width:sq,height:sq,class:"shape-outline"
+    }));
+
+    addMathLabel(rx+commonW/2,ry+rectH/2,180,42,`F_nF_{n-1}`,Math.max(13,Math.min(18,rectH*.16)),svg,"piece-math");
+    addMathLabel(rx+commonW+leftSqW/2,ry+rectH/2,150,42,`F_{n-1}^{2}`,Math.max(12,Math.min(17,leftSqW*.22)),svg,"piece-math");
+
+    addMathLabel(sx+sq/2,sy+commonH/2,180,42,`F_nF_{n-1}`,Math.max(13,Math.min(18,commonH*.16)),svg,"piece-math");
+    if (leftoverH > 24) {
+      addMathLabel(sx+sq/2,sy+commonH+leftoverH/2,180,40,`F_nF_{n-2}`,Math.max(12,Math.min(17,leftoverH*.26)),svg,"piece-math");
+    }
+
+    addMathLabel(rx+rectW/2,92,300,42,`F_{n-1}(F_n+F_{n-1})`,18,svg,"result-math");
+    addMathLabel(sx+sq/2,92,300,42,`F_n(F_{n-1}+F_{n-2})`,18,svg,"result-math");
+
+    addMathLabel(rx+rectW/2,baseY+52,280,36,`F_{n+1}=F_n+F_{n-1}`,15,svg,"result-math");
+    addMathLabel(sx+sq/2,baseY+52,250,36,`F_n=F_{n-1}+F_{n-2}`,15,svg,"result-math");
+
+    return {
+      rx,ry,rectW,rectH,sx,sy,sq,commonW,leftSqW,commonH,leftoverH,scale,baseY
+    };
+  }
+
+  function drawCancelled(s) {
+    const g=drawSplitComparison(s);
+
+    // Cancel marks on the two common gold pieces
+    drawCross(g.rx+g.commonW/2,g.ry+g.rectH/2,18);
+    drawCross(g.sx+g.sq/2,g.sy+g.commonH/2,18);
+
+    addText(470,500,"identical areas cancel","svg-label",17);
+
+    // arrows down to the reduced comparison
+    svg.appendChild(makeSvg("line",{
+      x1:g.rx+g.commonW+g.leftSqW/2,y1:g.ry+g.rectH+18,
+      x2:380,y2:555,class:"arrow"
+    }));
+    svg.appendChild(makeSvg("line",{
+      x1:g.sx+g.sq/2,y1:g.sy+g.commonH+g.leftoverH+18,
+      x2:560,y2:555,class:"arrow"
+    }));
+
+    addMathLabel(380,584,170,36,`\\text{left: }F_{n-1}^{2}`,15,svg,"result-math");
+    addMathLabel(560,584,190,36,`\\text{right: }F_nF_{n-2}`,15,svg,"result-math");
+  }
+
+  function drawReducedComparison(s) {
+    const {fm2,fm1,fn} = s;
+    const W=940;
+    const top=120;
+    const baseY=410;
+    const gap=115;
+    const availableW=650;
+    const maxH=235;
+
+    const scale=Math.min(
+      availableW/(fm1+fn),
+      maxH/Math.max(fm1,fm2)
+    );
+
+    const sq=fm1*scale;
+    const rw=fn*scale;
+    const rh=fm2*scale;
+    const total=sq+gap+rw;
+    const x0=(W-total)/2;
+
+    const sx=x0, sy=baseY-sq;
+    const rx=x0+sq+gap, ry=baseY-rh;
+
+    addMathLabel(sx+sq/2,80,330,44,`\\text{leftover square: }F_{n-1}^{2}=${fm1*fm1}`,18,svg,"result-math");
+    addMathLabel(rx+rw/2,80,360,44,`\\text{leftover rectangle: }F_{n-2}F_n=${fm2*fn}`,18,svg,"result-math");
+
+    svg.appendChild(makeSvg("rect",{
+      x:sx,y:sy,width:sq,height:sq,class:"leftover-square animate-in"
+    }));
+    svg.appendChild(makeSvg("rect",{
+      x:rx,y:ry,width:rw,height:rh,class:"leftover-rect animate-in"
+    }));
+
+    addDimension(sx,baseY+28,sx+sq,baseY+28,`F_{n-1}=${fm1}`,false);
+    addDimension(sx-26,sy,sx-26,baseY,`F_{n-1}=${fm1}`,true);
+
+    addDimension(rx,baseY+28,rx+rw,baseY+28,`F_n=${fn}`,false);
+    addDimension(rx+rw+26,ry,rx+rw+26,baseY,`F_{n-2}=${fm2}`,true);
+
+    // Reversal callout
+    const boxX=255, boxY=485, boxW=430, boxH=78;
+    svg.appendChild(makeSvg("rect",{
+      x:boxX,y:boxY,width:boxW,height:boxH,rx:"12",class:"trail-box"
+    }));
+    addText(470,boxY+28,"these are exactly the n−1 Cassini shapes","svg-label",17);
+    addText(470,boxY+55,"but LEFT and RIGHT have exchanged roles","svg-label",17);
+  }
+
+  function drawRecursionTrail(s) {
+    const {n} = s;
+
+    addText(470,65,"Each reduction flips the sign but preserves the magnitude","svg-label",20);
+
+    const entries=[];
+    for (let k=n;k>=2;k--) {
+      const d=fib[k-1]*fib[k+1]-fib[k]*fib[k];
+      entries.push({k,d});
+    }
+
+    const boxW=105;
+    const boxH=64;
+    const gap=18;
+    const perRow=Math.min(5,entries.length);
+    const totalW=perRow*boxW+(perRow-1)*gap;
+    const startX=(940-totalW)/2;
+    const startY=125;
+
+    entries.forEach((e,i)=>{
+      const row=Math.floor(i/perRow);
+      const col=i%perRow;
+      const x=startX+col*(boxW+gap);
+      const y=startY+row*(boxH+54);
+
+      svg.appendChild(makeSvg("rect",{
+        x,y,width:boxW,height:boxH,rx:"11",
+        class:`trail-box ${e.d>0 ? "trail-plus" : "trail-minus"} animate-in`
+      }));
+
+      addMathLabel(x+boxW/2,y+21,72,28,`D_{${e.k}}`,15,svg,"result-math");
+      addMathLabel(x+boxW/2,y+45,64,28,e.d>0?"+1":"-1",19,svg,"result-math");
+
+      if (i<entries.length-1 && col<perRow-1) {
+        svg.appendChild(makeSvg("line",{
+          x1:x+boxW+5,y1:y+boxH/2,
+          x2:x+boxW+gap-5,y2:y+boxH/2,class:"arrow"
+        }));
+      }
+    });
+
+    const baseY=entries.length>5 ? 390 : 285;
+
+    const bX=300,bW=340,bH=105;
+    svg.appendChild(makeSvg("rect",{
+      x:bX,y:baseY,width:bW,height:bH,rx:"14",
+      class:"trail-box"
+    }));
+
+    addText(470,baseY+29,"base case","svg-label",16);
+    addMathLabel(470,baseY+57,300,38,`D_2=F_1F_3-F_2^2`,18,svg,"result-math");
+    addMathLabel(470,baseY+84,260,38,`=1\\cdot2-1=+1`,20,svg,"result-math");
+
+    addMathLabel(470,baseY+bH+52,390,40,
+      `\\text{After ${n-2} sign flip${n-2===1?"":"s"}: }D_n=${n%2===0?"+1":"-1"}`,
+      18,svg,"result-math");
+  }
+
+  function drawFinal(s) {
+    const {n,fm1,fn,fp1,diff,rectArea,squareArea} = s;
+
+    const W=940,H=620;
+    const boxW=660, boxH=230;
+    const x=(W-boxW)/2, y=95;
+
+    svg.appendChild(makeSvg("rect",{
+      x,y,width:boxW,height:boxH,rx:"18",
+      fill:"#fff",stroke:"rgba(15,23,42,.13)"
+    }));
+
+    addText(470,y+42,"Cassini's identity","svg-label",23);
+    addMathLabel(470,y+83,520,48,`F_{n-1}F_{n+1}-F_n^2=${diff>0?"+1":"-1"}`,25,svg,"result-math");
+    addText(470,y+120,`${fm1}·${fp1} − ${fn}² = ${rectArea} − ${squareArea} = ${diff>0?"+1":"−1"}`,"svg-label",19);
+
+    const ux=430,uy=y+150,us=56;
+    svg.appendChild(makeSvg("rect",{
+      x:ux,y:uy,width:us,height:us,rx:"5",class:"unit-square animate-in"
+    }));
+    addText(ux+us/2,uy+us/2,"1","piece-label",24);
+
+    addText(470,y+222,diff>0
+      ? "rectangle has exactly one extra unit of area"
+      : "square has exactly one extra unit of area",
+      "svg-label",17
+    );
+
+    // compact parity row
+    const rowY=390;
+    for (let k=2;k<=Math.min(9,n+2);k++) {
+      const d=fib[k-1]*fib[k+1]-fib[k]*fib[k];
+      const bx=165+(k-2)*82;
+      svg.appendChild(makeSvg("rect",{
+        x:bx,y:rowY,width:64,height:58,rx:"10",
+        class:`trail-box ${d>0?"trail-plus":"trail-minus"}`
+      }));
+      addText(bx+32,rowY+20,`n=${k}`,"trail-text",13);
+      addText(bx+32,rowY+41,d>0?"+1":"−1","trail-text",18);
+    }
+
+    addText(470,490,"the sign alternates because each cancellation reverses the comparison","svg-label",17);
+  }
+
+  function renderSvg() {
+    clearSvg();
+    addDefs();
+    const s=state();
+
+    if (step===1) drawInitialComparison(s);
+    if (step===2) drawSplitComparison(s);
+    if (step===3) drawCancelled(s);
+    if (step===4) {
+      drawReducedComparison(s);
+      // Small recurrence statement
+      addMathLabel(470,605,470,40,`D_n=F_{n-1}^{2}-F_nF_{n-2}=-D_{n-1}`,18,svg,"result-math");
+    }
+    if (step===5) drawRecursionTrail(s);
+  }
+
+  function typesetMath() {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([svg,stepCopy,stepEquation,notice,parityPill]).catch(()=>{});
+    }
+  }
+
+  function renderText() {
+    const {n,fm2,fm1,fn,fp1,rectArea,squareArea,diff}=state();
+
+    nReadout.textContent=`n = ${n}`;
+    factFib.textContent=`${fm1}, ${fn}, ${fp1}`;
+    factRect.textContent=String(rectArea);
+    factSquare.textContent=String(squareArea);
+    factDiff.textContent=diff>0?"+1":"−1";
+
+    parityPill.className=`parity-pill ${diff>0?"plus":"minus"}`;
+    parityPill.innerHTML=diff>0
+      ? `Even \\(n\\): rectangle has 1 more unit`
+      : `Odd \\(n\\): square has 1 more unit`;
+
+    stageBadge.textContent=`Step ${step} of 5`;
+    stepKicker.textContent=`Step ${step}`;
+
+    if (step===1) {
+      stepTitle.textContent="Compare the Fibonacci rectangle and square";
+      stepCopy.innerHTML=
+        `The rectangle has sides \\(F_{n-1}=${fm1}\\) and \\(F_{n+1}=${fp1}\\). ` +
+        `The square has side \\(F_n=${fn}\\). Cassini claims that their signed area difference is only one unit.`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `D_${n}=F_${n-1}F_${n+1}-F_${n}^2` +
+        `=${fm1}\\cdot${fp1}-${fn}^2=${diff>0?"+1":"-1"}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `For large Fibonacci numbers the two areas are extremely close. The proof must explain both facts: ` +
+        `why the magnitude stays \\(1\\), and why the sign alternates.`;
+    }
+
+    if (step===2) {
+      stepTitle.textContent="Split both shapes using the Fibonacci recurrence";
+      stepCopy.innerHTML=
+        `Use \\(F_{n+1}=F_n+F_{n-1}\\) to split the rectangle, and ` +
+        `\\(F_n=F_{n-1}+F_{n-2}\\) to split the square. ` +
+        `Both now contain the same gold rectangle \\(F_n\\times F_{n-1}\\).`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `F_${n-1}F_${n+1}=F_${n-1}F_${n}+F_${n-1}^2` +
+        `\\]` +
+        `\\[` +
+        `F_${n}^2=F_${n}F_${n-1}+F_${n}F_${n-2}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `The gold pieces have exactly the same dimensions, so they contribute equally to both total areas.`;
+    }
+
+    if (step===3) {
+      stepTitle.textContent="Cancel the identical gold rectangles";
+      stepCopy.innerHTML=
+        `Removing the same area from both sides cannot change their difference. ` +
+        `Only the purple square \\(F_{n-1}^2\\) and cyan rectangle \\(F_nF_{n-2}\\) remain.`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `D_${n}=F_${n-1}^2-F_${n}F_${n-2}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `This cancellation is the central rectangle-area move: the large comparison collapses to a smaller Fibonacci comparison.`;
+    }
+
+    if (step===4) {
+      stepTitle.textContent="The smaller comparison is the previous one—reversed";
+      stepCopy.innerHTML=
+        `At index \\(n-1\\), Cassini compares the rectangle \\(F_{n-2}\\times F_n\\) with ` +
+        `the square \\(F_{n-1}\\times F_{n-1}\\). Those are precisely our two leftovers, but their subtraction order is reversed.`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `D_${n-1}=F_${n-2}F_${n}-F_${n-1}^2` +
+        `\\]` +
+        `\\[` +
+        `\\therefore\\qquad D_${n}=-D_${n-1}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `So every time we reduce the picture by one Fibonacci step, the area difference keeps the same magnitude but flips sign.`;
+    }
+
+    if (step===5) {
+      stepTitle.textContent="Repeat until the one-unit base case";
+      stepCopy.innerHTML=
+        `Keep reducing. Eventually the comparison reaches \\(n=2\\), where the areas are ` +
+        `\\(F_1F_3=2\\) and \\(F_2^2=1\\), a difference of exactly \\(+1\\). ` +
+        `Every reverse step flips the sign once.`;
+
+      stepEquation.innerHTML=
+        `\\[` +
+        `D_2=1,\\qquad D_n=-D_{n-1}` +
+        `\\]` +
+        `\\[` +
+        `\\boxed{D_n=(-1)^n}` +
+        `\\]` +
+        `\\[` +
+        `\\boxed{F_{n-1}F_{n+1}-F_n^2=(-1)^n}.` +
+        `\\]`;
+
+      notice.innerHTML=
+        `This proves both pieces of the visual pattern: the difference is always one square unit in magnitude, and its side alternates with the parity of \\(n\\).`;
+    }
+
+    prevBtn.disabled=step===1;
+    nextBtn.disabled=step===5;
+
+    typesetMath();
+  }
+
+  function render() {
+    renderSvg();
+    renderText();
+  }
+
+  function stopPlay() {
+    if (timer) {
+      clearInterval(timer);
+      timer=null;
+    }
+    playBtn.textContent="▶ Play";
+  }
+
+  function togglePlay() {
+    if (timer) {
+      stopPlay();
+      return;
+    }
+
+    if (step===5) step=1;
+    playBtn.textContent="❚❚ Pause";
+    render();
+
+    timer=setInterval(()=>{
+      if (step>=5) {
+        stopPlay();
+        return;
+      }
+      step++;
+      render();
+    },1650);
+  }
+
+  nSlider.addEventListener("input",()=>{
+    stopPlay();
+    render();
+  });
+
+  resetBtn.addEventListener("click",()=>{
+    stopPlay();
+    step=1;
+    nSlider.value="6";
+    render();
+  });
+
+  prevBtn.addEventListener("click",()=>{
+    stopPlay();
+    if (step>1) {
+      step--;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener("click",()=>{
+    stopPlay();
+    if (step<5) {
+      step++;
+      render();
+    }
+  });
+
+  playBtn.addEventListener("click",togglePlay);
+
+  render();
+})();
+</script>
+</body>
+</html>

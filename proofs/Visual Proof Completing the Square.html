@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Completing the Square</title>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg-light: #f8f9fa;
+            --text-dark: #2d3748;
+            --c-x2: #3b82f6;      /* Blue */
+            --c-ax: #10b981;      /* Emerald Green */
+            --c-missing: #ef4444; /* Red */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .container-custom {
+            max-width: 850px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .visualization-area {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .board {
+            position: relative;
+            width: 480px;
+            height: 360px;
+        }
+
+        /* Geometric Pieces */
+        .piece {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.15rem;
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            border-radius: 3px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .piece-x2 { background-color: var(--c-x2); z-index: 2; }
+        .piece-ax { background-color: var(--c-ax); z-index: 3; }
+        
+        .piece-missing { 
+            background-color: rgba(239, 68, 68, 0.1); 
+            border: 3px dashed var(--c-missing);
+            color: var(--c-missing);
+            box-shadow: none;
+            z-index: 1;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        /* Dimension Labels */
+        .board-label {
+            position: absolute;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #1e293b;
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            background: #ffffff;
+            padding: 3px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Button Styling */
+        .btn {
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+            cursor: pointer;
+            border: none;
+        }
+        .btn:hover { background-color: #1d4ed8; transform: translateY(-1px); }
+        .btn:active { transform: scale(0.97); }
+
+        /* Dynamic Text inner shapes */
+        .piece-text { transition: opacity 0.3s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Visual Proof: Completing the Square</h1>
+
+        <div class="text-center text-lg md:text-xl font-bold p-4 bg-blue-50 text-blue-900 rounded-lg mb-6 shadow-sm border border-blue-100 min-h-[70px] flex flex-col items-center justify-center transition-all">
+            <div id="liveEq">Area = $x^2 + ax$</div>
+            <div id="subEq" class="text-sm text-blue-700 font-medium mt-1">Starting with square $x^2$ and rectangle $ax$</div>
+        </div>
+
+        <div class="visualization-area">
+            <div class="board" id="board">
+                
+                <!-- Dimension Labels -->
+                <div class="board-label" id="lbl-top-x">$x$</div>
+                <div class="board-label" id="lbl-top-a">$a$</div>
+                <div class="board-label" id="lbl-top-a2-1">$\frac{a}{2}$</div>
+                <div class="board-label" id="lbl-top-a2-2">$\frac{a}{2}$</div>
+                <div class="board-label" id="lbl-left-x">$x$</div>
+                <div class="board-label" id="lbl-left-a2">$\frac{a}{2}$</div>
+                <div class="board-label" id="lbl-right-a2">$\frac{a}{2}$</div>
+                
+                <!-- The x^2 Square -->
+                <div class="piece piece-x2" id="piece-x2">
+                    <span class="piece-text">$x^2$</span>
+                </div>
+                
+                <!-- The ax Rectangle (Split into two halves) -->
+                <div class="piece piece-ax" id="piece-ax1">
+                    <span class="piece-text" id="text-ax1"></span>
+                </div>
+                <div class="piece piece-ax" id="piece-ax2">
+                    <span class="piece-text" id="text-ax2"></span>
+                </div>
+
+                <!-- The Missing Corner -->
+                <div class="piece piece-missing flex-col" id="piece-missing">
+                    <span class="piece-text">$\left(\frac{a}{2}\right)^2$</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-3 mb-8 mt-2">
+            <button id="animBtn" class="btn text-lg shadow-md px-8 py-3">Next Step: Halve the Coefficient</button>
+            <div class="text-sm font-medium text-slate-500" id="stepCounter">Step 1 of 4</div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-6 mt-4">
+            <h3 class="text-xl font-bold text-slate-800 mb-4">The Geometric Process:</h3>
+            <ol class="list-decimal list-inside space-y-4 text-slate-700 text-lg">
+                <li><strong>Start with the Expression:</strong> We begin with the area $x^2 + ax$, represented by a large blue square of side $x$ and an adjacent green rectangle of dimensions $x$ by $a$.</li>
+                <li><strong>Halve the Coefficient:</strong> We symmetrically split the green $ax$ rectangle into two equal halves, each with a width of $\frac{a}{2}$. The total area remains exactly the same.</li>
+                <li><strong>Relocate Rectangles:</strong> We keep one half attached to the right side of the $x^2$ square, and swing the other half to attach to the bottom edge.</li>
+                <li><strong>Identify the Deficit:</strong> The resulting shape is <em>almost</em> a large square of side $(x + \frac{a}{2})$, but a small corner piece is missing! The dimensions of this missing gap are $\frac{a}{2}$ by $\frac{a}{2}$. Adding this missing $(\frac{a}{2})^2$ piece "completes the square".</li>
+            </ol>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 mt-8 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200">
+                $$x^2 + ax + \left(\frac{a}{2}\right)^2 = \left(x + \frac{a}{2}\right)^2$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const animBtn = document.getElementById('animBtn');
+        const liveEq = document.getElementById('liveEq');
+        const subEq = document.getElementById('subEq');
+        const stepCounter = document.getElementById('stepCounter');
+        
+        const pieceX2 = document.getElementById('piece-x2');
+        const pieceAx1 = document.getElementById('piece-ax1');
+        const pieceAx2 = document.getElementById('piece-ax2');
+        const pieceMissing = document.getElementById('piece-missing');
+
+        const textAx1 = document.getElementById('text-ax1');
+        const textAx2 = document.getElementById('text-ax2');
+
+        // Geometric configuration (fixed pixels for perfect display)
+        const baseX = 85;  // Centered X offset
+        const baseY = 40;  // Centered Y offset
+        const sizeX = 200; // Size of x
+        const sizeA = 160; // Total size of a
+        const halfA = sizeA / 2; // Size of a/2 (80)
+
+        let state = 0; // 0: Start, 1: Halve, 2: Relocate, 3: Complete
+
+        function applyLabels(config) {
+            for (const [id, props] of Object.entries(config)) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.left = props.left + 'px';
+                    el.style.top = props.top + 'px';
+                    el.style.opacity = props.opacity;
+                }
+            }
+        }
+
+        function updateMathJax() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetClear();
+                MathJax.typesetPromise().catch((err) => console.log(err.message));
+            }
+        }
+
+        // --- State Definitions ---
+        function renderState() {
+            if (state === 0) {
+                // Step 1: Initial side-by-side
+                pieceX2.style.cssText = `left: ${baseX}px; top: ${baseY}px; width: ${sizeX}px; height: ${sizeX}px;`;
+                
+                // Keep the two ax pieces completely adjacent to look like one block
+                pieceAx1.style.cssText = `left: ${baseX + sizeX}px; top: ${baseY}px; width: ${halfA}px; height: ${sizeX}px; border-right: none; border-radius: 3px 0 0 3px;`;
+                pieceAx2.style.cssText = `left: ${baseX + sizeX + halfA}px; top: ${baseY}px; width: ${halfA}px; height: ${sizeX}px; border-left: none; border-radius: 0 3px 3px 0;`;
+                
+                pieceMissing.style.cssText = `left: ${baseX + sizeX}px; top: ${baseY + sizeX}px; width: ${halfA}px; height: ${halfA}px; opacity: 0; transform: scale(0.8);`;
+
+                textAx1.innerHTML = '';
+                textAx2.innerHTML = '$ax$'; 
+                textAx2.style.transform = `translateX(-${halfA/2}px)`; // Center text visually across both
+
+                applyLabels({
+                    'lbl-top-x': { left: baseX + sizeX/2, top: baseY - 25, opacity: 1 },
+                    'lbl-top-a': { left: baseX + sizeX + halfA, top: baseY - 25, opacity: 1 },
+                    'lbl-top-a2-1': { left: baseX + sizeX + halfA/2, top: baseY - 25, opacity: 0 },
+                    'lbl-top-a2-2': { left: baseX + sizeX + halfA*1.5 + 20, top: baseY - 25, opacity: 0 },
+                    'lbl-left-x': { left: baseX - 25, top: baseY + sizeX/2, opacity: 1 },
+                    'lbl-left-a2': { left: baseX - 25, top: baseY + sizeX + halfA/2, opacity: 0 },
+                    'lbl-right-a2': { left: baseX + sizeX + halfA + 25, top: baseY + sizeX + halfA/2, opacity: 0 }
+                });
+
+                liveEq.innerHTML = 'Area = $x^2 + ax$';
+                subEq.innerHTML = 'Starting with square $x^2$ and rectangle $ax$';
+                animBtn.innerText = "Next Step: Halve the Coefficient";
+                stepCounter.innerText = "Step 1 of 4";
+
+            } else if (state === 1) {
+                // Step 2: Split ax into two halves
+                pieceAx1.style.borderRight = '1px solid rgba(255,255,255,0.4)';
+                pieceAx1.style.borderRadius = '3px';
+                pieceAx2.style.borderLeft = '1px solid rgba(255,255,255,0.4)';
+                pieceAx2.style.borderRadius = '3px';
+                
+                // Add a small gap to emphasize the split
+                pieceAx2.style.left = `${baseX + sizeX + halfA + 20}px`;
+
+                textAx1.innerHTML = '$\\frac{a}{2}x$';
+                textAx2.innerHTML = '$\\frac{a}{2}x$';
+                textAx2.style.transform = 'translateX(0)';
+
+                applyLabels({
+                    'lbl-top-a': { left: baseX + sizeX + halfA, top: baseY - 25, opacity: 0 },
+                    'lbl-top-a2-1': { left: baseX + sizeX + halfA/2, top: baseY - 25, opacity: 1 },
+                    'lbl-top-a2-2': { left: baseX + sizeX + halfA*1.5 + 20, top: baseY - 25, opacity: 1 },
+                });
+
+                liveEq.innerHTML = 'Area = $x^2 + \\frac{a}{2}x + \\frac{a}{2}x$';
+                subEq.innerHTML = 'Symmetrically split the rectangle into two equal halves';
+                animBtn.innerText = "Next Step: Relocate Rectangles";
+                stepCounter.innerText = "Step 2 of 4";
+
+            } else if (state === 2) {
+                // Step 3: Move one half to the bottom
+                pieceAx2.style.left = `${baseX}px`;
+                pieceAx2.style.top = `${baseY + sizeX}px`;
+                pieceAx2.style.width = `${sizeX}px`;
+                pieceAx2.style.height = `${halfA}px`;
+
+                applyLabels({
+                    'lbl-top-a2-2': { left: baseX + sizeX + halfA*1.5 + 20, top: baseY - 25, opacity: 0 },
+                    'lbl-left-a2': { left: baseX - 30, top: baseY + sizeX + halfA/2, opacity: 1 }
+                });
+
+                liveEq.innerHTML = 'Area = $x^2 + 2\\left(\\frac{a}{2}x\\right)$';
+                subEq.innerHTML = 'Rearrange one half to the bottom edge of the square';
+                animBtn.innerText = "Next Step: Identify the Deficit";
+                stepCounter.innerText = "Step 3 of 4";
+
+            } else if (state === 3) {
+                // Step 4: Show the missing square corner
+                pieceMissing.style.opacity = '1';
+                pieceMissing.style.transform = 'scale(1)';
+                
+                applyLabels({
+                    'lbl-right-a2': { left: baseX + sizeX + halfA + 35, top: baseY + sizeX + halfA/2, opacity: 1 }
+                });
+
+                liveEq.innerHTML = 'Area + $\\left(\\frac{a}{2}\\right)^2$ = $\\left(x + \\frac{a}{2}\\right)^2$';
+                subEq.innerHTML = 'Notice the missing corner! Add $\\left(\\frac{a}{2}\\right)^2$ to complete the macro-square.';
+                animBtn.innerText = "Reset Animation";
+                stepCounter.innerText = "Step 4 of 4";
+            }
+            
+            // Re-render math dynamically
+            updateMathJax();
+        }
+
+        // Button listener
+        animBtn.addEventListener('click', () => {
+            state = (state + 1) % 4;
+            renderState();
+        });
+
+        // Initialize perfectly on load
+        window.onload = () => {
+            renderState();
+            updateMathJax();
+        };
+    </script>
+</body>
+</html>

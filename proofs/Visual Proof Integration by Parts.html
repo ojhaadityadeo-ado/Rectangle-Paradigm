@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual proof and intuition for integration by parts using rectangle areas." />
+  <title>Visual Proof: Integration by Parts</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #7c3aed;
+      --accent-2: #0891b2;
+      --success: #059669;
+      --warning: #d97706;
+      --shadow: 0 16px 40px rgba(15,23,42,.10);
+      --radius: 18px;
+      --purple: #7c3aed;
+      --cyan: #0891b2;
+      --orange: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 15%, rgba(8,145,178,.06), transparent 26rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 60px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid rgba(124,58,237,.25);
+      border-radius: 999px;
+      color: #6d28d9;
+      background: rgba(124,58,237,.06);
+      font-size: .82rem;
+      font-weight: 760;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      margin: 0 auto;
+      max-width: 880px;
+      color: var(--muted);
+      font-size: clamp(.98rem, 1.8vw, 1.12rem);
+    }
+
+    .formula-banner {
+      margin: 22px auto 0;
+      max-width: 860px;
+      padding: 15px 18px;
+      border: 1px solid rgba(8,145,178,.20);
+      border-radius: 15px;
+      background: linear-gradient(180deg, rgba(8,145,178,.055), rgba(8,145,178,.018));
+      font-size: clamp(1.02rem, 2.1vw, 1.34rem);
+      overflow-x: auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(320px, .6fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: minmax(200px,1fr) minmax(200px,1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .slider-box {
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+      border-radius: 14px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: .9rem;
+    }
+
+    .slider-head strong { color: #6d28d9; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 9px 13px;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+      transition: .18s ease;
+      font-weight: 720;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(124,58,237,.45);
+      background: rgba(124,58,237,.06);
+    }
+
+    .btn.primary {
+      border-color: rgba(124,58,237,.40);
+      background: linear-gradient(180deg, rgba(124,58,237,.12), rgba(124,58,237,.07));
+    }
+
+    .btn:disabled { opacity: .42; cursor: not-allowed; }
+
+    .stage-shell {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.095) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.095) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 28px 28px;
+      min-height: 545px;
+    }
+
+    #proofSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 545px;
+      aspect-ratio: 1.28 / 1;
+    }
+
+    .stage-badge {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 2;
+      padding: 7px 10px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,.93);
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch {
+      width: 15px;
+      height: 15px;
+      border-radius: 4px;
+      border: 1px solid rgba(15,23,42,.18);
+    }
+
+    .swatch.vdu { background: rgba(124,58,237,.64); }
+    .swatch.udv { background: rgba(8,145,178,.58); }
+    .swatch.bound { background: transparent; border: 2px solid #0f172a; }
+
+    .side-card {
+      padding: 18px;
+      position: sticky;
+      top: 14px;
+    }
+
+    .step-kicker {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .step-title {
+      margin: 4px 0 8px;
+      font-size: 1.34rem;
+      line-height: 1.25;
+    }
+
+    .step-copy {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .equation-card {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid rgba(124,58,237,.20);
+      background: rgba(124,58,237,.045);
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .equation-label {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+    }
+
+    .dynamic-equation { min-width: max-content; }
+
+    .fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .fact {
+      padding: 11px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      font-size: .98rem;
+      overflow-wrap: anywhere;
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border-left: 3px solid var(--accent-2);
+      border-radius: 8px 12px 12px 8px;
+      background: rgba(8,145,178,.045);
+      color: #334155;
+      font-size: .91rem;
+    }
+
+    .below {
+      margin-top: 20px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .explain-card { padding: 22px; }
+
+    .explain-card h2,
+    .explain-card h3 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .explain-card p,
+    .explain-card li { color: #475569; }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-weight: 800;
+      font-size: .82rem;
+    }
+
+    .proof-step b { color: #0f172a; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .mini-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .mini-card h4 {
+      margin: 0 0 6px;
+      color: #0f172a;
+    }
+
+    .mini-card p { margin: 0; }
+
+    .final-box {
+      padding: 17px;
+      text-align: center;
+      border: 1px solid rgba(5,150,105,.24);
+      border-radius: 14px;
+      background: rgba(16,185,129,.055);
+      overflow-x: auto;
+    }
+
+    .final-box .big {
+      font-size: clamp(1.03rem, 2vw, 1.31rem);
+    }
+
+    .warning-box {
+      padding: 14px 15px;
+      border: 1px solid rgba(217,119,6,.22);
+      border-radius: 13px;
+      background: rgba(245,158,11,.06);
+      color: #78350f;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    /* SVG */
+    .axis {
+      stroke: #64748b;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .axis-label {
+      fill: #475569;
+      font-weight: 780;
+    }
+
+    .tick-text {
+      fill: #64748b;
+      font-size: 12px;
+      text-anchor: middle;
+    }
+
+    .curve {
+      fill: none;
+      stroke: #0f172a;
+      stroke-width: 2.2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .curve-label {
+      fill: #0f172a;
+      font-weight: 820;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+    }
+
+    .area-vdu {
+      fill: #7c3aed;
+      fill-opacity: .38;
+      stroke: none;
+    }
+
+    .area-udv {
+      fill: #0891b2;
+      fill-opacity: .34;
+      stroke: none;
+    }
+
+    .rect-outline {
+      fill: none;
+      stroke: rgba(15,23,42,.9);
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .strip-v {
+      stroke: rgba(124,58,237,.62);
+      stroke-width: .8;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .strip-h {
+      stroke: rgba(8,145,178,.64);
+      stroke-width: .8;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .guide {
+      stroke: rgba(100,116,139,.34);
+      stroke-width: .8;
+      stroke-dasharray: 5 5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .dimension-line {
+      stroke: #5b21b6;
+      stroke-width: .9;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .dimension-text {
+      fill: #5b21b6;
+      font-weight: 850;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+    }
+
+    .region-label {
+      font-weight: 850;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: rgba(255,255,255,.92);
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .purple-text { fill: #5b21b6; }
+    .cyan-text { fill: #0e7490; }
+
+    .animate-in {
+      animation: fadeIn .55s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: .08; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 880px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .side-card { position: static; }
+      .stage-shell, #proofSvg { min-height: 440px; }
+    }
+
+    @media (max-width: 650px) {
+      .control-grid { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; }
+      .button-row { width: 100%; }
+      .btn { flex: 1 1 auto; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 18px, 1180px); padding-top: 22px; }
+      .visual-card, .side-card, .explain-card { padding: 13px; }
+      .stage-shell, #proofSvg { min-height: 370px; }
+      .fact-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Proof • Calculus</div>
+    <h1>Integration by Parts as a Rectangle Split into Two Areas</h1>
+    <p class="subtitle">
+      Instead of memorizing a formula, watch one product rectangle get divided by the curve traced by
+      \((u(x),v(x))\). One family of strips measures \(\int v\,du\); the other measures \(\int u\,dv\).
+    </p>
+
+    <div class="formula-banner">
+      \[
+        \boxed{\displaystyle \int_a^b u\,dv=[uv]_a^b-\int_a^b v\,du}
+      \]
+    </div>
+  </header>
+
+  <section class="main-grid">
+    <div class="card visual-card">
+      <div class="control-grid">
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Upper limit \(b\)</span>
+            <strong id="bReadout">b = 2.00</strong>
+          </div>
+          <input id="bSlider" type="range" min="0.8" max="3" value="2" step="0.05"
+                 aria-label="Upper integration limit b">
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Strip fineness</span>
+            <strong id="stripReadout">12 strips</strong>
+          </div>
+          <input id="stripSlider" type="range" min="5" max="24" value="12" step="1"
+                 aria-label="Number of visual strips">
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="button-row">
+          <button class="btn" id="resetBtn" type="button">↺ Reset</button>
+          <button class="btn" id="prevBtn" type="button">← Previous</button>
+        </div>
+        <div class="button-row">
+          <button class="btn primary" id="playBtn" type="button">▶ Play</button>
+          <button class="btn primary" id="nextBtn" type="button">Next →</button>
+        </div>
+      </div>
+
+      <div class="stage-shell">
+        <div class="stage-badge" id="stageBadge">Step 1 of 5</div>
+        <svg id="proofSvg" viewBox="0 0 920 600" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">Integration by parts visualized as two complementary areas in a rectangle</title>
+          <desc id="svgDesc">
+            For u equals x and v equals e to the x, the product rectangle is partitioned by the curve v equals e to the u.
+            Vertical strips measure the integral of v du, while horizontal strips measure the integral of u dv.
+          </desc>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="swatch vdu"></span> vertical-strip area \(=\int v\,du\)</span>
+        <span class="legend-item"><span class="swatch udv"></span> horizontal-strip area \(=\int u\,dv\)</span>
+        <span class="legend-item"><span class="swatch bound"></span> product rectangle \(uv\)</span>
+      </div>
+    </div>
+
+    <aside class="card side-card" aria-live="polite">
+      <div class="step-kicker" id="stepKicker">Step 1</div>
+      <h2 class="step-title" id="stepTitle">Start with the product rectangle</h2>
+      <p class="step-copy" id="stepCopy"></p>
+
+      <div class="equation-card">
+        <div class="equation-label">What the picture says</div>
+        <div class="dynamic-equation" id="stepEquation"></div>
+      </div>
+
+      <div class="fact-grid">
+        <div class="fact">
+          <small>\(u(b)=b\)</small>
+          <strong id="factU">2.000</strong>
+        </div>
+        <div class="fact">
+          <small>\(v(b)=e^b\)</small>
+          <strong id="factV">7.389</strong>
+        </div>
+        <div class="fact">
+          <small>\(\int_0^b v\,du\)</small>
+          <strong id="factVDU">6.389</strong>
+        </div>
+        <div class="fact">
+          <small>\(\int_0^b u\,dv\)</small>
+          <strong id="factUDV">8.389</strong>
+        </div>
+      </div>
+
+      <div class="notice" id="notice"></div>
+    </aside>
+  </section>
+
+  <section class="below">
+    <article class="card explain-card">
+      <h2>The geometric idea before the formula</h2>
+
+      <div class="proof-steps">
+        <div class="proof-step">
+          <b>Think of \(u\) as a horizontal coordinate and \(v\) as a vertical coordinate.</b>
+          As \(x\) changes, the point \((u(x),v(x))\) traces a curve inside the rectangle.
+        </div>
+
+        <div class="proof-step">
+          <b>Vertical slices have area \(v\,du\).</b>
+          A very thin vertical strip has width \(du\) and height \(v\), so its area is approximately \(v\,du\).
+          Adding all such strips gives \(\int v\,du\).
+        </div>
+
+        <div class="proof-step">
+          <b>Horizontal slices have area \(u\,dv\).</b>
+          A thin horizontal strip has height \(dv\) and width \(u\), so its area is approximately \(u\,dv\).
+          Adding those strips gives \(\int u\,dv\).
+        </div>
+
+        <div class="proof-step">
+          <b>The two regions exactly tile the product rectangle.</b>
+          Therefore their areas add to the rectangle area \(uv\). Rearranging that area equation is integration by parts.
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>Why the differential identity appears</h3>
+      <p>
+        There is also a local version of the same picture. If a rectangle has side lengths \(u\) and \(v\),
+        then a tiny increase changes its area by two first-order strips:
+      </p>
+
+      <div class="two-col">
+        <div class="mini-card">
+          <h4>Horizontal growth</h4>
+          <p>
+            Increasing the width by \(du\) adds a thin rectangle of area \(v\,du\).
+          </p>
+        </div>
+
+        <div class="mini-card">
+          <h4>Vertical growth</h4>
+          <p>
+            Increasing the height by \(dv\) adds a thin rectangle of area \(u\,dv\).
+          </p>
+        </div>
+      </div>
+
+      <p>
+        The tiny corner has area \(du\,dv\), which is second order and disappears in the differential limit.
+        Thus
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \boxed{d(uv)=u\,dv+v\,du}
+          \]
+        </div>
+      </div>
+
+      <p>
+        Integrating both sides from \(a\) to \(b\) gives
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            [uv]_a^b=\int_a^b u\,dv+\int_a^b v\,du.
+          \]
+        </div>
+      </div>
+
+      <p>
+        Moving one area to the other side gives the familiar rule:
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \boxed{\displaystyle
+            \int_a^b u\,dv=[uv]_a^b-\int_a^b v\,du}
+          \]
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>The concrete example shown above</h3>
+
+      <p>
+        In the interactive picture we choose
+        \[
+          u=x,\qquad v=e^x,\qquad 0\le x\le b.
+        \]
+        Then \(du=dx\) and \(dv=e^x\,dx\). Integration by parts becomes
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \int_0^b x e^x\,dx
+            =\left[xe^x\right]_0^b-\int_0^b e^x\,dx
+            =be^b-(e^b-1).
+          \]
+        </div>
+      </div>
+
+      <p>
+        The cyan region is exactly the integral \(\int_0^b x e^x\,dx\).
+        The purple region is \(\int_0^b e^x\,dx\).
+        Together they fill the rectangle of area \(be^b\).
+      </p>
+    </article>
+
+    <article class="card explain-card">
+      <h3>One important mathematical note</h3>
+      <div class="warning-box">
+        The clean “two complementary regions” picture is easiest when \(u\) and \(v\) are increasing,
+        as in the example above. The integration-by-parts identity itself is much more general:
+        it follows from the product rule and remains valid whenever the usual differentiability/integrability
+        conditions hold, even when the curve is not monotone.
+      </div>
+    </article>
+  </section>
+
+  <p class="footer-note">
+    Interactive visual proof using product area, vertical strips, and horizontal strips.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const svg = document.getElementById("proofSvg");
+  const bSlider = document.getElementById("bSlider");
+  const stripSlider = document.getElementById("stripSlider");
+
+  const bReadout = document.getElementById("bReadout");
+  const stripReadout = document.getElementById("stripReadout");
+
+  const resetBtn = document.getElementById("resetBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const playBtn = document.getElementById("playBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const stageBadge = document.getElementById("stageBadge");
+  const stepKicker = document.getElementById("stepKicker");
+  const stepTitle = document.getElementById("stepTitle");
+  const stepCopy = document.getElementById("stepCopy");
+  const stepEquation = document.getElementById("stepEquation");
+  const notice = document.getElementById("notice");
+
+  const factU = document.getElementById("factU");
+  const factV = document.getElementById("factV");
+  const factVDU = document.getElementById("factVDU");
+  const factUDV = document.getElementById("factUDV");
+
+  let step = 1;
+  let timer = null;
+
+  function state() {
+    const b = Number(bSlider.value);
+    const strips = Number(stripSlider.value);
+    const eb = Math.exp(b);
+    const rectArea = b * eb;
+    const vdu = eb - 1;
+    const udv = rectArea - vdu;
+    return { b, strips, eb, rectArea, vdu, udv };
+  }
+
+  function fmt(x) {
+    return Number(x).toFixed(3);
+  }
+
+  function makeSvg(tag, attrs={}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v));
+    return el;
+  }
+
+  function addText(x,y,text,cls,size,parent=svg,extra={}) {
+    const el = makeSvg("text", {x,y,class:cls,"font-size":size,...extra});
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  function clearSvg() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+  }
+
+  function renderSvg() {
+    clearSvg();
+
+    const {b,strips,eb} = state();
+
+    const W = 920, H = 600;
+    const left = 100, right = 95, top = 70, bottom = 90;
+    const plotW = W-left-right;
+    const plotH = H-top-bottom;
+
+    const x0 = left;
+    const y0 = H-bottom;
+    const x1 = left+plotW;
+    const y1 = top;
+
+    const X = u => x0 + (u/b)*plotW;
+    const Y = v => y0 - (v/eb)*plotH;
+
+    // Axes
+    svg.appendChild(makeSvg("line",{x1:x0,y1:y0,x2:x1+12,y2:y0,class:"axis"}));
+    svg.appendChild(makeSvg("line",{x1:x0,y1:y0,x2:x0,y2:y1-12,class:"axis"}));
+    addText(x1+18,y0+5,"u","axis-label",17);
+    addText(x0-7,y1-19,"v","axis-label",17);
+
+    // Product rectangle outline
+    if (step >= 1) {
+      svg.appendChild(makeSvg("rect",{
+        x:x0,y:y1,width:plotW,height:plotH,
+        rx:"3",class:"rect-outline"
+      }));
+
+      // u=b guide
+      svg.appendChild(makeSvg("line",{
+        x1:x1,y1:y0,x2:x1,y2:y1,class:"guide"
+      }));
+
+      // v=e^b guide
+      svg.appendChild(makeSvg("line",{
+        x1:x0,y1:y1,x2:x1,y2:y1,class:"guide"
+      }));
+
+      addText((x0+x1)/2,y0+40,`u(b) = b = ${b.toFixed(2)}`,"dimension-text",18);
+      const vText = addText(x1+42,(y0+y1)/2,`v(b) = eᵇ = ${eb.toFixed(2)}`,"dimension-text",18);
+      vText.setAttribute("transform",`rotate(90 ${x1+42} ${(y0+y1)/2})`);
+    }
+
+    // Build curve points
+    const samples = 140;
+    const pts = [];
+    for (let i=0;i<=samples;i++) {
+      const u = b*i/samples;
+      const v = Math.exp(u);
+      pts.push([X(u),Y(v)]);
+    }
+
+    // purple area = under curve, i.e. vertical strips v du
+    if (step >= 3) {
+      const under = [];
+      under.push([X(0),Y(0)]);
+      under.push([X(b),Y(0)]);
+      for (let i=samples;i>=0;i--) under.push(pts[i]);
+      under.push([X(0),Y(0)]);
+
+      const d = under.map((p,i)=>(i===0?"M":"L")+p[0]+" "+p[1]).join(" ")+" Z";
+      svg.appendChild(makeSvg("path",{d,class:"area-vdu animate-in"}));
+    }
+
+    // cyan area = left of curve from v=1 to e^b = horizontal strips u dv
+    if (step >= 4) {
+      const cyan = [];
+      cyan.push([X(0),Y(1)]);
+      for (let i=0;i<=samples;i++) cyan.push(pts[i]);
+      cyan.push([X(0),Y(eb)]);
+      cyan.push([X(0),Y(1)]);
+
+      const d = cyan.map((p,i)=>(i===0?"M":"L")+p[0]+" "+p[1]).join(" ")+" Z";
+      svg.appendChild(makeSvg("path",{d,class:"area-udv animate-in"}));
+    }
+
+    // Strip guides: vertical in purple region.
+    if (step >= 3) {
+      for (let i=1;i<strips;i++) {
+        const u = b*i/strips;
+        const v = Math.exp(u);
+        svg.appendChild(makeSvg("line",{
+          x1:X(u),y1:Y(0),x2:X(u),y2:Y(v),
+          class:"strip-v"
+        }));
+      }
+    }
+
+    // Horizontal guides in cyan region.
+    if (step >= 4) {
+      for (let j=1;j<strips;j++) {
+        const v = 1 + (eb-1)*j/strips;
+        const u = Math.log(v);
+        svg.appendChild(makeSvg("line",{
+          x1:X(0),y1:Y(v),x2:X(u),y2:Y(v),
+          class:"strip-h"
+        }));
+      }
+    }
+
+    // Curve
+    if (step >= 2) {
+      const d = pts.map((p,i)=>(i===0?"M":"L")+p[0]+" "+p[1]).join(" ");
+      svg.appendChild(makeSvg("path",{d,class:"curve animate-in"}));
+
+      const labelU = Math.min(b*.63, b-.15);
+      const labelV = Math.exp(labelU);
+      addText(
+        X(labelU)+12,
+        Y(labelV)-12,
+        "v = eᵘ",
+        "curve-label",
+        18
+      );
+    }
+
+    // region labels
+    if (step >= 3) {
+      addText(
+        X(b*.69),
+        Y(Math.exp(b*.35)*.48),
+        "∫ v du",
+        "region-label purple-text",
+        21
+      );
+    }
+
+    if (step >= 4) {
+      const labV = 1 + (eb-1)*.67;
+      const labU = Math.log(labV);
+      addText(
+        X(labU*.46),
+        Y(labV),
+        "∫ u dv",
+        "region-label cyan-text",
+        21
+      );
+    }
+
+    if (step >= 5) {
+      const boxW = Math.min(430,plotW*.7);
+      const boxH = 82;
+      const bx = x0 + plotW/2 - boxW/2;
+      const by = y0 - plotH*.48 - boxH/2;
+
+      svg.appendChild(makeSvg("rect",{
+        x:bx,y:by,width:boxW,height:boxH,rx:"13",
+        fill:"#ffffff","fill-opacity":".94",
+        stroke:"rgba(15,23,42,.13)"
+      }));
+
+      addText(
+        x0+plotW/2,
+        by+31,
+        "product rectangle = purple area + cyan area",
+        "dimension-text",
+        18
+      );
+      addText(
+        x0+plotW/2,
+        by+59,
+        "uv = ∫v du + ∫u dv",
+        "dimension-text",
+        21
+      );
+    }
+
+    // Tick labels
+    addText(X(0),y0+20,"0","tick-text",12);
+    addText(X(b),y0+20,b.toFixed(2),"tick-text",12);
+    addText(x0-16,Y(1)+4,"1","axis-label",13,svg,{"text-anchor":"end"});
+    addText(x0-16,Y(eb)+4,eb.toFixed(2),"axis-label",13,svg,{"text-anchor":"end"});
+  }
+
+  function typesetMath() {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([stepCopy,stepEquation,notice]).catch(()=>{});
+    }
+  }
+
+  function renderText() {
+    const {b, strips, eb, rectArea, vdu, udv} = state();
+
+    bReadout.textContent = `b = ${b.toFixed(2)}`;
+    stripReadout.textContent = `${strips} strips`;
+
+    factU.textContent = fmt(b);
+    factV.textContent = fmt(eb);
+    factVDU.textContent = fmt(vdu);
+    factUDV.textContent = fmt(udv);
+
+    stageBadge.textContent = `Step ${step} of 5`;
+    stepKicker.textContent = `Step ${step}`;
+
+    if (step === 1) {
+      stepTitle.textContent = "Start with the product rectangle";
+      stepCopy.innerHTML =
+        `For the example \\(u=x\\), \\(v=e^x\\), at \\(x=b\\) the outer rectangle has width ` +
+        `\\(u(b)=b\\) and height \\(v(b)=e^b\\). Its area is the product \\(u(b)v(b)=be^b\\).`;
+
+      stepEquation.innerHTML =
+        `\\[u(b)v(b)=b e^b=${b.toFixed(2)}\\cdot${eb.toFixed(3)}=${fmt(rectArea)}.\\]`;
+
+      notice.innerHTML =
+        `Integration by parts will come from splitting this one rectangle into two complementary accumulated areas.`;
+    }
+
+    if (step === 2) {
+      stepTitle.textContent = "Let (u,v) trace a curve";
+      stepCopy.innerHTML =
+        `As \\(x\\) runs from \\(0\\) to \\(b\\), the point \\((u(x),v(x))=(x,e^x)\\) ` +
+        `moves along the curve \\(v=e^u\\) inside the rectangle. This curve will separate the two integrals.`;
+
+      stepEquation.innerHTML =
+        `\\[u=x,\\qquad v=e^x\\quad\\Longrightarrow\\quad v=e^u.\\]`;
+
+      notice.innerHTML =
+        `The same point can be read two ways: vertical slices use \\(u\\) as the variable, while horizontal slices use \\(v\\) as the variable.`;
+    }
+
+    if (step === 3) {
+      stepTitle.textContent = "Vertical strips measure ∫v du";
+      stepCopy.innerHTML =
+        `Take a thin vertical strip. Its width is \\(du\\), and its height is \\(v\\). ` +
+        `So its tiny area is \\(v\\,du\\). Adding all such vertical strips gives the purple region.`;
+
+      stepEquation.innerHTML =
+        `\\[\\int_0^b v\\,du=\\int_0^b e^x\\,dx=e^b-1=${fmt(vdu)}.\\]`;
+
+      notice.innerHTML =
+        `This is ordinary “area under a curve,” except the horizontal variable is named \\(u\\) instead of \\(x\\).`;
+    }
+
+    if (step === 4) {
+      stepTitle.textContent = "Horizontal strips measure ∫u dv";
+      stepCopy.innerHTML =
+        `Now slice horizontally. At height \\(v\\), the curve lies at horizontal position \\(u\\). ` +
+        `A thin horizontal strip has height \\(dv\\) and width \\(u\\), so its area is \\(u\\,dv\\).`;
+
+      stepEquation.innerHTML =
+        `\\[\\int_0^b u\\,dv=\\int_0^b x e^x\\,dx=${fmt(udv)}.\\]`;
+
+      notice.innerHTML =
+        `The cyan and purple regions touch along the same curve and have no overlap. Together they fill the entire product rectangle.`;
+    }
+
+    if (step === 5) {
+      stepTitle.textContent = "Rearrange the rectangle-area equation";
+      stepCopy.innerHTML =
+        `Because the purple and cyan regions exactly tile the rectangle, their areas add to the product area. ` +
+        `Move the purple area to the other side, and integration by parts appears.`;
+
+      stepEquation.innerHTML =
+        `\\[` +
+        `be^b=\\int_0^b e^x\\,dx+\\int_0^b x e^x\\,dx` +
+        `\\]` +
+        `\\[` +
+        `\\therefore\\quad \\int_0^b x e^x\\,dx=be^b-(e^b-1).` +
+        `\\]`;
+
+      notice.innerHTML =
+        `In general: \\(\\boxed{\\int_a^b u\\,dv=[uv]_a^b-\\int_a^b v\\,du}\\). ` +
+        `The formula is just “one part of the rectangle = whole rectangle − the other part.”`;
+    }
+
+    prevBtn.disabled = step === 1;
+    nextBtn.disabled = step === 5;
+
+    typesetMath();
+  }
+
+  function render() {
+    renderSvg();
+    renderText();
+  }
+
+  function stopPlay() {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+    playBtn.textContent = "▶ Play";
+  }
+
+  function togglePlay() {
+    if (timer) {
+      stopPlay();
+      return;
+    }
+
+    if (step === 5) step = 1;
+    playBtn.textContent = "❚❚ Pause";
+    render();
+
+    timer = setInterval(() => {
+      if (step >= 5) {
+        stopPlay();
+        return;
+      }
+      step++;
+      render();
+    }, 1700);
+  }
+
+  [bSlider, stripSlider].forEach(el => {
+    el.addEventListener("input", () => {
+      stopPlay();
+      render();
+    });
+  });
+
+  resetBtn.addEventListener("click", () => {
+    stopPlay();
+    step = 1;
+    render();
+  });
+
+  prevBtn.addEventListener("click", () => {
+    stopPlay();
+    if (step > 1) {
+      step--;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    stopPlay();
+    if (step < 5) {
+      step++;
+      render();
+    }
+  });
+
+  playBtn.addEventListener("click", togglePlay);
+
+  render();
+})();
+</script>
+</body>
+</html>

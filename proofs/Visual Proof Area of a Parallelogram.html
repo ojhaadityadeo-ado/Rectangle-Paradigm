@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Area of a Parallelogram</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            --bg-light: #f8fafc;
+            --trap-fill: #bfdbfe; /* Light Blue */
+            --trap-stroke: #3b82f6; /* Blue */
+            --sliver-fill: #fed7aa; /* Light Orange */
+            --sliver-stroke: #f97316; /* Orange */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--primary);
+        }
+
+        .container-custom {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* SVG Visualization Board */
+        .visualization-area {
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 640px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Geometric Shapes */
+        .poly-trap {
+            fill: var(--trap-fill);
+            stroke: var(--trap-stroke);
+            stroke-width: 2.5;
+            stroke-linejoin: round;
+        }
+
+        .poly-sliver {
+            fill: var(--sliver-fill);
+            stroke: var(--sliver-stroke);
+            stroke-width: 2.5;
+            stroke-linejoin: round;
+            /* Note: Transform is controlled via JS slider */
+        }
+
+        .poly-outline {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2;
+            stroke-dasharray: 6 4;
+        }
+
+        .cut-line {
+            stroke: #ef4444;
+            stroke-width: 2.5;
+            stroke-dasharray: 5 3;
+        }
+
+        /* Dimensions and Labels */
+        .dim-line {
+            stroke: #475569;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .dim-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            fill: #334155;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+
+        /* Custom Interactive Slider */
+        .slider-container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            margin-bottom: 25px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            outline: none;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #f97316;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(249, 115, 22, 0.4);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Status Pill */
+        .status-pill {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        .status-para { background-color: #f1f5f9; color: #475569; }
+        .status-sliding { background-color: #fff7ed; color: #ea580c; }
+        .status-rect { background-color: #f0fdf4; color: #16a34a; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Area of a Parallelogram
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-blue-50 text-blue-950 rounded-lg mb-6 shadow-sm border border-blue-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$\text{Area of Parallelogram} = b \times h$$
+        </div>
+
+        <div class="slider-container text-center">
+            <div class="flex justify-between items-center mb-2">
+                <span class="font-semibold text-slate-700">Drag to Cut & Slide:</span>
+                <span id="statusIndicator" class="status-pill status-para">Original Parallelogram</span>
+            </div>
+            <input type="range" id="slideRange" min="0" max="320" value="0">
+            <div class="flex justify-between text-xs font-bold text-slate-400 mt-2 px-1 uppercase tracking-wider">
+                <span>Start</span>
+                <span>Slide Full Base Length <span class="normal-case font-normal">($(b)$)</span></span>
+            </div>
+        </div>
+
+        <div class="visualization-area">
+            <div class="svg-container">
+                <svg viewBox="0 0 640 360">
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                        </marker>
+                    </defs>
+
+                    <!-- Background Outline of Original Parallelogram -->
+                    <polygon points="100,280 420,280 540,80 220,80" class="poly-outline" />
+
+                    <!-- Base Dimension Line (Static) -->
+                    <g id="dimBaseGroup">
+                        <path d="M 100 310 L 100 320 L 420 320 L 420 310" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="260" y="340" class="dim-text">Base ($b$)</text>
+                    </g>
+
+                    <!-- Height Dimension Line (Static) -->
+                    <g id="dimHeightGroup">
+                        <path d="M 60 80 L 50 80 L 50 280 L 60 280" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                        <text x="30" y="180" class="dim-text">Height ($h$)</text>
+                    </g>
+
+                    <!-- Main Trapezoid (Remains Stationary) -->
+                    <!-- Points: E(220, 280), B(420, 280), C(540, 80), D(220, 80) -->
+                    <polygon points="220,280 420,280 540,80 220,80" class="poly-trap" />
+
+                    <!-- Perpendicular Cut Line -->
+                    <line x1="220" y1="80" x2="220" y2="280" class="cut-line" />
+
+                    <!-- Points: A(100, 280), E(220, 280), D(220, 80) -->
+                    <g id="sliverGroup" style="transform: translateX(0px);">
+                        <polygon points="100,280 220,280 220,80" class="poly-sliver" />
+                        
+                        <!-- Mini label inside sliver -->
+                        <text x="180" y="240" class="dim-text" style="font-size: 12px; fill: #c2410c;">Sliver</text>
+                    </g>
+
+                    <!-- Top Base Dimension Line (Appears when forming rectangle) -->
+                    <g id="dimRectTopGroup" style="opacity: 0; transition: opacity 0.3s;">
+                        <path d="M 220 50 L 220 40 L 540 40 L 540 50" class="dim-line" marker-start="url(#arrow)" marker-end="url(#arrow)" style="stroke: #16a34a;" />
+                        <text x="380" y="20" class="dim-text" style="fill: #16a34a;">Base ($b$)</text>
+                    </g>
+
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 border-l-4 border-blue-600 p-5 rounded-r-lg shadow-sm mb-6 min-h-[90px] flex items-center">
+            <p class="text-slate-800 text-lg leading-relaxed w-full transition-opacity duration-300" id="explanationText">
+                <strong>Start:</strong> We have a parallelogram with a horizontal base length of $b$ and a vertical height of $h$.
+            </p>
+        </div>
+
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">How this Geometric Proof Works:</h3>
+            <ol class="list-decimal list-inside space-y-3 text-slate-700 text-lg">
+                <li>
+                    <strong>Drop a Perpendicular:</strong> We drop a straight vertical line from the top-left corner down to the base. This represents the height $h$.
+                </li>
+                <li>
+                    <strong>Cut the Parallelogram:</strong> Slicing along this height line detaches a right-angled triangular "sliver" (orange) from the left side.
+                </li>
+                <li>
+                    <strong>Slide to the Opposite Side:</strong> Because opposite sides of a parallelogram are perfectly parallel and equal in length, sliding this sliver exactly the distance of base $b$ allows it to fit perfectly into the empty space on the right.
+                </li>
+                <li>
+                    <strong>The Conclusion:</strong> Cutting and rearranging pieces does not change total area. The new shape is a plain rectangle with a width of $b$ and a height of $h$. Therefore, the area of the original parallelogram is exactly $b \times h$.
+                </li>
+            </ol>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto mt-6">
+                $$\text{Area of Parallelogram} = \text{Base} \times \text{Height} = b \times h$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slider = document.getElementById('slideRange');
+            const sliverGroup = document.getElementById('sliverGroup');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const explanationText = document.getElementById('explanationText');
+            const liveEq = document.getElementById('liveEq');
+            const dimRectTopGroup = document.getElementById('dimRectTopGroup');
+
+            const MAX_SLIDE = 320; // Exact length of base 'b'
+            let currentState = 0; // 0: start, 1: sliding, 2: rectangle
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.typesetPromise([explanationText, liveEq]).catch((err) => console.log(err.message));
+                }
+            }
+
+            slider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                
+                // 1. Physically Move the SVG Element
+                sliverGroup.style.transform = `translateX(${val}px)`;
+
+                // 2. Logic to update Text, Math, and Status Pills based on position
+                if (val === 0) {
+                    if (currentState !== 0) {
+                        currentState = 0;
+                        statusIndicator.className = 'status-pill status-para';
+                        statusIndicator.innerText = 'Original Parallelogram';
+                        explanationText.innerHTML = '<strong>Start:</strong> We have a parallelogram with a horizontal base length of $b$ and a vertical height of $h$.';
+                        liveEq.innerHTML = '$$\\text{Area of Parallelogram} = ?$$';
+                        dimRectTopGroup.style.opacity = '0';
+                        updateMathJax();
+                    }
+                } else if (val > 0 && val < MAX_SLIDE) {
+                    if (currentState !== 1) {
+                        currentState = 1;
+                        statusIndicator.className = 'status-pill status-sliding';
+                        statusIndicator.innerText = 'Sliding Area...';
+                        explanationText.innerHTML = '<strong>Transforming:</strong> Sliding the triangular sliver across the base length $b$. Since we are just moving an existing piece, the total area remains constant.';
+                        liveEq.innerHTML = '$$\\text{Area of Parallelogram} = \\text{Area of New Shape}$$';
+                        dimRectTopGroup.style.opacity = '0';
+                        updateMathJax();
+                    }
+                } else if (val === MAX_SLIDE) {
+                    if (currentState !== 2) {
+                        currentState = 2;
+                        statusIndicator.className = 'status-pill status-rect';
+                        statusIndicator.innerText = 'Perfect Rectangle';
+                        explanationText.innerHTML = '<strong>Finished:</strong> The sliver fits the right side perfectly! The resulting shape is a standard rectangle. Its width is still $b$ and its height is $h$.';
+                        liveEq.innerHTML = '$$\\text{Area} = \\text{Area of Rectangle} = b \\times h$$';
+                        dimRectTopGroup.style.opacity = '1';
+                        updateMathJax();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

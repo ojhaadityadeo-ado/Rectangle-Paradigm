@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Logarithm Product Law · An Area That Changes Shape</title>
+<meta name="description" content="An interactive visual proof of log(ab) = log(a) + log(b): stretch rectangles horizontally and shrink them vertically without changing their areas.">
+<style>
+:root{--bg:#f5f7fa;--paper:#fff;--ink:#203044;--muted:#5e6c7c;--line:#dce3eb;--green:#18786b;--greenfill:#baded3;--orange:#a76316;--orangefill:#f3ce9a;--blue:#2c4f76;--soft:#edf5f2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1220px;margin:auto;padding:35px 22px 48px}header{max-width:900px;margin:0 auto 25px;text-align:center}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.13em;font-weight:750;color:var(--green)}h1{font-size:clamp(31px,4.1vw,46px);line-height:1.14;letter-spacing:-.04em;margin:12px 0 15px}header p{font-size:18px;max-width:730px;margin:0 auto;color:var(--muted)}.hero-law{font-family:Georgia,"Times New Roman",serif;font-size:clamp(26px,4vw,38px);margin:17px 0 8px}.green{color:var(--green)}.orange{color:var(--orange)}.hint{font-size:13px;color:var(--muted)}h2{font-size:24px;line-height:1.3;letter-spacing:-.025em;margin:6px 0 12px}h3{font-size:17px;line-height:1.4;margin:0 0 9px}p{margin:0 0 14px}button,input{font:inherit}button{min-height:43px;padding:8px 13px;border:1px solid #cbd4df;border-radius:9px;background:white;color:var(--ink);cursor:pointer}button:hover{background:#eff4f7}button:disabled{opacity:.4;cursor:default}.primary{background:var(--green);border-color:var(--green);color:white;font-weight:650}.primary:hover{background:#126254}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--green);outline-offset:3px}.card{background:var(--paper);border:1px solid var(--line);border-radius:16px}.setup{display:grid;grid-template-columns:1fr 1fr auto;align-items:center;gap:24px;padding:18px 22px;margin-bottom:16px}.control-head{display:flex;justify-content:space-between;gap:14px;font-weight:650}.control-head output{color:var(--green);font-variant-numeric:tabular-nums}input[type=range]{width:100%;height:24px;accent-color:var(--green);cursor:pointer;margin:7px 0 2px}.setup-note{font-size:13px;color:var(--muted);max-width:190px}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.step-btn{text-align:left;font-weight:600;font-size:14px;background:transparent;border-color:transparent;color:var(--muted)}.step-btn[aria-current=step]{background:#e3f1ec;border-color:#b8d7cc;color:var(--green)}.step-btn span{display:inline-grid;place-items:center;width:25px;height:25px;border:1px solid currentColor;border-radius:50%;font-size:12px;margin-right:8px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}.visual{padding:16px;min-width:0}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}.buttons{display:flex;gap:7px;flex-wrap:wrap}.stage{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fcfdff}.stage-head{display:flex;justify-content:space-between;gap:14px;padding:12px 15px 0;color:var(--muted);font-size:13px}.stage-head strong{color:var(--ink);font-weight:650}.scroll{overflow-x:auto}#plot{display:block;width:100%;min-width:630px;height:auto}.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:12px 0}.legend span{display:inline-flex;align-items:center;gap:7px}.swatch{width:13px;height:13px;border-radius:3px}.legend [hidden]{display:none}.motion{background:#f4f7f8;border-radius:10px;padding:13px 15px;margin-top:14px}.motion-head{display:flex;justify-content:space-between;gap:12px;font-size:14px;font-weight:600}.motion input{accent-color:var(--orange)}.motion .hint{font-size:12px}.refine{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:15px;font-size:13px;color:var(--muted)}.refine label{display:flex;align-items:center;gap:7px}.refine input[type=checkbox]{width:16px;height:16px;accent-color:var(--orange)}.refine input[type=range]{width:130px;margin:0;accent-color:var(--orange)}.side{padding:21px}.side p{color:var(--muted)}.notice{border-left:3px solid var(--green);background:var(--soft);padding:12px 14px;margin:17px 0;font-size:14px}.notice strong{color:var(--green)}.rectangle-box{border-top:1px solid var(--line);padding-top:17px;margin-top:21px}#rectangles{display:block;width:100%;height:auto}.factors{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.factors>div{border-radius:9px;background:#fff5e6;padding:10px;text-align:center}.factors small{display:block;font-size:12px;color:var(--muted)}.factors strong{font-size:21px;color:var(--orange);font-variant-numeric:tabular-nums}.same-area{font-size:14px;text-align:center;color:var(--green);font-weight:650;margin:11px 0 0}.result{margin-top:20px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}.result p{font-size:14px;color:var(--muted);margin:4px 0 0}.live-law{font-family:Georgia,"Times New Roman",serif;font-size:clamp(23px,3.2vw,30px);line-height:1.5}.below{margin-top:20px;padding:25px}.idea-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:25px;margin-top:20px}.idea{padding-top:15px;border-top:2px solid var(--line)}.idea p{font-size:15px;color:var(--muted)}.idea .number{color:var(--green);font-size:12px;font-weight:750;margin-bottom:8px}.small-formula{border-radius:10px;background:#f1f5f8;padding:13px 16px;margin-top:14px;text-align:center;overflow-x:auto}.small-formula math{font-size:1.15rem}details{margin-top:19px;padding-top:12px;border-top:1px solid var(--line)}summary{cursor:pointer;padding:8px 0;font-weight:650}details p{margin-top:12px;color:var(--muted)}footer{text-align:center;font-size:13px;color:var(--muted);margin-top:22px}svg text{font-family:system-ui,sans-serif}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr;gap:24px}.rectangle-box{border:0;margin:0;padding:0}#rectangles{max-width:310px}}@media(max-width:640px){main{padding:24px 12px 36px}header p{font-size:16px}.setup{grid-template-columns:1fr 1fr;padding:17px;gap:14px}.setup-note{grid-column:1/-1;max-width:none}.step-btn{padding:8px 4px;text-align:center;font-size:12px}.step-btn span{display:grid;margin:0 auto 5px}.visual{padding:10px}.side{display:block;padding:19px}.rectangle-box{margin-top:20px;border-top:1px solid var(--line);padding-top:17px}.buttons{gap:5px}.buttons button{font-size:13px;padding:7px 9px}.stage-head span{display:none}.idea-grid{grid-template-columns:1fr;gap:9px}.below{padding:19px}.result{padding:18px}.motion-head{font-size:13px}.refine{gap:10px}}
+@media print{.setup,.steps,.toolbar,.motion,.refine{display:none}.layout{display:block}.side{display:block}.card{break-inside:avoid}.below{break-before:page}.scroll{overflow:visible}#plot{min-width:0}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="eyebrow">Visual mathematics · Area of rectangles</div><h1>Change the shape.<br>Keep the area. Add the logs.</h1><p>Define log x as the area under the curve y = 1/t, from 1 to x. One area-preserving stretch reveals the product law.</p><div class="hero-law">log(ab) = <span class="green">log a</span> + <span class="orange">log b</span></div><div class="hint">Here “log” means the natural logarithm, ln.</div></header>
+<section class="card setup" aria-label="Choose the two factors">
+<div><label class="control-head" for="a"><span>Factor a</span><output id="aOut">2</output></label><input id="a" type="range" min="1" max="4" step="0.25" value="2"><div class="hint">The horizontal stretch factor.</div></div>
+<div><label class="control-head" for="b"><span>Factor b</span><output id="bOut">3</output></label><input id="b" type="range" min="1" max="4" step="0.25" value="3"><div class="hint">The original orange area ends here.</div></div>
+<div class="setup-note">Explore a, b ≥ 1 first, so all shaded areas are positive. The extension to all positive factors is explained below.</div>
+</section>
+<nav class="steps" aria-label="Proof steps"><button class="step-btn" data-step="1" aria-current="step"><span>1</span>See the area</button><button class="step-btn" data-step="2"><span>2</span>Stretch and shrink</button><button class="step-btn" data-step="3"><span>3</span>Join the areas</button></nav>
+<div class="layout">
+<section class="card visual" aria-label="Interactive area transformation">
+<div class="toolbar"><div class="buttons"><button id="back">← Back</button><button id="play" class="primary" aria-pressed="false">▶ Watch the change</button><button id="next">Next →</button></div><button id="reset">↺ Reset</button></div>
+<div class="stage"><div class="stage-head"><strong id="stageTitle" role="status" aria-live="polite">The orange area is log b</strong><span>Fixed axes throughout the transformation</span></div><div class="scroll"><svg id="plot" viewBox="0 0 860 480" role="img" aria-labelledby="plotTitle plotDesc"></svg></div></div>
+<div class="legend"><span id="greenLegend" hidden><i class="swatch" style="background:var(--greenfill)"></i>green area = log a</span><span><i class="swatch" style="background:var(--orangefill)"></i>orange area = log b</span><span>curve: y = 1/t</span></div>
+<div class="motion"><label class="motion-head" for="progress"><span>Drag to reshape the orange area</span><output id="progressOut">0%</output></label><input id="progress" type="range" min="0" max="1000" step="1" value="0"><div class="hint" id="motionNote">Move the slider or press “Watch the change.”</div></div>
+<div class="refine"><label><input id="showStrips" type="checkbox" checked>Show rectangular strips</label><label for="count">Thinner strips</label><input id="count" type="range" min="4" max="64" step="4" value="8"><output id="countOut" for="count">8</output></div>
+</section>
+<aside class="card side"><div><div class="eyebrow" id="stepLabel">Step 1 of 3</div><h2 id="explainTitle">Start with the orange area.</h2><p id="explainCopy"></p><div class="notice" id="notice"></div></div><div class="rectangle-box"><h3>Follow one rectangle</h3><svg id="rectangles" viewBox="0 0 280 170" role="img" aria-labelledby="rectTitle rectDesc"></svg><div class="factors"><div><small>width</small><strong id="widthFactor">× 1</strong></div><div><small>height</small><strong id="heightFactor">÷ 1</strong></div></div><div class="same-area" id="sameArea">Same rectangle area</div><p class="hint" style="margin:10px 0 0">Both rectangles use the same scale. Wider and shorter balance exactly.</p></div></aside>
+</div>
+<section class="card result"><div><div class="eyebrow" id="resultLabel">What we will show</div><div class="live-law" id="liveLaw"></div><p id="resultCopy">The orange area will fit beside the green area without changing its size.</p></div></section>
+<section class="card below"><div class="eyebrow">The whole argument</div><h2>Three things to notice</h2><div class="idea-grid">
+<article class="idea"><div class="number">01 · AREA DEFINES THE LOG</div><h3>Start at 1.</h3><p>The area from 1 to b is log b. We break it into thin rectangles so that we can see how each piece changes shape.</p></article>
+<article class="idea"><div class="number">02 · STRETCH AND SHRINK</div><h3>The area stays the same.</h3><p>Multiply every horizontal coordinate and every width by a. Divide every height by a. A point on the curve (t, 1/t) becomes (at, 1/(at)), so the reshaped area still lies under the same curve.</p><div class="small-formula"><math display="block" aria-label="a times width, multiplied by height over a, equals width times height"><mrow><mo>(</mo><mi>a</mi><mi>w</mi><mo>)</mo><mo>×</mo><mfrac><mi>h</mi><mi>a</mi></mfrac><mo>=</mo><mi>w</mi><mi>h</mi></mrow></math></div></article>
+<article class="idea"><div class="number">03 · PUT THE AREAS TOGETHER</div><h3>Multiplication becomes addition.</h3><p>The orange area now runs from a to ab, but it still equals log b. Put the green area from 1 to a beside it. Together they fill the entire area from 1 to ab: log(ab).</p></article>
+</div>
+<details><summary>Are the rectangles the exact curved area?</summary><p>A finite set of rectangles is an approximation: each strip uses the curve’s height at its midpoint. Every individual rectangle preserves its area exactly during the transformation. As the strips become arbitrarily thin, their sums approach the curved areas, so those areas are equal too.</p><p>The faint orange shading shows the exact curved region. The outlined strips make the area-preserving transformation visible.</p></details>
+<details><summary>What if a or b is less than 1?</summary><p>The law holds for every a &gt; 0 and b &gt; 0. For 0 &lt; x &lt; 1, define log x as the negative of the area from x to 1. This is a signed area, measured from 1 toward x.</p><p>The same transformation takes the directed interval from 1 to b into the directed interval from a to ab. It preserves signed area. Adding the signed areas from 1 to a and from a to ab gives the signed area from 1 to ab, even when some parts cancel.</p><p>If a &lt; 1, the picture shrinks horizontally and stretches vertically. The factors still multiply to 1, so the area argument is unchanged.</p></details>
+</section>
+<footer>Horizontal scale × a · vertical scale ÷ a · area unchanged.</footer>
+</main>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let step=1,frame=null,playing=false;
+  const fmt=n=>Number(n.toFixed(3)).toString();
+
+  function state() {
+    const a=+$('a').value,b=+$('b').value,n=+$('count').value;
+    const p=step===1?0:step===3?1:+$('progress').value/1000;
+    // Reciprocal scales preserve each rectangle's area at EVERY animation frame.
+    const s=Math.pow(a,p),dx=(b-1)/n,index=Math.floor(n/2),mid=1+(index+.5)*dx;
+    return {a,b,n,p,s,dx,mid,h:1/mid,product:a*b,show:$('showStrips').checked};
+  }
+  function el(tag,attrs={},parent=$('plot')) {
+    const node=document.createElementNS(NS,tag);
+    Object.entries(attrs).forEach(([k,v])=>node.setAttribute(k,String(v)));
+    parent.appendChild(node);return node;
+  }
+  function text(x,y,value,size=14,color='#5e6c7c',parent=$('plot'),anchor='middle') {
+    const node=el('text',{x,y,'font-size':size,fill:color,'text-anchor':anchor,'font-family':'system-ui,sans-serif'},parent);
+    node.textContent=value;return node;
+  }
+  function line(x1,y1,x2,y2,color='#dce3eb',extra={},parent=$('plot')) {
+    return el('line',{x1,y1,x2,y2,stroke:color,'stroke-width':1,...extra},parent);
+  }
+  function drawPlot(st) {
+    const svg=$('plot');svg.innerHTML='';
+    el('title',{id:'plotTitle'}).textContent=`Area proof of the logarithm product law, step ${step}`;
+    el('desc',{id:'plotDesc'}).textContent=`The curve is y equals one over t. Orange runs from ${fmt(st.s)} to ${fmt(st.s*st.b)} and has area log ${fmt(st.b)}. Each rectangle is scaled horizontally by ${fmt(st.s)} and vertically by its reciprocal. ${step===3?'Green fills from one to a. Together the two areas give log of a times b.':''}`;
+    const X0=68,X1=815,BASE=360,YUNIT=215,xmax=Math.max(2,st.product)*1.12;
+    const xp=t=>X0+(X1-X0)*t/xmax,yp=y=>BASE-y*YUNIT;
+    const region=(l,r)=>{
+      const pts=[];for(let i=0;i<=180;i++){const t=l+(r-l)*i/180;pts.push(`${xp(t)},${yp(1/t)}`);}
+      return `M${xp(l)},${BASE} L${pts.join(' L')} L${xp(r)},${BASE} Z`;
+    };
+    // Exact areas remain beneath the same fixed curve during the whole motion.
+    if(step===3&&st.a>1)el('path',{d:region(1,st.a),fill:'#baded3','fill-opacity':.85,'data-region':'green'});
+    if(st.b>1)el('path',{d:region(st.s,st.s*st.b),fill:'#f3ce9a','fill-opacity':.45,'data-region':'orange'});
+    for(const y of [.5,1]){line(X0,yp(y),X1,yp(y),'#e5eaf0');text(X0-12,yp(y)+4,fmt(y),12,'#5e6c7c',svg,'end');}
+    if(st.show&&st.b>1) {
+      for(let i=0;i<st.n;i++) {
+        const left=1+i*st.dx,middle=left+st.dx/2;
+        const x=st.s*left,w=st.s*st.dx,h=1/(st.s*middle);
+        const selected=i===Math.floor(st.n/2);
+        const r=el('rect',{
+          x:xp(x),y:yp(h),width:w*(X1-X0)/xmax,height:h*YUNIT,
+          fill:selected?'#e5a14d':'#f3ce9a','fill-opacity':selected?.72:.35,
+          stroke:selected?'#8d5313':'#ba7d36','stroke-width':selected?1.8:.65,
+          'data-strip':i,'data-left':x,'data-width':w,'data-height':h
+        });
+        el('title',{},r).textContent=`Rectangle ${i+1}: its width is multiplied by ${fmt(st.s)} and its height divided by ${fmt(st.s)}. Area is unchanged.`;
+      }
+    }
+    const curve=[];
+    for(let i=0;i<=350;i++){const t=.76+(xmax-.76)*i/350;curve.push(`${xp(t)},${yp(1/t)}`);}
+    el('path',{d:'M'+curve.join(' L'),fill:'none',stroke:'#2c4f76','stroke-width':2.6});
+    line(X0,BASE,X1+8,BASE,'#8c9bae',{'stroke-width':1.3});
+    line(X0,BASE,X0,51,'#8c9bae',{'stroke-width':1.3});
+    text(X1+10,BASE+22,'t',14,'#203044');text(X0-15,49,'y',14,'#203044');
+    text(185,40,'y = 1/t',18,'#2c4f76');
+    text(568,40,step===3?'Two adjacent areas make one total area':`Orange: from ${fmt(st.s)} to ${fmt(st.s*st.b)}`,15,'#a76316');
+    // Merge coincident endpoint labels and stagger close labels.
+    const entries=step===3?[[1,'1'],[st.a,'a'],[st.product,'ab']]:[[1,'1'],[st.s,st.p===0?'1':fmt(st.s)],[st.s*st.b,st.p===0?'b':st.p===1?'ab':fmt(st.s*st.b)]];
+    const marks=[];
+    entries.sort((a,b)=>a[0]-b[0]).forEach(([value,name])=>{
+      const existing=marks.find(m=>Math.abs(m.value-value)<1e-8);
+      if(existing){if(!existing.names.includes(name))existing.names.push(name);}
+      else marks.push({value,names:[name]});
+    });
+    let lastX=-Infinity,lastRow=0;
+    for(const mark of marks) {
+      const x=xp(mark.value),label=mark.names.join(' = ');
+      const row=x-lastX<72?1-lastRow:0;
+      line(x,BASE,x,BASE+6,'#8c9bae');
+      text(x,BASE+24+row*19,label,13,'#203044');
+      lastX=x;lastRow=row;
+    }
+    if(step===3&&st.a>1)line(xp(st.a),BASE,xp(st.a),yp(1/st.a),'#18786b',{'stroke-width':1.5});
+    const caption=st.b===1?'b = 1: there is no orange area. log 1 = 0.':step===3?'From 1 to a: log a. From a to ab: the unchanged log b.':step===2?'Wider rectangles. Shorter rectangles. Exactly the same rectangle areas.':'The orange area from 1 to b defines log b.';
+    text(440,433,caption,15,'#203044');
+    text(440,461,st.show?'Rectangles approximate the curve; thinner strips improve the fit.':'The shading shows the exact curved area.',12);
+  }
+  function drawRectangle(st) {
+    const svg=$('rectangles');svg.innerHTML='';
+    el('title',{id:'rectTitle'},svg).textContent='One rectangle before and after scaling';
+    el('desc',{id:'rectDesc'},svg).textContent=`Width is multiplied by ${fmt(st.s)}. Height is divided by the same factor. Area remains width times height.`;
+    text(64,20,'Before',13,'#5e6c7c',svg);text(212,20,'Now',13,'#a76316',svg);
+    if(st.dx===0){text(140,92,'No strip: b = 1',15,'#5e6c7c',svg);return;}
+    const w=st.dx,h=st.h,W=st.s*w,H=h/st.s;
+    const scale=Math.min(98/Math.max(w,W),96/Math.max(h,H)),baseline=133;
+    for(const [cx,width,height,fill,key] of [[64,w,h,'#f4dfbd','before'],[212,W,H,'#e9b570','after']]) {
+      el('rect',{x:cx-width*scale/2,y:baseline-height*scale,width:width*scale,height:height*scale,fill,stroke:'#a76316','stroke-width':1.2,'data-rectangle':key,'data-width':width,'data-height':height},svg);
+    }
+    line(124,88,150,88,'#8b98a8',{'stroke-width':1.5},svg);
+    el('path',{d:'M145,83 L150,88 L145,93',fill:'none',stroke:'#8b98a8','stroke-width':1.5},svg);
+    text(64,157,'w × h',13,'#5e6c7c',svg);text(212,157,'same area',13,'#a76316',svg);
+  }
+  function render() {
+    const st=state();
+    $('aOut').textContent=fmt(st.a);$('bOut').textContent=fmt(st.b);$('countOut').textContent=String(st.n);
+    $('progressOut').textContent=`${Math.round(st.p*100)}%`;
+    $('greenLegend').hidden=step!==3;
+    $('stageTitle').textContent=['The orange area is log b','Reshape the orange area without changing its size','Add the green area: the picture is complete'][step-1];
+    $('stepLabel').textContent=`Step ${step} of 3`;
+    $('explainTitle').textContent=['Start with the orange area.','Make it wider and shorter.','The two areas fit together.'][step-1];
+    $('explainCopy').textContent=[
+      `The orange region runs from 1 to b = ${fmt(st.b)}. Its area is log b. We will move its left edge to a = ${fmt(st.a)} by scaling the entire region.`,
+      `Stretch horizontally by a = ${fmt(st.a)} and shrink vertically by the same factor. Every rectangle keeps its area. Its midpoint still meets y = 1/t.`,
+      `The green region from 1 to a has area log a. The orange region from a to ab still has area log b. Together they give the area from 1 to ab.`
+    ][step-1];
+    $('notice').innerHTML=st.b===1?'<strong>Zero orange area.</strong> The interval from 1 to 1 has no width, so log 1 = 0.':st.a===1?'<strong>No stretch is needed.</strong> With a = 1, the green area is zero and the orange area stays where it started.':[
+      'Watch the <strong>same piece of area</strong> change shape. Its width grows while its height shrinks.',
+      'At the end, the endpoints change from <strong>1 → a</strong> and <strong>b → ab</strong>. The curve stays fixed.',
+      '<strong>Same orange area, new location.</strong> Adding the green part proves log(ab) = log a + log b.'
+    ][step-1];
+    $('widthFactor').textContent=`× ${fmt(st.s)}`;$('heightFactor').textContent=`÷ ${fmt(st.s)}`;
+    $('sameArea').textContent=st.b===1?'Zero width means zero area':'Same rectangle area';
+    $('motionNote').textContent=step===3?'Drag back to revisit the transformation.':st.a===1?'a = 1 leaves the region unchanged. Try a larger value to see the stretch.':'Horizontal × s and vertical ÷ s stay paired throughout the motion.';
+    $('resultLabel').textContent=step===3?'The areas prove the law':'What we will show';
+    $('liveLaw').innerHTML=`log ${fmt(st.product)} = <span class="green">log ${fmt(st.a)}</span> + <span class="orange">log ${fmt(st.b)}</span>`;
+    $('resultCopy').textContent=step===3?'One complete region is the sum of the green and orange regions.':'The orange area will fit beside the green area without changing its size.';
+    $('back').disabled=step===1;$('next').disabled=step===3;$('next').textContent=step===1?'Next: reshape →':step===2?'Add log a →':'Complete ✓';
+    document.querySelectorAll('[data-step]').forEach(b=>{if(+b.dataset.step===step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
+    drawPlot(st);drawRectangle(st);
+  }
+  function stop() {if(frame!==null)cancelAnimationFrame(frame);frame=null;playing=false;$('play').textContent='▶ Watch the change';$('play').setAttribute('aria-pressed','false');}
+  function go(target) {stop();step=target;$('progress').value=step===3?'1000':'0';render();}
+  function play() {
+    if(playing){stop();return;}
+    if(step!==2||+$('progress').value===1000){step=2;$('progress').value='0';}
+    if(reduced){$('progress').value='1000';render();return;}
+    playing=true;$('play').textContent='Ⅱ Pause';$('play').setAttribute('aria-pressed','true');
+    const start=performance.now(),from=+$('progress').value,duration=3800*(1-from/1000);
+    function tick(now) {
+      const q=Math.min(1,(now-start)/duration),ease=q*q*(3-2*q);
+      $('progress').value=String(Math.round(from+(1000-from)*ease));render();
+      if(q<1)frame=requestAnimationFrame(tick);else stop();
+    }
+    tick(start);
+  }
+  ['a','b'].forEach(id=>$(id).addEventListener('input',()=>{stop();step=1;$('progress').value='0';render();}));
+  $('count').addEventListener('input',render);$('showStrips').addEventListener('change',render);
+  $('progress').addEventListener('input',()=>{stop();step=2;render();});
+  $('back').addEventListener('click',()=>go(Math.max(1,step-1)));
+  $('next').addEventListener('click',()=>go(Math.min(3,step+1)));
+  $('play').addEventListener('click',play);
+  document.querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.step)));
+  $('reset').addEventListener('click',()=>{stop();$('a').value='2';$('b').value='3';$('count').value='8';$('showStrips').checked=true;go(1);});
+  render();
+})();
+</script>
+</body>
+</html>

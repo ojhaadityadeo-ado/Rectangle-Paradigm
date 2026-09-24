@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual showing how scaling rectangle side lengths changes area." />
+  <title>Visual Maths: Scaling Length and Area</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fbff;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --purple: #7c3aed;
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --shadow: 0 16px 38px rgba(15, 23, 42, 0.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      line-height: 1.55;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 10%, rgba(37,99,235,.06), transparent 26rem),
+        var(--bg);
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1140px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 30px 0 54px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(124,58,237,.22);
+      background: rgba(124,58,237,.07);
+      color: #6d28d9;
+      text-transform: uppercase;
+      font-size: .8rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      max-width: 940px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.8vw, 1.1rem);
+    }
+
+    .top-box {
+      margin: 20px auto 0;
+      max-width: 900px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(16,185,129,.20);
+      background: linear-gradient(180deg, rgba(16,185,129,.07), rgba(16,185,129,.03));
+      color: #065f46;
+      font-weight: 800;
+      font-size: clamp(1.08rem, 2vw, 1.34rem);
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card, .side-card, .explain-card {
+      padding: 18px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .slider-box {
+      padding: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.02);
+      border-radius: 14px;
+      min-width: 0;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: .92rem;
+    }
+
+    .slider-head strong {
+      color: #6d28d9;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--purple);
+      cursor: pointer;
+    }
+
+    .stage-wrap {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.08) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 32px 32px;
+      padding: 18px;
+      overflow-x: auto;
+    }
+
+    .svg-wrap {
+      min-width: 650px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 470px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px 18px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch {
+      width: 15px;
+      height: 15px;
+      border-radius: 4px;
+      border: 1px solid rgba(15,23,42,.18);
+    }
+
+    .swatch.base { background: rgba(37,99,235,.28); }
+    .swatch.scaled { background: rgba(16,185,129,.30); }
+    .swatch.tile { background: rgba(124,58,237,.23); }
+
+    .step-kicker {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .step-title {
+      margin: 4px 0 8px;
+      font-size: 1.34rem;
+      line-height: 1.24;
+    }
+
+    .step-copy {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .math-strip, .kid-note, .facts-card {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .math-strip {
+      border: 1px solid rgba(124,58,237,.18);
+      background: rgba(124,58,237,.05);
+    }
+
+    .math-strip small {
+      display: block;
+      color: #6d28d9;
+      font-size: .77rem;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .math-line {
+      font-size: clamp(1.05rem, 2vw, 1.3rem);
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .kid-note {
+      border: 1px solid rgba(16,185,129,.18);
+      background: rgba(16,185,129,.055);
+      color: #334155;
+      font-size: .92rem;
+    }
+
+    .kid-note strong, .facts-card strong.title {
+      display: block;
+      color: #047857;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-size: .8rem;
+      margin-bottom: 4px;
+    }
+
+    .facts-card {
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+    }
+
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .fact {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      padding: 10px 11px;
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      color: #0f172a;
+      font-size: 1rem;
+    }
+
+    .big-box {
+      margin-top: 14px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid rgba(5,150,105,.24);
+      border-radius: 14px;
+      background: rgba(16,185,129,.055);
+      font-size: clamp(1.06rem, 2vw, 1.32rem);
+      font-weight: 800;
+      color: #065f46;
+      overflow-x: auto;
+    }
+
+    .explain-card {
+      margin-top: 18px;
+    }
+
+    .explain-card h2 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+      color: #475569;
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    mjx-container {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    @media (max-width: 920px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .controls { grid-template-columns: 1fr; }
+      .facts-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        width: min(100% - 18px, 1140px);
+        padding-top: 22px;
+      }
+      .visual-card, .side-card, .explain-card { padding: 13px; }
+      .stage-wrap { padding: 10px; }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Maths • Scaling</div>
+    <h1>When Lengths Scale, Area Scales Twice</h1>
+    <p class="subtitle">
+      If both side lengths of a rectangle are multiplied by the same scale factor,
+      the area gets multiplied by that factor twice. So doubling both sides gives 4 times the area,
+      and tripling both sides gives 9 times the area.
+    </p>
+    <div class="top-box" id="topBox">
+      \(\text{lengths}\times2 \Rightarrow \text{area}\times4\)
+    </div>
+  </header>
+
+  <section class="main-grid">
+    <div class="card visual-card">
+      <div class="controls">
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Original width</span>
+            <strong id="wReadout">3</strong>
+          </div>
+          <input id="wSlider" type="range" min="1" max="6" value="3" step="1" aria-label="Original rectangle width">
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Original height</span>
+            <strong id="hReadout">2</strong>
+          </div>
+          <input id="hSlider" type="range" min="1" max="6" value="2" step="1" aria-label="Original rectangle height">
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Scale both sides by</span>
+            <strong id="kReadout">×2</strong>
+          </div>
+          <input id="kSlider" type="range" min="1" max="4" value="2" step="1" aria-label="Scale factor">
+        </div>
+      </div>
+
+      <div class="stage-wrap">
+        <div class="svg-wrap">
+          <svg id="viz" viewBox="0 0 900 520" role="img" aria-labelledby="svgTitle svgDesc">
+            <title id="svgTitle">Original and scaled rectangles showing area growth</title>
+            <desc id="svgDesc">The original rectangle and the scaled rectangle are shown with unit-square tiling to demonstrate that scaling both side lengths by k scales area by k squared.</desc>
+          </svg>
+        </div>
+
+        <div class="legend">
+          <span class="legend-item"><span class="swatch base"></span> original rectangle</span>
+          <span class="legend-item"><span class="swatch scaled"></span> scaled rectangle</span>
+          <span class="legend-item"><span class="swatch tile"></span> copies of original-area blocks</span>
+        </div>
+      </div>
+    </div>
+
+    <aside class="card side-card">
+      <div class="step-kicker">What the picture means</div>
+      <h2 class="step-title">The scale factor appears twice in area</h2>
+      <p class="step-copy" id="stepCopy">
+        The width is multiplied by 2 and the height is also multiplied by 2.
+        Since area is width times height, the area receives two factors of 2.
+      </p>
+
+      <div class="math-strip">
+        <small>Area calculation</small>
+        <div class="math-line" id="areaEquation">
+          \(A'= (2w)(2h)=4wh=4A\)
+        </div>
+      </div>
+
+      <div class="kid-note">
+        <strong>What is happening?</strong>
+        <div id="kidExplanation">
+          The larger rectangle can be split into 4 copies of the original rectangle.
+          That is why doubling both sides makes the area 4 times as large.
+        </div>
+      </div>
+
+      <div class="facts-card">
+        <strong class="title">Quick facts</strong>
+        <div class="facts-grid">
+          <div class="fact">
+            <small>Original area</small>
+            <strong id="factOriginalArea">6</strong>
+          </div>
+          <div class="fact">
+            <small>Scaled dimensions</small>
+            <strong id="factScaledDims">6 × 4</strong>
+          </div>
+          <div class="fact">
+            <small>Scaled area</small>
+            <strong id="factScaledArea">24</strong>
+          </div>
+          <div class="fact">
+            <small>Area multiplier</small>
+            <strong id="factMultiplier">×4</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="big-box" id="bigBox">
+        Double both sides \(\Rightarrow\) \(2\times2=4\) times the area.
+      </div>
+    </aside>
+  </section>
+
+  <section class="card explain-card">
+    <h2>How to explain scaling to small kids</h2>
+
+    <div class="proof-steps">
+      <div class="proof-step">
+        <b>Start with a rectangle.</b>
+        Suppose its width is \(w\) and its height is \(h\). Its area is
+        \[
+          A=wh.
+        \]
+      </div>
+
+      <div class="proof-step">
+        <b>Stretch the width.</b>
+        If every length is multiplied by \(k\), the new width is \(kw\).
+      </div>
+
+      <div class="proof-step">
+        <b>Stretch the height too.</b>
+        The new height is \(kh\).
+      </div>
+
+      <div class="proof-step">
+        <b>Area uses both dimensions.</b>
+        The new area is
+        \[
+          (kw)(kh)=k^2wh.
+        \]
+      </div>
+
+      <div class="proof-step">
+        <b>So area scales by \(k^2\).</b>
+        If \(k=2\), area multiplies by \(4\). If \(k=3\), area multiplies by \(9\).
+      </div>
+    </div>
+
+    <div class="big-box">
+      \[
+        \boxed{\text{side lengths}\times k \quad\Longrightarrow\quad \text{area}\times k^2}
+      \]
+    </div>
+  </section>
+
+  <p class="footer-note">
+    Kid-friendly interactive visual for scaling lengths and area.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const wSlider = document.getElementById("wSlider");
+  const hSlider = document.getElementById("hSlider");
+  const kSlider = document.getElementById("kSlider");
+
+  const wReadout = document.getElementById("wReadout");
+  const hReadout = document.getElementById("hReadout");
+  const kReadout = document.getElementById("kReadout");
+
+  const viz = document.getElementById("viz");
+  const stepCopy = document.getElementById("stepCopy");
+  const areaEquation = document.getElementById("areaEquation");
+  const kidExplanation = document.getElementById("kidExplanation");
+
+  const factOriginalArea = document.getElementById("factOriginalArea");
+  const factScaledDims = document.getElementById("factScaledDims");
+  const factScaledArea = document.getElementById("factScaledArea");
+  const factMultiplier = document.getElementById("factMultiplier");
+
+  const bigBox = document.getElementById("bigBox");
+  const topBox = document.getElementById("topBox");
+
+  function typesetMath(targets) {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise(targets).catch(() => {});
+    }
+  }
+
+  function svgEl(tag, attrs={}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v));
+    return el;
+  }
+
+  function addText(x,y,text,size=16,weight=700,fill="#334155",anchor="middle") {
+    const t = svgEl("text", {
+      x, y,
+      "font-size": size,
+      "font-weight": weight,
+      fill,
+      "text-anchor": anchor,
+      "font-family": "Inter, system-ui, sans-serif"
+    });
+    t.textContent = text;
+    viz.appendChild(t);
+  }
+
+  function drawGridRect(x,y,cols,rows,cell,fill,stroke,blockCols=1,blockRows=1) {
+    const width = cols*cell;
+    const height = rows*cell;
+
+    const bg = svgEl("rect", {
+      x, y, width, height, rx: 10,
+      fill, stroke, "stroke-width": 2
+    });
+    viz.appendChild(bg);
+
+    for (let c=1; c<cols; c++) {
+      viz.appendChild(svgEl("line", {
+        x1:x+c*cell, y1:y, x2:x+c*cell, y2:y+height,
+        stroke:"rgba(15,23,42,.18)", "stroke-width":1
+      }));
+    }
+    for (let r=1; r<rows; r++) {
+      viz.appendChild(svgEl("line", {
+        x1:x, y1:y+r*cell, x2:x+width, y2:y+r*cell,
+        stroke:"rgba(15,23,42,.18)", "stroke-width":1
+      }));
+    }
+
+    // Emphasize chunks the size of the original rectangle.
+    if (blockCols > 1 || blockRows > 1) {
+      for (let c=1; c<blockCols; c++) {
+        viz.appendChild(svgEl("line", {
+          x1:x+c*(cols/blockCols)*cell, y1:y,
+          x2:x+c*(cols/blockCols)*cell, y2:y+height,
+          stroke:"#7c3aed", "stroke-width":2.2, "stroke-dasharray":"6 4"
+        }));
+      }
+      for (let r=1; r<blockRows; r++) {
+        viz.appendChild(svgEl("line", {
+          x1:x, y1:y+r*(rows/blockRows)*cell,
+          x2:x+width, y2:y+r*(rows/blockRows)*cell,
+          stroke:"#7c3aed", "stroke-width":2.2, "stroke-dasharray":"6 4"
+        }));
+      }
+    }
+
+    return {width,height};
+  }
+
+  function drawDimension(x1,y1,x2,y2,label,vertical=false) {
+    viz.appendChild(svgEl("line", {
+      x1,y1,x2,y2,
+      stroke:"#64748b","stroke-width":1.5
+    }));
+
+    if (!vertical) {
+      addText((x1+x2)/2, y1-8, label, 15, 800, "#475569");
+    } else {
+      addText(x1-12, (y1+y2)/2+5, label, 15, 800, "#475569", "end");
+    }
+  }
+
+  function renderVisual() {
+    const w = Number(wSlider.value);
+    const h = Number(hSlider.value);
+    const k = Number(kSlider.value);
+
+    viz.innerHTML = "";
+
+    const maxScaledDim = Math.max(w*k, h*k);
+    const cell = Math.max(16, Math.min(34, 260 / maxScaledDim));
+
+    // Original rectangle
+    const ox = 80;
+    const oy = 150;
+    addText(ox+90, 88, "Original rectangle", 20, 850, "#1d4ed8");
+    const o = drawGridRect(
+      ox, oy, w, h, cell,
+      "rgba(37,99,235,.24)", "rgba(37,99,235,.55)"
+    );
+    drawDimension(ox, oy+o.height+34, ox+o.width, oy+o.height+34, `width = ${w}`);
+    drawDimension(ox-28, oy, ox-28, oy+o.height, `height = ${h}`, true);
+    addText(ox+o.width/2, oy+o.height/2+6, `area = ${w*h}`, 18, 850, "#1e3a8a");
+
+    // Arrow
+    const arrowY = 265;
+    viz.appendChild(svgEl("line", {
+      x1:330, y1:arrowY, x2:420, y2:arrowY,
+      stroke:"#64748b","stroke-width":2
+    }));
+    viz.appendChild(svgEl("polygon", {
+      points:`420,${arrowY} 405,${arrowY-8} 405,${arrowY+8}`,
+      fill:"#64748b"
+    }));
+    addText(375, arrowY-18, `scale ×${k}`, 16, 850, "#6d28d9");
+
+    // Scaled rectangle
+    const sx = 500;
+    const sy = 110;
+    addText(sx+135, 64, "Scaled rectangle", 20, 850, "#047857");
+    const s = drawGridRect(
+      sx, sy, w*k, h*k, cell,
+      "rgba(16,185,129,.22)", "rgba(5,150,105,.55)",
+      k, k
+    );
+    drawDimension(sx, sy+s.height+34, sx+s.width, sy+s.height+34, `width = ${w*k}`);
+    drawDimension(sx-28, sy, sx-28, sy+s.height, `height = ${h*k}`, true);
+    addText(sx+s.width/2, sy+s.height/2+6, `area = ${w*h*k*k}`, 18, 850, "#065f46");
+
+    // k^2 block count callout
+    const boxX = 500;
+    const boxY = 405;
+    const boxW = 320;
+    const boxH = 78;
+    viz.appendChild(svgEl("rect", {
+      x:boxX, y:boxY, width:boxW, height:boxH, rx:14,
+      fill:"rgba(124,58,237,.06)", stroke:"rgba(124,58,237,.22)"
+    }));
+    addText(boxX+boxW/2, boxY+30, `${k} across × ${k} down`, 17, 850, "#5b21b6");
+    addText(boxX+boxW/2, boxY+57, `= ${k*k} copies of the original area`, 15, 750, "#475569");
+  }
+
+  function renderText() {
+    const w = Number(wSlider.value);
+    const h = Number(hSlider.value);
+    const k = Number(kSlider.value);
+
+    const originalArea = w*h;
+    const scaledArea = originalArea*k*k;
+
+    wReadout.textContent = String(w);
+    hReadout.textContent = String(h);
+    kReadout.textContent = `×${k}`;
+
+    stepCopy.innerHTML =
+      `The width changes from \\(${w}\\) to \\(${k}\\cdot${w}=${w*k}\\), and the height changes from \\(${h}\\) to \\(${k}\\cdot${h}=${h*k}\\). ` +
+      `Because area multiplies width by height, the scale factor appears twice.`;
+
+    areaEquation.innerHTML =
+      `\\(A'=(${k}w)(${k}h)=${k}^2wh=${k*k}A\\)`;
+
+    kidExplanation.innerHTML =
+      k === 1
+        ? `The rectangle has not been enlarged, so the area stays the same.`
+        : `The larger rectangle can be split into \\(${k}\\times${k}=${k*k}\\) blocks, each the same size as the original rectangle. ` +
+          `So scaling both sides by \\(${k}\\) makes the area \\(${k*k}\\) times as large.`;
+
+    factOriginalArea.textContent = String(originalArea);
+    factScaledDims.textContent = `${w*k} × ${h*k}`;
+    factScaledArea.textContent = String(scaledArea);
+    factMultiplier.textContent = `×${k*k}`;
+
+    bigBox.innerHTML =
+      `Side lengths \\(\\times${k}\\) \\(\\Rightarrow\\) area \\(\\times${k}^2=\\times${k*k}\\).`;
+
+    topBox.innerHTML =
+      `\\(\\text{lengths}\\times${k}\\Rightarrow\\text{area}\\times${k}^2=\\times${k*k}\\)`;
+
+    typesetMath([stepCopy, areaEquation, kidExplanation, bigBox, topBox]);
+  }
+
+  function render() {
+    renderVisual();
+    renderText();
+  }
+
+  wSlider.addEventListener("input", render);
+  hSlider.addEventListener("input", render);
+  kSlider.addEventListener("input", render);
+
+  render();
+})();
+</script>
+</body>
+</html>

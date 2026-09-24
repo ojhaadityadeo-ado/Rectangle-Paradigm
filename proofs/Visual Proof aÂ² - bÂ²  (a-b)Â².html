@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: a² - b² > (a-b)²</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-line { transition: all 0.4s ease; }
+        .geom-text { transition: opacity 0.4s ease, transform 0.5s ease; user-select: none; }
+        .fade { transition: opacity 0.5s ease; }
+
+        /* Pulse Animation for the Extra Area */
+        @keyframes pulse-extra {
+            0%, 100% { fill: rgba(245, 158, 11, 0.2); }
+            50% { fill: rgba(245, 158, 11, 0.5); }
+        }
+        .anim-extra { animation: pulse-extra 2s infinite; stroke: #d97706; stroke-dasharray: 4,4; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-square-minus text-indigo-600 text-2xl"></i> Visual Proof: Algebraic Inequality
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            A geometric demonstration of why the difference of squares is strictly greater than the square of their difference.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap" id="live-equation">
+                $$a^2 - b^2 > (a-b)^2 \quad \text{for } a > b > 0$$
+            </div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-6 items-center justify-center flex-grow">
+                <!-- A Slider -->
+                <div class="flex flex-col gap-2 w-48">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Side <span class="math-font text-sm normal-case text-indigo-600">a</span></span>
+                        <span id="val-a" class="text-indigo-600 text-sm font-mono">8.0</span>
+                    </div>
+                    <input type="range" id="slider-a" value="8" min="4" max="10" step="0.5" class="w-full">
+                </div>
+
+                <!-- B Slider -->
+                <div class="flex flex-col gap-2 w-48">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Side <span class="math-font text-sm normal-case text-rose-600">b</span></span>
+                        <span id="val-b" class="text-rose-600 text-sm font-mono">3.0</span>
+                    </div>
+                    <input type="range" id="slider-b" value="3" min="1" max="9" step="0.5" class="w-full">
+                </div>
+
+                <!-- Live Area Value -->
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-600 flex gap-4">
+                    <div>LHS: <span class="font-bold text-slate-800 font-mono" id="val-lhs">55.0</span></div>
+                    <div class="w-px bg-slate-300"></div>
+                    <div>RHS: <span class="font-bold text-slate-800 font-mono" id="val-rhs">25.0</span></div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Pattern for removed b^2 -->
+                        <pattern id="hatch-removed" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#cbd5e1" stroke-width="2" opacity="0.6"/>
+                        </pattern>
+                        <!-- Markers for dimension lines -->
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Geometry Group (Origin at X=100, Y=100) -->
+                    <g id="geometryGroup">
+                        <!-- Main full square a^2 outline -->
+                        <rect id="rect-a2" class="geom-rect" fill="rgba(241, 245, 249, 0.5)" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
+
+                        <!-- Bottom-Left: (a-b)^2 -->
+                        <rect id="rect-amb2" class="geom-rect" fill="rgba(16, 185, 129, 0.2)" stroke="#059669" stroke-width="2.5" />
+                        <text id="lbl-amb2" class="geom-text math-font font-bold" fill="#047857" font-size="22" text-anchor="middle" dominant-baseline="middle">(a-b)²</text>
+
+                        <!-- Top-Left: Extra Rect 1 -->
+                        <rect id="rect-extra1" class="geom-rect" fill="rgba(79, 70, 229, 0.15)" stroke="#4338ca" stroke-width="2" />
+                        <text id="lbl-extra1" class="geom-text math-font font-bold" fill="#3730a3" font-size="16" text-anchor="middle" dominant-baseline="middle">b(a-b)</text>
+
+                        <!-- Bottom-Right: Extra Rect 2 -->
+                        <rect id="rect-extra2" class="geom-rect" fill="rgba(79, 70, 229, 0.15)" stroke="#4338ca" stroke-width="2" />
+                        <text id="lbl-extra2" class="geom-text math-font font-bold" fill="#3730a3" font-size="16" text-anchor="middle" dominant-baseline="middle" transform="">b(a-b)</text>
+
+                        <!-- Top-Right: b^2 (The subtracted part) -->
+                        <rect id="rect-b2" class="geom-rect" fill="rgba(225, 29, 72, 0.2)" stroke="#e11d48" stroke-width="2.5" />
+                        <text id="lbl-b2" class="geom-text math-font font-bold" fill="#be123c" font-size="20" text-anchor="middle" dominant-baseline="middle">b²</text>
+                    </g>
+
+                    <g id="dimensionGroup">
+                        <!-- Top Dim a -->
+                        <line id="dim-top-a" class="geom-line" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />
+                        <text id="lbl-top-a" class="geom-text math-font font-bold" fill="#334155" font-size="20" text-anchor="middle" dominant-baseline="bottom">a</text>
+
+                        <!-- Top Dim split (a-b and b) -->
+                        <line id="dim-top-amb" class="geom-line fade" stroke="#059669" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0" />
+                        <text id="lbl-top-amb" class="geom-text math-font font-bold fade" fill="#059669" font-size="16" text-anchor="middle" dominant-baseline="bottom" opacity="0">a-b</text>
+
+                        <line id="dim-top-b" class="geom-line fade" stroke="#e11d48" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0" />
+                        <text id="lbl-top-b" class="geom-text math-font font-bold fade" fill="#e11d48" font-size="16" text-anchor="middle" dominant-baseline="bottom" opacity="0">b</text>
+
+                        <!-- Left Dim a -->
+                        <line id="dim-left-a" class="geom-line" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />
+                        <text id="lbl-left-a" class="geom-text math-font font-bold" fill="#334155" font-size="20" text-anchor="end" dominant-baseline="middle">a</text>
+
+                        <!-- Left Dim split (b and a-b) -->
+                        <line id="dim-left-b" class="geom-line fade" stroke="#e11d48" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0" />
+                        <text id="lbl-left-b" class="geom-text math-font font-bold fade" fill="#e11d48" font-size="16" text-anchor="end" dominant-baseline="middle" opacity="0">b</text>
+
+                        <line id="dim-left-amb" class="geom-line fade" stroke="#059669" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0" />
+                        <text id="lbl-left-amb" class="geom-text math-font font-bold fade" fill="#059669" font-size="16" text-anchor="end" dominant-baseline="middle" opacity="0">a-b</text>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Original Square</span>
+                            <span class="text-xs text-slate-600">We start with a large square of side length $a$. Its total enclosed area is exactly $a^2$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. The Left Side: $a^2 - b^2$</span>
+                            <span class="text-xs text-slate-600">Subtract a smaller square of side $b$ from the top-right corner. The remaining blue L-shaped region represents exactly $a^2 - b^2$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-slate-800 block mb-1">3. The Right Side: $(a-b)^2$</span>
+                            <span class="text-xs text-slate-600">Look at the bottom-left corner of the L-shape. It forms a perfect square with side length $(a-b)$. Its area is exactly $(a-b)^2$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-slate-800 block mb-1">4. The Gained Area</span>
+                            <span class="text-xs text-slate-600">Notice that the L-shape contains $(a-b)^2$ <strong>plus</strong> two extra rectangular regions. Each rectangle has an area of $b(a-b)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. Conclusion</span>
+                            <span class="text-xs text-slate-600">Because $a > b$, these two extra rectangles have positive area. Therefore, the L-shape ($a^2 - b^2$) is strictly greater than the smaller square $(a-b)^2$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust $a$ and $b$. We enforce $a > b$. Press <strong>Play</strong> to visualize the area differences.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Inequality Algebraically</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Expansion -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Algebraic Expansion</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        We can also prove this strictly using algebra. Let's expand the right side of the inequality using the standard binomial formula:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ (a-b)^2 = a^2 - 2ab + b^2 $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Now, we want to compare this expanded form to our left side, which is $a^2 - b^2$.
+                    </p>
+                </div>
+
+                <!-- Right: Comparison -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Analyzing the Difference</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Let's subtract the Right Side from the Left Side to see if the difference is strictly positive:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ (a^2 - b^2) - (a^2 - 2ab + b^2) $$
+                        $$ = a^2 - b^2 - a^2 + 2ab - b^2 $$
+                        $$ = 2ab - 2b^2 = 2b(a-b) $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    The difference between the two sides simplifies exactly to $2b(a-b)$. This perfectly matches the two extra rectangles we found in our visual proof!
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ a^2 - b^2 = (a-b)^2 + 2b(a-b) $$
+                </div>
+                <p class="text-slate-700 leading-relaxed">
+                    Since we stated that $a > b > 0$, both $b$ and $(a-b)$ are positive numbers. Therefore, the extra area $2b(a-b) > 0$. Because we have to add a positive amount to $(a-b)^2$ to reach $a^2 - b^2$, we conclusively prove that $a^2 - b^2$ is strictly greater.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            a: 8.0,
+            b: 3.0,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG Grid
+        const SCALE = 40; // pixels per unit
+        const OX = 100;   // Origin X (Top Left of main square)
+        const OY = 100;   // Origin Y (Top Left of main square)
+
+        // DOM Elements
+        const DOM = {
+            sliders: { a: document.getElementById('slider-a'), b: document.getElementById('slider-b') },
+            vals: { a: document.getElementById('val-a'), b: document.getElementById('val-b'), lhs: document.getElementById('val-lhs'), rhs: document.getElementById('val-rhs') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                rectA2: document.getElementById('rect-a2'),
+                rectAmb2: document.getElementById('rect-amb2'), lblAmb2: document.getElementById('lbl-amb2'),
+                rectExtra1: document.getElementById('rect-extra1'), lblExtra1: document.getElementById('lbl-extra1'),
+                rectExtra2: document.getElementById('rect-extra2'), lblExtra2: document.getElementById('lbl-extra2'),
+                rectB2: document.getElementById('rect-b2'), lblB2: document.getElementById('lbl-b2'),
+                
+                dimTopA: document.getElementById('dim-top-a'), lblTopA: document.getElementById('lbl-top-a'),
+                dimTopAmb: document.getElementById('dim-top-amb'), lblTopAmb: document.getElementById('lbl-top-amb'),
+                dimTopB: document.getElementById('dim-top-b'), lblTopB: document.getElementById('lbl-top-b'),
+                
+                dimLeftA: document.getElementById('dim-left-a'), lblLeftA: document.getElementById('lbl-left-a'),
+                dimLeftB: document.getElementById('dim-left-b'), lblLeftB: document.getElementById('lbl-left-b'),
+                dimLeftAmb: document.getElementById('dim-left-amb'), lblLeftAmb: document.getElementById('lbl-left-amb')
+            }
+        };
+
+        const descriptions = [
+            "We start with a large square of side length $a$. Its total enclosed area is exactly $a^2$.",
+            "Subtract a smaller square of side $b$ from the top-right corner. The remaining blue L-shape is exactly $a^2 - b^2$.",
+            "Look at the bottom-left corner of the L-shape. It forms a perfect square with side length $(a-b)$ and area $(a-b)^2$.",
+            "Notice that the L-shape contains $(a-b)^2$ <strong>plus</strong> two extra rectangular regions of area $b(a-b)$.",
+            "Because $a > b$, these two extra rectangles have positive area. Therefore, $a^2 - b^2 > (a-b)^2$."
+        ];
+
+        function init() {
+            // Slider events - enforce a > b
+            DOM.sliders.a.addEventListener('input', (e) => {
+                let v = parseFloat(e.target.value);
+                if (v <= state.b) { v = state.b + 0.5; DOM.sliders.a.value = v; }
+                state.a = v;
+                updateGeometry();
+            });
+
+            DOM.sliders.b.addEventListener('input', (e) => {
+                let v = parseFloat(e.target.value);
+                if (v >= state.a) { v = state.a - 0.5; DOM.sliders.b.value = v; }
+                state.b = v;
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.a = 8.0; state.b = 3.0;
+                DOM.sliders.a.value = 8.0; DOM.sliders.b.value = 3.0;
+                setStep(0);
+                updateGeometry();
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { a, b, step } = state;
+            
+            // Math values
+            const lhs = (a * a) - (b * b);
+            const rhs = (a - b) * (a - b);
+            
+            // Pixels
+            const pA = a * SCALE;
+            const pB = b * SCALE;
+            const pAmb = (a - b) * SCALE;
+
+            // UI Text
+            DOM.vals.a.textContent = a.toFixed(1);
+            DOM.vals.b.textContent = b.toFixed(1);
+            DOM.vals.lhs.textContent = lhs.toFixed(2);
+            DOM.vals.rhs.textContent = rhs.toFixed(2);
+
+            // Setup Helper
+            const setRect = (el, x, y, w, h) => {
+                el.setAttribute('x', x); el.setAttribute('y', y);
+                el.setAttribute('width', w); el.setAttribute('height', h);
+            };
+            const setLine = (el, x1, y1, x2, y2) => {
+                el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+                el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+            };
+
+            // Main a^2 boundary
+            setRect(DOM.svg.rectA2, OX, OY, pA, pA);
+
+            // Regions
+            // Top-Left: Extra 1: w=(a-b), h=b
+            setRect(DOM.svg.rectExtra1, OX, OY, pAmb, pB);
+            DOM.svg.lblExtra1.setAttribute('x', OX + pAmb/2); DOM.svg.lblExtra1.setAttribute('y', OY + pB/2);
+            
+            // Bottom-Left: (a-b)^2: w=(a-b), h=(a-b)
+            setRect(DOM.svg.rectAmb2, OX, OY + pB, pAmb, pAmb);
+            DOM.svg.lblAmb2.setAttribute('x', OX + pAmb/2); DOM.svg.lblAmb2.setAttribute('y', OY + pB + pAmb/2);
+
+            // Top-Right: b^2: w=b, h=b
+            setRect(DOM.svg.rectB2, OX + pAmb, OY, pB, pB);
+            DOM.svg.lblB2.setAttribute('x', OX + pAmb + pB/2); DOM.svg.lblB2.setAttribute('y', OY + pB/2);
+
+            // Bottom-Right: Extra 2: w=b, h=(a-b)
+            setRect(DOM.svg.rectExtra2, OX + pAmb, OY + pB, pB, pAmb);
+            DOM.svg.lblExtra2.setAttribute('x', OX + pAmb + pB/2); DOM.svg.lblExtra2.setAttribute('y', OY + pB + pAmb/2);
+            
+            // Transform for vertical text if it's too thin
+            if (pB < 40 && pAmb > 60) {
+                DOM.svg.lblExtra2.setAttribute('transform', `rotate(-90 ${OX + pAmb + pB/2} ${OY + pB + pAmb/2})`);
+            } else {
+                DOM.svg.lblExtra2.setAttribute('transform', '');
+            }
+
+            // --- Dimensions ---
+            const offsetT = 25;
+            const offsetL = 25;
+
+            // Top Dim a
+            setLine(DOM.svg.dimTopA, OX, OY - offsetT, OX + pA, OY - offsetT);
+            DOM.svg.lblTopA.setAttribute('x', OX + pA/2); DOM.svg.lblTopA.setAttribute('y', OY - offsetT - 10);
+
+            // Top Dim split (a-b, b)
+            setLine(DOM.svg.dimTopAmb, OX, OY - offsetT - 35, OX + pAmb, OY - offsetT - 35);
+            DOM.svg.lblTopAmb.setAttribute('x', OX + pAmb/2); DOM.svg.lblTopAmb.setAttribute('y', OY - offsetT - 45);
+
+            setLine(DOM.svg.dimTopB, OX + pAmb, OY - offsetT - 35, OX + pA, OY - offsetT - 35);
+            DOM.svg.lblTopB.setAttribute('x', OX + pAmb + pB/2); DOM.svg.lblTopB.setAttribute('y', OY - offsetT - 45);
+
+            // Left Dim a
+            setLine(DOM.svg.dimLeftA, OX - offsetL, OY, OX - offsetL, OY + pA);
+            DOM.svg.lblLeftA.setAttribute('x', OX - offsetL - 10); DOM.svg.lblLeftA.setAttribute('y', OY + pA/2);
+
+            // Left Dim split (b, a-b)
+            setLine(DOM.svg.dimLeftB, OX - offsetL - 35, OY, OX - offsetL - 35, OY + pB);
+            DOM.svg.lblLeftB.setAttribute('x', OX - offsetL - 45); DOM.svg.lblLeftB.setAttribute('y', OY + pB/2);
+
+            setLine(DOM.svg.dimLeftAmb, OX - offsetL - 35, OY + pB, OX - offsetL - 35, OY + pA);
+            DOM.svg.lblLeftAmb.setAttribute('x', OX - offsetL - 45); DOM.svg.lblLeftAmb.setAttribute('y', OY + pB + pAmb/2);
+
+            // Re-apply opacities based on step
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => el.style.opacity = val;
+
+            // Step 0: All light blue, b^2 is slight red
+            if (step === 0) {
+                DOM.svg.rectExtra1.style.fill = 'rgba(79, 70, 229, 0.15)'; DOM.svg.rectExtra1.style.stroke = '#4338ca';
+                DOM.svg.rectExtra2.style.fill = 'rgba(79, 70, 229, 0.15)'; DOM.svg.rectExtra2.style.stroke = '#4338ca';
+                DOM.svg.rectAmb2.style.fill = 'rgba(79, 70, 229, 0.15)'; DOM.svg.rectAmb2.style.stroke = '#4338ca';
+                
+                DOM.svg.rectB2.style.fill = 'rgba(225, 29, 72, 0.2)';
+                DOM.svg.rectB2.classList.remove('fade');
+                DOM.svg.rectB2.style.fillOpacity = '1'; // Not hatched yet
+            }
+
+            // Step 1: b^2 gets subtracted (hatched)
+            if (step >= 1) {
+                DOM.svg.rectB2.style.fill = 'url(#hatch-removed)';
+            }
+
+            // Step 2: (a-b)^2 turns green
+            if (step >= 2) {
+                DOM.svg.rectAmb2.style.fill = 'rgba(16, 185, 129, 0.2)'; DOM.svg.rectAmb2.style.stroke = '#059669';
+            } else if (step === 1) {
+                DOM.svg.rectAmb2.style.fill = 'rgba(79, 70, 229, 0.15)'; DOM.svg.rectAmb2.style.stroke = '#4338ca';
+            }
+
+            // Step 3 & 4: Extra rectangles pulse amber
+            if (step >= 3) {
+                DOM.svg.rectExtra1.classList.add('anim-extra');
+                DOM.svg.rectExtra2.classList.add('anim-extra');
+            } else {
+                DOM.svg.rectExtra1.classList.remove('anim-extra');
+                DOM.svg.rectExtra1.style.fill = 'rgba(79, 70, 229, 0.15)'; DOM.svg.rectExtra1.style.stroke = '#4338ca';
+                
+                DOM.svg.rectExtra2.classList.remove('anim-extra');
+                DOM.svg.rectExtra2.style.fill = 'rgba(79, 70, 229, 0.15)'; DOM.svg.rectExtra2.style.stroke = '#4338ca';
+            }
+
+            // Dimensions logic
+            op(DOM.svg.dimTopA, step < 2 ? 1 : 0); op(DOM.svg.lblTopA, step < 2 ? 1 : 0);
+            op(DOM.svg.dimLeftA, step < 2 ? 1 : 0); op(DOM.svg.lblLeftA, step < 2 ? 1 : 0);
+
+            op(DOM.svg.dimTopAmb, step >= 2 ? 1 : 0); op(DOM.svg.lblTopAmb, step >= 2 ? 1 : 0);
+            op(DOM.svg.dimTopB, step >= 1 ? 1 : 0); op(DOM.svg.lblTopB, step >= 1 ? 1 : 0);
+
+            op(DOM.svg.dimLeftAmb, step >= 2 ? 1 : 0); op(DOM.svg.lblLeftAmb, step >= 2 ? 1 : 0);
+            op(DOM.svg.dimLeftB, step >= 1 ? 1 : 0); op(DOM.svg.lblLeftB, step >= 1 ? 1 : 0);
+
+            // Internal Text Labels
+            op(DOM.svg.lblAmb2, step >= 2 ? 1 : 0);
+            op(DOM.svg.lblExtra1, step >= 3 ? 1 : 0);
+            op(DOM.svg.lblExtra2, step >= 3 ? 1 : 0);
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            updateGeometry();
+
+            // Text Update
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Alternating Series II</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Visualization Board */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 500px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* SVG Element Classes & Transitions */
+        .geom-shape {
+            transition: opacity 0.4s ease, fill 0.4s ease;
+        }
+        .geom-shape.hidden { opacity: 0; }
+        .geom-shape.visible { opacity: 1; }
+        
+        .geom-shape.highlighted {
+            filter: drop-shadow(0 0 4px #0f766e); /* Teal drop shadow */
+            stroke-width: 2.5px;
+            stroke: #0d9488;
+            z-index: 10;
+        }
+        .geom-shape.sub-highlighted {
+            filter: drop-shadow(0 0 4px #e11d48); /* Rose drop shadow */
+            stroke-width: 2.5px;
+            stroke: #be123c;
+            z-index: 10;
+        }
+
+        /* Buttons */
+        .btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play {
+            background-color: #0284c7;
+            color: white;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+        }
+        .btn-play:hover:not(:disabled) { background-color: #0369a1; transform: translateY(-1px); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Ledger Row Interactions */
+        .ledger-row {
+            transition: background-color 0.2s ease, opacity 0.3s ease;
+            cursor: pointer;
+        }
+        .ledger-row:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Alternating Series II
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-sky-50 text-sky-950 rounded-lg mb-6 shadow-sm border border-sky-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$1 - \frac{1}{2} + \frac{1}{4} - \frac{1}{8} + \dots = \frac{2}{3}$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-slate-700">Step:</span>
+                    <span id="stepIndicator" class="text-sky-700 font-bold text-lg bg-sky-100 px-3 py-1 rounded-md border border-sky-200">0 / 8</span>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 text-sm text-slate-500 font-medium mr-2">
+                        <span>Speed:</span>
+                        <input type="range" id="speedSlider" min="500" max="3000" step="250" value="1500" style="transform: rotate(180deg); width: 80px;">
+                    </div>
+                    <button id="playBtn" class="btn-action btn-play">▶ Play</button>
+                    <button id="prevBtn" class="btn-action btn-secondary" disabled>← Prev</button>
+                    <button id="stepBtn" class="btn-action btn-secondary">Next →</button>
+                    <button id="resetBtn" class="btn-action btn-secondary">↺ Reset</button>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- SVG Visualization Window -->
+            <div class="lg:col-span-2 visualization-area mb-0">
+                <div class="svg-container">
+                    <svg id="fractalSvg" viewBox="0 0 500 500" width="500" height="500"></svg>
+                </div>
+            </div>
+
+            <!-- Area Summation Ledger -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-2 flex justify-between items-center">
+                        <span>Area Summation</span>
+                        <span class="text-xs font-normal text-slate-500">Value</span>
+                    </h3>
+                    <div id="ledgerContainer" class="space-y-1">
+                        <!-- Ledger rows populated by JS -->
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t-2 border-slate-800">
+                    <div class="flex justify-between items-center font-bold text-slate-900 text-sm mb-1">
+                        <span>Current Total:</span>
+                        <span id="runningTotal" class="text-sky-700 font-mono">0.000</span>
+                    </div>
+                    <div class="flex justify-between items-center font-bold text-slate-400 text-sm">
+                        <span>Target Limit:</span>
+                        <span class="font-mono">0.667</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Explanation Box -->
+        <div class="bg-sky-50 border-l-4 border-sky-600 p-5 rounded-r-lg shadow-sm mb-6 min-h-[100px] flex items-center">
+            <p class="text-slate-800 text-lg leading-relaxed w-full transition-opacity duration-300" id="statusText">
+                Press <strong>Play</strong> or <strong>Next</strong> to trace the alternating sequence.
+            </p>
+        </div>
+
+        <div class="border-t border-slate-200 pt-6 mt-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-3">The Geometric Insight:</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        This visual proof relies on an incredibly elegant geometric fact: A standard L-shape has an area that is exactly <strong>twice</strong> the area of the square that fits perfectly inside its "elbow".
+                    </p>
+                    <p>
+                        By starting with an L-shape of Area $1$, removing an elbow square of Area $\frac{1}{2}$, and then filling the new inner void with a smaller L-shape of Area $\frac{1}{4}$, we can visually map the alternating series:
+                        $$1 - \frac{1}{2} + \frac{1}{4} - \frac{1}{8} \dots$$
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">Why does it equal 2/3?</h3>
+                    <p class="mb-3 text-sm">
+                        Look closely at the remaining shaded area whenever a white square is removed. Removing the square completely deletes the central "elbow" block of the L-shape, leaving behind exactly the two outer arms.
+                    </p>
+                    <p class="text-sm font-semibold text-sky-800 mb-3">
+                        These two outer arms constitute exactly $\frac{2}{3}$ of the original L-shape's area!
+                    </p>
+                    <p class="text-sm">
+                        In the infinite limit, the entire shaded region is just the sum of the outer arms of all the infinitely many, progressively smaller L-shapes. Therefore, the total remaining area perfectly converges to $\frac{2}{3}$.
+                    </p>
+                </div>
+            </div>
+            <div class="text-center text-xl md:text-2xl font-bold text-slate-800 bg-slate-100 p-5 rounded-lg shadow-inner border border-slate-200 overflow-x-auto mt-6">
+                $$1 - \frac{1}{2} + \frac{1}{4} - \frac{1}{8} + \frac{1}{16} - \dots = \frac{2}{3}$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const totalSteps = 8;
+            let currentStep = 0;
+            let isPlaying = false;
+            let playTimer = null;
+
+            const S = 500; // Dimension of canvas
+            
+            // DOM Elements
+            const svg = document.getElementById('fractalSvg');
+            const ledgerContainer = document.getElementById('ledgerContainer');
+            const statusText = document.getElementById('statusText');
+            const stepIndicator = document.getElementById('stepIndicator');
+            const liveEq = document.getElementById('liveEq');
+            const runningTotalEl = document.getElementById('runningTotal');
+            
+            const playBtn = document.getElementById('playBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const stepBtn = document.getElementById('stepBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const speedSlider = document.getElementById('speedSlider');
+
+            const colorAdd = '#0d9488'; // Teal 600
+            const colorSub = '#ffffff'; // White
+            const strokeSub = '#e11d48'; // Rose 600
+
+            // Database of algebraic terms
+            const terms = [
+                { label: "1", val: 1.0, isAdd: true, denom: "1", sign: "" },
+                { label: "- 1/2", val: -0.5, isAdd: false, denom: "2", sign: "-" },
+                { label: "+ 1/4", val: 0.25, isAdd: true, denom: "4", sign: "+" },
+                { label: "- 1/8", val: -0.125, isAdd: false, denom: "8", sign: "-" },
+                { label: "+ 1/16", val: 0.0625, isAdd: true, denom: "16", sign: "+" },
+                { label: "- 1/32", val: -0.03125, isAdd: false, denom: "32", sign: "-" },
+                { label: "+ 1/64", val: 0.015625, isAdd: true, denom: "64", sign: "+" },
+                { label: "- 1/128", val: -0.0078125, isAdd: false, denom: "128", sign: "-" }
+            ];
+
+            const stepCaptions = [
+                `We start with a large shaded L-shape. Let's define its total area as exactly <strong>1</strong>. Notice it consists of a $3 \\times 3$ grid missing one corner.`,
+                
+                `<strong>Step 1 (Subtract 1/2):</strong> We subtract a square of area <strong>1/2</strong>. This square is anchored perfectly at the inner elbow, effectively cutting out the center of the L-shape.`,
+                
+                `<strong>Step 2 (Add 1/4):</strong> We add back a smaller L-shape of area <strong>1/4</strong>, nestled exactly inside the void left by the previous square.`,
+                
+                `<strong>Step 3 (Subtract 1/8):</strong> We subtract an even smaller square of area <strong>1/8</strong> from the inner corner of our new L-shape.`,
+                
+                `<strong>Step 4 (Add 1/16):</strong> We add back an L-shape of area <strong>1/16</strong> into the newest void.`,
+                
+                `<strong>Step 5 (Subtract 1/32):</strong> We subtract a square of area <strong>1/32</strong>.`,
+                
+                `<strong>Step 6 (Add 1/64):</strong> We add back a tiny L-shape of area <strong>1/64</strong> into the void.`,
+                
+                `<strong>Step 7 (Subtract 1/128):</strong> We subtract an even tinier square of area <strong>1/128</strong>.`,
+                
+                `<strong>Step 8 (The Infinite Limit):</strong> As this process repeats infinitely, the nested shapes converge perfectly toward the center. The remaining shaded area converges precisely to <strong>2/3</strong> of the original shape.`
+            ];
+
+            function updateMathJax() {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.texReset();
+                    MathJax.typesetPromise([statusText, liveEq]).catch((err) => console.log(err.message));
+                }
+            }
+
+            // SVG Helper
+            const svgNS = 'http://www.w3.org/2000/svg';
+            function createSvgElement(tag, attrs){
+                const element = document.createElementNS(svgNS, tag);
+                for(const key in attrs) element.setAttribute(key, attrs[key]);
+                return element;
+            }
+
+            function buildVisualHierarchy() {
+                svg.innerHTML = '';
+                const mainGroup = createSvgElement('g', { id: 'main-group' });
+                svg.appendChild(mainGroup);
+
+                // Add grid background for visual reference
+                const gridGroup = createSvgElement('g', { stroke: '#e2e8f0', 'stroke-width': '1' });
+                for(let i=1; i<12; i++) {
+                    gridGroup.appendChild(createSvgElement('line', { x1: i*(S/12), y1: 0, x2: i*(S/12), y2: S }));
+                    gridGroup.appendChild(createSvgElement('line', { x1: 0, y1: i*(S/12), x2: S, y2: i*(S/12) }));
+                }
+                mainGroup.appendChild(gridGroup);
+
+                const scale = S / 3; // The mathematical dimension of the bounding box is 3x3
+
+                // Pre-generate steps 0 to 7
+                for (let step = 0; step < 8; step++) {
+                    const k = Math.floor(step / 2) + 1; // Depth level
+                    const isWhite = (step % 2 === 1);   // Alternates between L-shape and Square
+
+                    // Calculate mathematical dimensions for depth k
+                    let w = 3; 
+                    let x = 0; 
+                    let y = 0;
+                    for (let i = 1; i < k; i++) {
+                        w = w / 2;
+                        x = x + w / 3;
+                        y = y + w / 3;
+                    }
+                    let d = w / 3; // Cell dimension
+
+                    const group = createSvgElement('g', {
+                        class: 'geom-shape hidden',
+                        id: `shape-step-${step}`
+                    });
+
+                    // Square is 2x2 cells at bottom left. L-shape is 3x3 minus top-right corner.
+                    const cells = isWhite ? 
+                        [[0,0], [1,0], [0,1], [1,1]] : 
+                        [[0,0], [1,0], [2,0], [0,1], [1,1], [2,1], [0,2], [1,2]];
+
+                    cells.forEach(c => {
+                        const cx = x + c[0] * d;
+                        const cy = y + c[1] * d;
+                        
+                        // Note: SVG Y-axis is inverted compared to standard Cartesian math
+                        const rect = createSvgElement('rect', {
+                            x: cx * scale,
+                            y: (3 - cy - d) * scale,
+                            width: d * scale,
+                            height: d * scale,
+                            fill: isWhite ? '#ffffff' : colorAdd,
+                            stroke: isWhite ? strokeSub : '#0f766e',
+                            'stroke-width': 1.5
+                        });
+                        group.appendChild(rect);
+                    });
+                    
+                    mainGroup.appendChild(group);
+                }
+
+                // Step 8: The Infinite Limit (Simulate infinity by drawing down to depth 14)
+                const infGroup = createSvgElement('g', {
+                    class: 'geom-shape hidden',
+                    id: 'shape-step-8'
+                });
+                
+                for (let step = 8; step < 24; step++) {
+                    const k = Math.floor(step / 2) + 1;
+                    const isWhite = (step % 2 === 1);
+                    let w = 3; let x = 0; let y = 0;
+                    for (let i = 1; i < k; i++) { w = w / 2; x = x + w / 3; y = y + w / 3; }
+                    let d = w / 3;
+                    const cells = isWhite ? [[0,0], [1,0], [0,1], [1,1]] : [[0,0], [1,0], [2,0], [0,1], [1,1], [2,1], [0,2], [1,2]];
+                    
+                    cells.forEach(c => {
+                        const rect = createSvgElement('rect', {
+                            x: (x + c[0] * d) * scale,
+                            y: (3 - (y + c[1] * d) - d) * scale,
+                            width: d * scale, height: d * scale,
+                            fill: isWhite ? '#ffffff' : colorAdd,
+                            stroke: isWhite ? strokeSub : '#0f766e',
+                            'stroke-width': 0.5 // Thinner lines for deep fractal
+                        });
+                        infGroup.appendChild(rect);
+                    });
+                }
+                mainGroup.appendChild(infGroup);
+            }
+
+            function buildLedgerSkeleton() {
+                ledgerContainer.innerHTML = '';
+                terms.forEach((term, index) => {
+                    const line = document.createElement('div');
+                    line.className = 'ledger-row flex justify-between items-center px-3 py-2 rounded-md opacity-25';
+                    line.id = `ledger-line-${index}`;
+                    
+                    const swatchColor = term.isAdd ? 'bg-teal-600 border-teal-700' : 'bg-white border-rose-500 border-2';
+                    const fractionHtml = index === 0 ? '1' : 
+                        `<div class="inline-flex flex-col items-center justify-center align-middle mx-1 font-mono text-[11px]"><span class="border-b border-slate-400 pb-[1px] leading-none">1</span><span class="pt-[1px] leading-none">${term.denom}</span></div>`;
+
+                    line.innerHTML = `
+                        <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
+                            <div class="w-3 h-3 rounded-sm ${swatchColor}"></div>
+                            Term ${index}
+                        </div>
+                        <div class="font-mono text-sm text-slate-600 flex items-center">
+                            ${term.sign} ${fractionHtml}
+                        </div>
+                    `;
+
+                    line.addEventListener('mouseenter', () => highlightTermShape(index, true));
+                    line.addEventListener('mouseleave', () => highlightTermShape(index, false));
+                    line.addEventListener('click', () => {
+                        stopPlaying();
+                        applyStep(index);
+                    });
+
+                    ledgerContainer.appendChild(line);
+                });
+            }
+
+            function highlightTermShape(step, isHighlight) {
+                const shape = document.getElementById(`shape-step-${step}`);
+                if (!shape) return;
+                const isAdd = terms[step] ? terms[step].isAdd : true;
+
+                if (isHighlight) {
+                    shape.classList.add(isAdd ? 'highlighted' : 'sub-highlighted');
+                } else {
+                    shape.classList.remove('highlighted', 'sub-highlighted');
+                }
+            }
+
+            function applyStep(targetStep) {
+                currentStep = targetStep;
+
+                stepIndicator.textContent = currentStep === totalSteps ? `Complete` : `${currentStep} / ${totalSteps}`;
+                
+                statusText.style.opacity = '0';
+                setTimeout(() => {
+                    statusText.innerHTML = stepCaptions[currentStep];
+                    statusText.style.opacity = '1';
+                    updateMathJax();
+                }, 150);
+
+                // Update Shapes (Show shapes from 0 up to currentStep)
+                for (let i = 0; i <= totalSteps; i++) {
+                    const shape = document.getElementById(`shape-step-${i}`);
+                    const ledgerLine = document.getElementById(`ledger-line-${i}`);
+                    
+                    if (shape) {
+                        if (i <= currentStep) {
+                            shape.classList.remove('hidden');
+                            shape.classList.add('visible');
+                        } else {
+                            shape.classList.remove('visible');
+                            shape.classList.add('hidden');
+                        }
+                    }
+
+                    if (ledgerLine) {
+                        if (i <= currentStep) ledgerLine.style.opacity = '1';
+                        else ledgerLine.style.opacity = '0.25';
+                        
+                        if (i === currentStep) {
+                            ledgerLine.classList.add('bg-slate-100', 'font-bold');
+                            ledgerLine.classList.remove('font-medium');
+                        } else {
+                            ledgerLine.classList.remove('bg-slate-100', 'font-bold');
+                            ledgerLine.classList.add('font-medium');
+                        }
+                    }
+                }
+
+                updateRunningTotal();
+                updateButtonsState();
+                renderMathBanner();
+            }
+
+            function updateRunningTotal() {
+                let runningTotal = 0;
+                for (let i = 0; i <= currentStep && i < terms.length; i++) {
+                    runningTotal += terms[i].val;
+                }
+                runningTotalEl.textContent = runningTotal.toFixed(3);
+            }
+
+            function renderMathBanner() {
+                let eq = "";
+                if (currentStep === 0) eq = "$$\\text{Area} = 1$$";
+                else if (currentStep === 1) eq = "$$1 - \\frac{1}{2} = \\frac{1}{2}$$";
+                else if (currentStep === 2) eq = "$$1 - \\frac{1}{2} + \\frac{1}{4} = \\frac{3}{4}$$";
+                else if (currentStep === 3) eq = "$$1 - \\frac{1}{2} + \\frac{1}{4} - \\frac{1}{8} = \\frac{5}{8}$$";
+                else if (currentStep < totalSteps) {
+                    let sum = 0;
+                    for(let i=0; i<=currentStep; i++) sum += terms[i].val;
+                    eq = `$$1 - \\frac{1}{2} + \\dots ${terms[currentStep].sign} \\frac{1}{${terms[currentStep].denom}} \\approx ${sum.toFixed(4)}$$`;
+                } else {
+                    eq = "$$1 - \\frac{1}{2} + \\frac{1}{4} - \\frac{1}{8} + \\dots = \\frac{2}{3}$$";
+                }
+                liveEq.innerHTML = eq;
+                updateMathJax();
+            }
+
+            function updateButtonsState() {
+                prevBtn.disabled = currentStep === 0;
+                stepBtn.disabled = currentStep >= totalSteps;
+            }
+
+            function stopPlaying() {
+                isPlaying = false;
+                clearTimeout(playTimer);
+                playBtn.innerHTML = '▶ Play';
+                playBtn.classList.replace('btn-secondary', 'btn-play');
+            }
+
+            function playLoop() {
+                if (!isPlaying) return;
+                if (currentStep >= totalSteps) { stopPlaying(); return; }
+                
+                applyStep(currentStep + 1);
+                const delay = parseInt(speedSlider.value);
+                playTimer = setTimeout(playLoop, delay);
+            }
+
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    stopPlaying();
+                } else {
+                    if (currentStep >= totalSteps) applyStep(0);
+                    isPlaying = true;
+                    playBtn.innerHTML = '⏸ Pause';
+                    playBtn.classList.replace('btn-play', 'btn-secondary');
+                    playLoop();
+                }
+            });
+
+            stepBtn.addEventListener('click', () => { stopPlaying(); if(currentStep < totalSteps) applyStep(currentStep + 1); });
+            prevBtn.addEventListener('click', () => { stopPlaying(); if(currentStep > 0) applyStep(currentStep - 1); });
+            resetBtn.addEventListener('click', () => { stopPlaying(); applyStep(0); });
+
+            // Initialize
+            buildVisualHierarchy();
+            buildLedgerSkeleton();
+            applyStep(0);
+        });
+    </script>
+</body>
+</html>

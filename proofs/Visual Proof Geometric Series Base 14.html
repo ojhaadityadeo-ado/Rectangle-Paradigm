@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Geometric Series Base 1/4</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.5s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.5s ease; }
+        .fade { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-square-root-variable text-indigo-600 text-2xl"></i> Visual Proof: Geometric Series
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            A self-similar fractal spiral demonstrating that an infinite sum of powers of 1/4 evaluates exactly to 1/3.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap">
+                $$ \frac{1}{4} + \frac{1}{16} + \frac{1}{64} + \dots = \sum_{k=1}^{\infty} \left(\frac{1}{4}\right)^k = \frac{1}{3} $$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-6 items-center justify-center flex-grow">
+                <!-- N Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[300px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Terms to Sum (<span class="math-font text-sm normal-case text-indigo-600">N</span>)</span>
+                        <span id="val-n" class="text-indigo-600 text-lg font-mono">1</span>
+                    </div>
+                    <input type="range" id="slider-n" value="1" min="1" max="6" step="1" class="w-full">
+                </div>
+
+                <!-- Live Area Value -->
+                <div class="bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-600 flex flex-col items-center justify-center min-w-[150px]">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Shaded Area</span>
+                    <span class="font-mono text-lg font-bold text-emerald-600" id="val-area">0.2500</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 5</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <!-- SVG Canvas mapped 500x500. Box starts at 50,50 and is 400x400 -->
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Base Framework -->
+                    <g id="grid-base">
+                        <rect x="50" y="50" width="400" height="400" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                        
+                        <!-- Unit Square Labels -->
+                        <line x1="50" y1="30" x2="450" y2="30" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                        <text class="math-font" x="250" y="20" font-size="18" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
+                        <line x1="30" y1="50" x2="30" y2="450" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)"/>
+                        <text class="math-font" x="20" y="250" font-size="18" font-weight="bold" fill="#334155" text-anchor="end" dominant-baseline="middle">1</text>
+                        <text x="250" y="475" font-size="16" fill="#64748b" text-anchor="middle">Total Area = 1</text>
+                    </g>
+
+                    <!-- Javascript injects the self-similar fractal here -->
+                    <g id="dynamic-svg"></g>
+                </svg>
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Unit Square</span>
+                            <span class="text-xs text-slate-600">We start with a complete square of area 1. We will partition it to represent our series.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. First Term (k=1)</span>
+                            <span class="text-xs text-slate-600">Split the square into 4 quadrants. Shade the top-right quadrant. Its area is exactly $1/4$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-amber-600 block mb-1">3. Second Term (k=2)</span>
+                            <span class="text-xs text-slate-600">Inside the empty <em>bottom-left</em> quadrant, repeat the process. Shade its top-right. Area is $1/16$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-600 block mb-1">4. Third Term (k=3)</span>
+                            <span class="text-xs text-slate-600">Recurse again into the new bottom-left sub-quadrant. Its top-right area is $1/64$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-rose-600 block mb-1">5. The Fractal Pattern</span>
+                            <span class="text-xs text-slate-600">We spiral indefinitely into the bottom-left corner. Each term is exactly $1/4$ the area of the previous term.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-5">
+                            <span class="font-bold text-slate-800 block mb-1">6. The Infinite Limit</span>
+                            <span class="text-xs text-slate-600">By exploiting self-similarity, we can prove the total shaded area exactly fills $1/3$ of the available space.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust the slider to add fractions to the grid. Press <strong>Play</strong> to visualize the spiraling sum.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Algebraic Identity</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Geometric Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Defining the Sum</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Let $S$ equal the total shaded area of our infinite fractal construction:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ S = \frac{1}{4} + \frac{1}{16} + \frac{1}{64} + \dots $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Notice that the very first shaded box accounts for exactly $\frac{1}{4}$ of the total unit square.
+                    </p>
+                </div>
+
+                <!-- Right: Self-Similarity -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. The Self-Similarity Trick</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Look closely at the <em>bottom-left quadrant</em>. It contains an identical, scaled-down copy of the <strong>entire</strong> fractal.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Because this sub-quadrant is exactly $\frac{1}{4}$ the size of the whole square, the infinite shaded area inside it must equal exactly $\frac{1}{4}S$.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0">
+                        $$ S = \frac{1}{4} \text{ (first box)} + \frac{1}{4}S \text{ (the rest)} $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: Solving for S</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    We now have a simple algebraic equation that perfectly models the geometry. We can solve for $S$:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ S - \frac{1}{4}S = \frac{1}{4} $$
+                    $$ \frac{3}{4}S = \frac{1}{4} \implies S = \frac{1}{3} $$
+                </div>
+                <p class="text-slate-700 leading-relaxed">
+                    This self-similarity argument beautifully proves that an infinite sum of powers of $\frac{1}{4}$ converges exactly to $\frac{1}{3}$. If you look closely at the diagram, for every shaded box, there are exactly two empty white boxes of the exact same size beside it, meaning the shaded region naturally covers 1 out of every 3 parts of the square!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            N: 0,
+            step: 0,
+            maxSteps: 5,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG
+        const S_SIZE = 400; // Physical pixel size of the max square
+        const OX = 50;      // Origin X (Top-Left of square)
+        const OY = 50;      // Origin Y (Top-Left of square)
+
+        const colors = [
+            { bg: '#4A63E7', border: '#3730a3', text: '#ffffff' }, // Indigo (1/4)
+            { bg: '#E8A33D', border: '#b45309', text: '#ffffff' }, // Amber (1/16)
+            { bg: '#5FA88F', border: '#047857', text: '#ffffff' }, // Emerald (1/64)
+            { bg: '#D6604D', border: '#be123c', text: '#ffffff' }, // Rose (1/256)
+            { bg: '#0284c7', border: '#0369a1', text: '#ffffff' }, // Sky
+            { bg: '#9333ea', border: '#6b21a8', text: '#ffffff' }, // Purple
+            { bg: '#ea580c', border: '#c2410c', text: '#ffffff' }  // Orange
+        ];
+
+        // DOM Elements
+        const DOM = {
+            sliderN: document.getElementById('slider-n'),
+            valN: document.getElementById('val-n'),
+            valArea: document.getElementById('val-area'),
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svgDynamic: document.getElementById('dynamic-svg')
+        };
+
+        const descriptions = [
+            "We start with a complete square of area 1. We will partition it to represent our series.",
+            "Split the square into 4 quadrants. Shade the top-right quadrant. Its area is exactly $1/4$.",
+            "Inside the empty <em>bottom-left</em> quadrant, repeat the process. Shade its top-right. Area is $1/16$.",
+            "Recurse again into the new bottom-left sub-quadrant. Its top-right area is $1/64$.",
+            "We spiral indefinitely into the bottom-left corner. Each term is exactly $1/4$ the area of the previous term.",
+            "By exploiting self-similarity, we can prove the total shaded area exactly fills $1/3$ of the available space."
+        ];
+
+        function init() {
+            // Slider events
+            DOM.sliderN.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.N = parseInt(e.target.value);
+                
+                if (state.N === 0) setStepOnly(0);
+                else if (state.N === 1) setStepOnly(1);
+                else if (state.N === 2) setStepOnly(2);
+                else if (state.N === 3) setStepOnly(3);
+                else if (state.N === 4) setStepOnly(4);
+                else if (state.N >= 6) setStepOnly(5);
+                else setStepOnly(4);
+                
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                setStep(0); 
+            });
+
+            setStep(0);
+        }
+
+        function setStepOnly(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+        }
+
+        function setStep(step) {
+            state.step = step;
+            
+            // Map Steps to N values
+            if (step === 0) state.N = 0; // Empty
+            if (step === 1) state.N = 1; 
+            if (step === 2) state.N = 2; 
+            if (step === 3) state.N = 3; 
+            if (step === 4) state.N = 4; 
+            if (step === 5) state.N = 6; // Max out for "Infinity" visual
+
+            DOM.sliderN.value = Math.max(0, state.N);
+            
+            setStepOnly(step);
+            updateGeometry();
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function updateGeometry() {
+            const N = state.N;
+            
+            // UI text
+            DOM.valN.textContent = (state.step === 5) ? "∞" : N;
+            
+            // Calculate Area Math: S_N = (1/4) * (1 - (1/4)^N) / (1 - 1/4) = 1/3 * (1 - (1/4)^N)
+            let area = 0;
+            if (N > 0) {
+                area = (1/3) * (1 - Math.pow(0.25, N));
+            }
+            DOM.valArea.textContent = (state.step === 5) ? "0.3333" : area.toFixed(4);
+
+            let svgContent = '';
+            
+            // Recursive generation
+            let cx = OX; // Current sub-square Top-Left X
+            let cy = OY; // Current sub-square Top-Left Y
+            let cSize = S_SIZE; // Current sub-square full size
+
+            for (let k = 1; k <= N; k++) {
+                const halfSize = cSize / 2;
+                
+                // Draw crosshairs for this sub-square
+                svgContent += `<line x1="${cx + halfSize}" y1="${cy}" x2="${cx + halfSize}" y2="${cy + cSize}" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4" class="geom-line"/>`;
+                svgContent += `<line x1="${cx}" y1="${cy + halfSize}" x2="${cx + cSize}" y2="${cy + halfSize}" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4" class="geom-line"/>`;
+
+                // Draw shaded top-right box
+                const shadeX = cx + halfSize;
+                const shadeY = cy;
+                const color = colors[(k-1) % colors.length];
+
+                svgContent += `<rect x="${shadeX}" y="${shadeY}" width="${halfSize}" height="${halfSize}" fill="${color.bg}" fill-opacity="0.85" stroke="${color.border}" stroke-width="1.5" class="geom-rect"/>`;
+
+                // Text labels
+                if (k === 1) {
+                    svgContent += `<text x="${shadeX + halfSize/2}" y="${shadeY + halfSize/2}" font-size="28" fill="${color.text}" text-anchor="middle" dominant-baseline="middle" font-weight="bold" class="geom-text">1/4</text>`;
+                } else if (k === 2) {
+                    svgContent += `<text x="${shadeX + halfSize/2}" y="${shadeY + halfSize/2}" font-size="18" fill="${color.text}" text-anchor="middle" dominant-baseline="middle" font-weight="bold" class="geom-text">1/16</text>`;
+                } else if (k === 3) {
+                    svgContent += `<text x="${shadeX + halfSize/2}" y="${shadeY + halfSize/2}" font-size="12" fill="${color.text}" text-anchor="middle" dominant-baseline="middle" font-weight="bold" class="geom-text">1/64</text>`;
+                }
+
+                // Update origin and size for next recursion (moves to bottom-left)
+                cy = cy + halfSize;
+                cSize = halfSize;
+            }
+
+            // If Infinity step, draw an arrow pointing to the origin corner
+            if (state.step === 5) {
+                svgContent += `<path d="M ${OX + 50} ${OY + S_SIZE - 20} Q ${OX + 30} ${OY + S_SIZE - 20} ${OX + 10} ${OY + S_SIZE - 10}" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" class="fade"/>`;
+                svgContent += `<text x="${OX + 55}" y="${OY + S_SIZE - 15}" font-size="14" fill="#64748b" class="fade">converges to bottom-left</text>`;
+            }
+
+            DOM.svgDynamic.innerHTML = svgContent;
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                // Allow a small delay before first step
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); // 3 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

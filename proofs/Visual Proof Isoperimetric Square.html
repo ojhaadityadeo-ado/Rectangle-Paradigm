@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Isoperimetric Square</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-line { transition: all 0.5s ease; }
+        .geom-text { transition: opacity 0.4s ease, transform 0.5s ease; user-select: none; }
+        .fade { transition: opacity 0.5s ease; }
+
+        /* Pulse Animation for the Gained Area */
+        @keyframes pulse-extra {
+            0%, 100% { fill: rgba(245, 158, 11, 0.2); stroke-width: 2px; }
+            50% { fill: rgba(245, 158, 11, 0.5); stroke-width: 3px; }
+        }
+        .anim-extra { animation: pulse-extra 2s infinite; stroke: #d97706; stroke-dasharray: 6,4; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-vector-square text-indigo-600 text-2xl"></i> Visual Proof: Maximum Area for Fixed Perimeter
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            A beautiful geometric partition demonstrating why a square always encloses more area than a rectangle of the exact same perimeter.
+        </p>
+
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap" id="live-equation">
+                $$x \cdot y \le \left(\frac{x+y}{2}\right)^2$$
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-6 items-center justify-center flex-grow">
+                <!-- X Slider -->
+                <div class="flex flex-col gap-2 w-48">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Width <span class="math-font text-sm normal-case text-indigo-600">x</span></span>
+                        <span id="val-x" class="text-indigo-600 text-sm">10.0</span>
+                    </div>
+                    <input type="range" id="slider-x" value="10" min="4" max="14" step="0.5" class="w-full">
+                </div>
+
+                <!-- Y Slider -->
+                <div class="flex flex-col gap-2 w-48">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Height <span class="math-font text-sm normal-case text-emerald-600">y</span></span>
+                        <span id="val-y" class="text-emerald-600 text-sm">4.0</span>
+                    </div>
+                    <input type="range" id="slider-y" value="4" min="2" max="14" step="0.5" class="w-full">
+                </div>
+
+                <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-600">
+                    Perimeter = <span class="font-bold text-slate-800" id="val-perimeter">28.0</span>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Hatch pattern for missing area -->
+                        <pattern id="hatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#f59e0b" stroke-width="2" opacity="0.5"/>
+                        </pattern>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Base coordinate system centered around OX, OY -->
+                    <g id="geometryGroup">
+                        <!-- Target Square Bounding Box (Appears Step 3) -->
+                        <rect id="sq-outline" class="geom-rect fade" fill="none" stroke="#334155" stroke-width="3" stroke-dasharray="8,6" opacity="0" />
+                        
+                        <!-- Missing Gap Area (Appears Step 4) -->
+                        <rect id="rect-gap" class="geom-rect fade anim-extra" opacity="0" />
+                        <text id="lbl-gap" class="geom-text math-font fade" fill="#b45309" font-weight="bold" font-size="16" text-anchor="middle" dominant-baseline="middle" opacity="0">Gap</text>
+
+                        <!-- Main Stable Block A (Left part of rectangle) -->
+                        <rect id="rect-a" class="geom-rect" fill="rgba(79, 70, 229, 0.15)" stroke="#4338ca" stroke-width="2" />
+                        <text id="lbl-a" class="geom-text math-font fade" fill="#4338ca" font-weight="bold" font-size="20" text-anchor="middle" dominant-baseline="middle">Base</text>
+
+                        <!-- Moving Block B (Right part of rectangle -> Top of L-shape) -->
+                        <rect id="rect-b" class="geom-rect" fill="rgba(16, 185, 129, 0.2)" stroke="#059669" stroke-width="2" />
+                        <text id="lbl-b" class="geom-text math-font fade" fill="#059669" font-weight="bold" font-size="18" text-anchor="middle" dominant-baseline="middle">Cut</text>
+                        
+                        <!-- Cut Line (Dashed line separating A and B) -->
+                        <line id="cut-line" class="geom-line fade" stroke="#0f766e" stroke-width="3" stroke-dasharray="6,4" opacity="0" />
+                    </g>
+
+                    <g id="dimensionGroup">
+                        <!-- Bottom Width Total (x) -->
+                        <line id="dim-btm-full" class="geom-line fade" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />
+                        <text id="lbl-btm-full" class="geom-text math-font fade" fill="#334155" font-size="18" text-anchor="middle">x</text>
+
+                        <!-- Bottom Width Split A (s) -->
+                        <line id="dim-btm-s" class="geom-line fade" stroke="#4338ca" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0" />
+                        <text id="lbl-btm-s" class="geom-text math-font fade" fill="#4338ca" font-size="16" text-anchor="middle" opacity="0">(x+y)/2</text>
+
+                        <!-- Bottom Width Split B (\delta) -->
+                        <line id="dim-btm-d" class="geom-line fade" stroke="#059669" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0" />
+                        <text id="lbl-btm-d" class="geom-text math-font fade" fill="#059669" font-size="16" text-anchor="middle" opacity="0">(x-y)/2</text>
+
+                        <!-- Left Height Total -->
+                        <line id="dim-lft-y" class="geom-line" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" />
+                        <text id="lbl-lft-y" class="geom-text math-font" fill="#334155" font-size="18" text-anchor="end" dominant-baseline="middle">y</text>
+
+                        <!-- Left Height Extended (s) -->
+                        <line id="dim-lft-s" class="geom-line fade" stroke="#334155" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0" />
+                        <text id="lbl-lft-s" class="geom-text math-font fade" fill="#334155" font-weight="bold" font-size="18" text-anchor="end" dominant-baseline="middle" opacity="0">s = (x+y)/2</text>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Original Rectangle</span>
+                            <span class="text-xs text-slate-600">Start with an $x \times y$ rectangle. Perimeter is $2(x+y)$. Total Area = $x \cdot y$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-slate-800 block mb-1">2. Partition the Excess</span>
+                            <span class="text-xs text-slate-600">Cut a slice of width $\frac{x-y}{2}$ from the right. The remaining width is exactly $s = \frac{x+y}{2}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-slate-800 block mb-1">3. Morph to L-Shape</span>
+                            <span class="text-xs text-slate-600">Rotate the cut slice and place it on top. The total area is identical, but the height is now $s = \frac{x+y}{2}$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-slate-800 block mb-1">4. The Isoperimetric Square</span>
+                            <span class="text-xs text-slate-600">Draw a bounding square of side $s = \frac{x+y}{2}$. Notice this square has the exact same perimeter: $4s = 2(x+y)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. The Gained Area</span>
+                            <span class="text-xs text-slate-600">The Square completely covers the L-shape and reveals an empty "gap". Square Area = Rectangle Area + Gap Area.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust $x$ and $y$. Press <strong>Play</strong> to visualize the partition.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Algebraic Identity</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Geometric Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Geometric Construction</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Given a rectangle with sides $x$ and $y$ (where $x \ge y$), its perimeter is $P = 2x + 2y$.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        A square with the <strong>exact same perimeter</strong> must have a side length of $s = \frac{x+y}{2}$. We want to compare the area of the rectangle ($xy$) to the area of the square ($s^2$).
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        To visualize this, we define a "difference" variable $\delta = \frac{x-y}{2}$. Notice that:
+                        <ul class="list-disc pl-5 mt-2 space-y-1 font-mono">
+                            <li>Width $x = s + \delta$</li>
+                            <li>Height $y = s - \delta$</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <!-- Right: Area Equality -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Tracking the Areas</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        As seen in the animation, the original rectangle is partitioned into a base and a cut piece. When rearranged into an L-shape, its area remains exactly $xy$.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-4">
+                        The bounding square of side $s$ completely encapsulates this L-shape, but leaves a missing square gap in the corner. The dimensions of this missing gap are precisely $\delta \times \delta$.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0">
+                        $$\text{Square Area} = \text{Rectangle Area} + \text{Gap Area}$$
+                        $$ \left(\frac{x+y}{2}\right)^2 = x \cdot y + \left(\frac{x-y}{2}\right)^2 $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: Isoperimetric Inequality</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    Because the area of the gap $\left(\frac{x-y}{2}\right)^2$ must always be $\ge 0$ (since any real number squared is non-negative), it follows directly that:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ \left(\frac{x+y}{2}\right)^2 \ge x \cdot y $$
+                </div>
+                <p class="text-slate-700 leading-relaxed">
+                    Furthermore, the area of the square is strictly greater than the rectangle <em>unless</em> the gap area is zero. The gap area is zero if and only if $\frac{x-y}{2} = 0$, which implies $x = y$. Thus, among all rectangles of a fixed perimeter, the square uniquely maximizes the enclosed area.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            x: 10.0,
+            y: 4.0,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG Grid
+        const SCALE = 25; // pixels per unit
+        const OX = 100;   // Origin X (Bottom Left of shapes)
+        const OY = 480;   // Origin Y (Bottom Left of shapes)
+
+        // DOM Elements
+        const DOM = {
+            sliders: { x: document.getElementById('slider-x'), y: document.getElementById('slider-y') },
+            vals: { x: document.getElementById('val-x'), y: document.getElementById('val-y'), p: document.getElementById('val-perimeter') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                rectA: document.getElementById('rect-a'), lblA: document.getElementById('lbl-a'),
+                rectB: document.getElementById('rect-b'), lblB: document.getElementById('lbl-b'),
+                sqOutline: document.getElementById('sq-outline'), cutLine: document.getElementById('cut-line'),
+                rectGap: document.getElementById('rect-gap'), lblGap: document.getElementById('lbl-gap'),
+                
+                dimBtmFull: document.getElementById('dim-btm-full'), lblBtmFull: document.getElementById('lbl-btm-full'),
+                dimBtmS: document.getElementById('dim-btm-s'), lblBtmS: document.getElementById('lbl-btm-s'),
+                dimBtmD: document.getElementById('dim-btm-d'), lblBtmD: document.getElementById('lbl-btm-d'),
+                dimLftY: document.getElementById('dim-lft-y'), lblLftY: document.getElementById('lbl-lft-y'),
+                dimLftS: document.getElementById('dim-lft-s'), lblLftS: document.getElementById('lbl-lft-s')
+            }
+        };
+
+        const descriptions = [
+            "Start with an $x \\times y$ rectangle. Perimeter is $2(x+y)$. Total Area = $x \\cdot y$.",
+            "Cut a slice of width $\\frac{x-y}{2}$ from the right. The remaining width is exactly $s = \\frac{x+y}{2}$.",
+            "Move the cut slice to the top. The total area is identical, but the shape is an 'L'.",
+            "Draw a bounding square of side $s = \\frac{x+y}{2}$. Notice this square has the exact same perimeter: $4s = 2(x+y)$.",
+            "The Square completely covers the L-shape and reveals an empty gap of area $\\left(\\frac{x-y}{2}\\right)^2$. Thus, $s^2 \\ge xy$."
+        ];
+
+        function init() {
+            // Slider events - enforce x >= y
+            DOM.sliders.x.addEventListener('input', (e) => {
+                let v = parseFloat(e.target.value);
+                if (v < state.y) { v = state.y; DOM.sliders.x.value = v; }
+                state.x = v;
+                updateGeometry();
+            });
+
+            DOM.sliders.y.addEventListener('input', (e) => {
+                let v = parseFloat(e.target.value);
+                if (v > state.x) { v = state.x; DOM.sliders.y.value = v; }
+                state.y = v;
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.x = 10; state.y = 4;
+                DOM.sliders.x.value = 10; DOM.sliders.y.value = 4;
+                setStep(0);
+                updateGeometry();
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { x, y, step } = state;
+            
+            // Math
+            const s = (x + y) / 2;
+            const d = (x - y) / 2;
+            const perim = 2 * (x + y);
+            
+            // Pixels
+            const px = x * SCALE;
+            const py = y * SCALE;
+            const ps = s * SCALE;
+            const pd = d * SCALE;
+
+            // UI Text
+            DOM.vals.x.textContent = x.toFixed(1);
+            DOM.vals.y.textContent = y.toFixed(1);
+            DOM.vals.p.textContent = perim.toFixed(1);
+
+            // Setup Helper
+            const setRect = (el, xPos, yPos, w, h) => {
+                el.setAttribute('x', xPos);
+                el.setAttribute('y', yPos);
+                el.setAttribute('width', w);
+                el.setAttribute('height', h);
+            };
+            const setLine = (el, x1, y1, x2, y2) => {
+                el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+                el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+            };
+
+            // BASE RECT A (Stable)
+            setRect(DOM.svg.rectA, OX, OY - py, ps, py);
+            DOM.svg.lblA.setAttribute('x', OX + ps/2); DOM.svg.lblA.setAttribute('y', OY - py/2);
+
+            // RECT B (Moving)
+            if (step < 2) {
+                // Initial or Cut position (right side)
+                setRect(DOM.svg.rectB, OX + ps, OY - py, pd, py);
+                DOM.svg.lblB.setAttribute('x', OX + ps + pd/2); DOM.svg.lblB.setAttribute('y', OY - py/2);
+            } else {
+                // Moved position (top of A)
+                // Width becomes y, height becomes d.
+                // Wait: The original B has width d, height y.
+                // If we rotate it 90 degrees, its width becomes y, height becomes d.
+                // It fits perfectly on top of A (which has width s = y + d).
+                // So it sits from x=OX to OX + y.
+                setRect(DOM.svg.rectB, OX, OY - py - pd, py, pd);
+                DOM.svg.lblB.setAttribute('x', OX + py/2); DOM.svg.lblB.setAttribute('y', OY - py - pd/2);
+            }
+
+            // Cut Line
+            setLine(DOM.svg.cutLine, OX + ps, OY, OX + ps, OY - py);
+
+            // Bounding Square
+            setRect(DOM.svg.sqOutline, OX, OY - ps, ps, ps);
+
+            // Gap Rect (Top Right)
+            setRect(DOM.svg.rectGap, OX + py, OY - ps, pd, pd);
+            DOM.svg.lblGap.setAttribute('x', OX + py + pd/2); DOM.svg.lblGap.setAttribute('y', OY - ps + pd/2);
+
+            // --- Dimensions ---
+            const offsetB = 25;
+            const offsetL = 25;
+
+            // Full X
+            setLine(DOM.svg.dimBtmFull, OX, OY + offsetB, OX + px, OY + offsetB);
+            DOM.svg.lblBtmFull.setAttribute('x', OX + px/2); DOM.svg.lblBtmFull.setAttribute('y', OY + offsetB + 20);
+
+            // Split S and D (Bottom)
+            setLine(DOM.svg.dimBtmS, OX, OY + offsetB + 40, OX + ps, OY + offsetB + 40);
+            DOM.svg.lblBtmS.setAttribute('x', OX + ps/2); DOM.svg.lblBtmS.setAttribute('y', OY + offsetB + 60);
+
+            setLine(DOM.svg.dimBtmD, OX + ps, OY + offsetB + 40, OX + px, OY + offsetB + 40);
+            DOM.svg.lblBtmD.setAttribute('x', OX + ps + pd/2); DOM.svg.lblBtmD.setAttribute('y', OY + offsetB + 60);
+
+            // Full Y
+            setLine(DOM.svg.dimLftY, OX - offsetL, OY, OX - offsetL, OY - py);
+            DOM.svg.lblLftY.setAttribute('x', OX - offsetL - 10); DOM.svg.lblLftY.setAttribute('y', OY - py/2);
+
+            // Full S (Left)
+            setLine(DOM.svg.dimLftS, OX - offsetL - 40, OY, OX - offsetL - 40, OY - ps);
+            DOM.svg.lblLftS.setAttribute('x', OX - offsetL - 50); DOM.svg.lblLftS.setAttribute('y', OY - ps/2);
+
+            // Re-apply opacities based on step (needed because coords trigger redraw)
+            applyStepOpacities(step);
+        }
+
+        function applyStepOpacities(step) {
+            const op = (el, val) => el.style.opacity = val;
+
+            // Step 0: Base Rect
+            op(DOM.svg.cutLine, step === 1 ? 1 : 0);
+            
+            // Dimensions
+            op(DOM.svg.dimBtmFull, step < 2 ? 1 : 0); op(DOM.svg.lblBtmFull, step < 2 ? 1 : 0);
+            op(DOM.svg.dimBtmS, step >= 1 ? 1 : 0); op(DOM.svg.lblBtmS, step >= 1 ? 1 : 0);
+            op(DOM.svg.dimBtmD, step === 1 ? 1 : 0); op(DOM.svg.lblBtmD, step === 1 ? 1 : 0);
+            
+            op(DOM.svg.dimLftY, step < 3 ? 1 : 0); op(DOM.svg.lblLftY, step < 3 ? 1 : 0);
+            op(DOM.svg.dimLftS, step >= 3 ? 1 : 0); op(DOM.svg.lblLftS, step >= 3 ? 1 : 0);
+
+            // Square outline & Gap
+            op(DOM.svg.sqOutline, step >= 3 ? 1 : 0);
+            op(DOM.svg.rectGap, step >= 4 ? 1 : 0);
+            op(DOM.svg.lblGap, step >= 4 ? 1 : 0);
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            // Geometry updates handles the coordinate shifts & opacities
+            updateGeometry();
+
+            // Text Update
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                // Allow a small delay before first step
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 800);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); // 3 seconds per step
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

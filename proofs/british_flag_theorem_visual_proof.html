@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: British Flag Theorem</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']]
+            },
+            options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] },
+            startup: {
+                pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+                    window.mathJaxLoaded = true;
+                })
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .container-custom {
+            max-width: 1280px; margin: 0 auto; background: #ffffff; padding: 24px;
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,.05);
+        }
+        .svg-container {
+            background-color:#fff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size:24px 24px;
+            border-radius:8px; box-shadow: inset 0 2px 6px rgba(0,0,0,.06);
+            border:2px solid #cbd5e1; overflow:hidden; position:relative; min-height:540px;
+        }
+        .math-font { font-family:'Times New Roman', Times, serif; font-style:italic; }
+        input[type=range] { accent-color:#4f46e5; cursor:pointer; }
+
+        .btn-action {
+            padding:8px 16px; border-radius:8px; font-weight:600; font-size:.9rem;
+            transition:all .2s ease; cursor:pointer; border:none; display:inline-flex;
+            align-items:center; justify-content:center; gap:6px;
+        }
+        .btn-play { background-color:#4f46e5; color:#fff; box-shadow:0 4px 6px rgba(79,70,229,.2); }
+        .btn-play:hover:not(:disabled) { background:#4338ca; transform:translateY(-1px); }
+        .btn-secondary { background:#e2e8f0; color:#334155; }
+        .btn-secondary:hover:not(:disabled) { background:#cbd5e1; }
+        .btn-secondary:disabled { opacity:.45; cursor:not-allowed; }
+
+        .ledger-step { transition:all .3s ease; border-left:4px solid transparent; opacity:.46; }
+        .ledger-step.active { background:#eff6ff; border-left-color:#3b82f6; box-shadow:0 2px 5px rgba(59,130,246,.05); opacity:1; }
+        .geom { transition:all .5s cubic-bezier(.34,1.2,.64,1); }
+        .segment { transition:stroke-width .25s ease, opacity .25s ease; }
+        .fade { transition:opacity .35s ease; }
+        .hidden-stage { opacity:0 !important; pointer-events:none; }
+        .drag-point { cursor:grab; filter:drop-shadow(0 3px 4px rgba(15,23,42,.18)); }
+        .drag-point:active { cursor:grabbing; }
+
+        .proof-card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+        .area-tile {
+            aspect-ratio:1/1; min-width:68px; border-radius:12px; border:2px solid;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            font-weight:700; transition:transform .25s ease, box-shadow .25s ease;
+        }
+        .area-tile:hover { transform:translateY(-2px); box-shadow:0 5px 12px rgba(15,23,42,.08); }
+        .symbolic-badge {
+            background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px;
+            display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:132px;
+        }
+        .stage-pill { border:1px solid #c7d2fe; background:#eef2ff; color:#4338ca; border-radius:8px; padding:6px 11px; font-weight:700; font-size:.86rem; }
+        .right-angle { fill:none; stroke:#64748b; stroke-width:1.8; }
+
+        @media (max-width:640px) {
+            .container-custom { padding:16px; }
+            .svg-container { min-height:470px; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+<div class="container-custom">
+    <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+        <i class="fa-solid fa-flag text-indigo-600 text-2xl"></i> British Flag Theorem
+    </h1>
+    <p class="text-center text-slate-500 text-sm mb-6 max-w-3xl mx-auto">
+        In a rectangle \(ABCD\), for any point \(P\), the sum of the squared distances to one pair of opposite vertices equals the sum for the other pair.
+    </p>
+
+    <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex items-center justify-center overflow-x-auto" style="min-height:86px;">
+        <div id="live-equation">\[\boxed{PA^2+PC^2=PB^2+PD^2}\]</div>
+    </div>
+
+    <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-5">
+        <div class="flex flex-wrap gap-4 items-center justify-center flex-grow">
+            <div class="flex flex-col gap-1 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm min-w-[190px] flex-1 max-w-xs">
+                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex justify-between">
+                    <span>Reshape width</span><span class="normal-case text-indigo-600">\(a\)</span>
+                </div>
+                <input type="range" id="sliderW" value="8" min="5" max="11" step="0.1" class="w-full" aria-label="Change rectangle width a">
+            </div>
+            <div class="flex flex-col gap-1 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm min-w-[190px] flex-1 max-w-xs">
+                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex justify-between">
+                    <span>Reshape height</span><span class="normal-case text-emerald-600">\(b\)</span>
+                </div>
+                <input type="range" id="sliderH" value="5" min="3.5" max="8" step="0.1" class="w-full" aria-label="Change rectangle height b">
+            </div>
+
+            <div class="flex gap-3 flex-wrap justify-center">
+                <div class="symbolic-badge">
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Point</span>
+                    <span class="text-slate-800 font-semibold mt-1">\(P=(x,y)\)</span>
+                </div>
+                <div class="symbolic-badge border-indigo-200">
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-indigo-400">Opposite pair</span>
+                    <span class="text-indigo-700 font-semibold mt-1">\(PA^2+PC^2\)</span>
+                </div>
+                <div class="symbolic-badge border-amber-200">
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-amber-500">Opposite pair</span>
+                    <span class="text-amber-700 font-semibold mt-1">\(PB^2+PD^2\)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap justify-center">
+            <span id="stepIndicator" class="stage-pill">Explore</span>
+            <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Auto</button>
+            <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+            <button id="resetBtn" class="btn-action btn-secondary" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+        <div class="lg:col-span-3 svg-container flex items-center justify-center">
+            <svg id="canvas" class="w-full h-full" viewBox="0 0 700 600" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1.4"/>
+                    </pattern>
+                    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.12"/>
+                    </filter>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)"/>
+
+                <rect id="rectABCD" class="geom" rx="2" fill="rgba(99,102,241,.055)" stroke="#334155" stroke-width="3"/>
+
+                <g id="cornerLabels" class="math-font" font-size="22" font-weight="700" fill="#0f172a">
+                    <text id="labelA">A</text><text id="labelB">B</text><text id="labelC">C</text><text id="labelD">D</text>
+                </g>
+
+                <g id="projections" class="fade hidden-stage">
+                    <line id="projV" stroke="#94a3b8" stroke-width="2" stroke-dasharray="7,6"/>
+                    <line id="projH" stroke="#94a3b8" stroke-width="2" stroke-dasharray="7,6"/>
+                    <path id="ra1" class="right-angle"/>
+                    <path id="ra2" class="right-angle"/>
+                </g>
+
+                <g id="component-labels" class="fade hidden-stage math-font" font-size="18" font-weight="700">
+                    <text id="lbl-x" fill="#4f46e5" text-anchor="middle">x</text>
+                    <text id="lbl-ax" fill="#0f766e" text-anchor="middle">a−x</text>
+                    <text id="lbl-y" fill="#b45309" text-anchor="end">y</text>
+                    <text id="lbl-by" fill="#be185d" text-anchor="end">b−y</text>
+                    <text id="lbl-a" fill="#334155" text-anchor="middle">a</text>
+                    <text id="lbl-b" fill="#334155" text-anchor="middle">b</text>
+                </g>
+
+                <line id="segPA" class="segment" stroke="#4f46e5" stroke-width="4" stroke-linecap="round"/>
+                <line id="segPC" class="segment" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
+                <line id="segPB" class="segment" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+                <line id="segPD" class="segment" stroke="#ec4899" stroke-width="4" stroke-linecap="round"/>
+
+                <g id="distanceLabels" class="fade math-font" font-size="16" font-weight="700">
+                    <text id="lblPA" fill="#4338ca">PA</text>
+                    <text id="lblPC" fill="#0f766e">PC</text>
+                    <text id="lblPB" fill="#b45309">PB</text>
+                    <text id="lblPD" fill="#be185d">PD</text>
+                </g>
+
+                <g id="pointP" class="drag-point" filter="url(#shadow)">
+                    <circle r="16" fill="rgba(15,23,42,.08)"/>
+                    <circle r="8" fill="#0f172a" stroke="#fff" stroke-width="3"/>
+                    <text x="14" y="-12" class="math-font" font-size="22" font-weight="700" fill="#0f172a">P</text>
+                </g>
+
+                <g id="dragHint" class="fade">
+                    <rect x="190" y="522" width="320" height="46" rx="12" fill="rgba(255,255,255,.95)" stroke="#cbd5e1"/>
+                    <text x="350" y="550" text-anchor="middle" fill="#475569" font-size="14" font-weight="600">Drag P anywhere inside the rectangle</text>
+                </g>
+            </svg>
+        </div>
+
+        <div class="lg:col-span-2 flex flex-col gap-4">
+            <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800">Visual Proof</h2>
+                <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                    <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                        <span class="font-bold text-slate-800 block mb-1">Explore the flag</span>
+                        <span class="text-xs text-slate-600">Drag \(P\). The four coloured segments connect \(P\) to the vertices. The theorem compares opposite pairs.</span>
+                    </div>
+                    <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                        <span class="font-bold text-indigo-700 block mb-1">Resolve into horizontal and vertical parts</span>
+                        <span class="text-xs text-slate-600">Through \(P=(x,y)\), draw horizontal and vertical guides. The rectangle sides split naturally into \(x,\ a-x,\ y,\ b-y\).</span>
+                    </div>
+                    <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                        <span class="font-bold text-emerald-700 block mb-1">Apply Pythagoras</span>
+                        <span class="text-xs text-slate-600">Each squared diagonal distance becomes the sum of two component-square areas.</span>
+                    </div>
+                    <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                        <span class="font-bold text-slate-800 block mb-1">Regroup the same four areas</span>
+                        <span class="text-xs text-slate-600">Both opposite-vertex sums contain exactly \(x^2,(a-x)^2,y^2,(b-y)^2\). Only the grouping changes.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[110px] flex items-center justify-center">
+                <div class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                    Drag \(P\) and look at the two opposite pairs of coloured segments.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pairComparison" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7">
+        <div class="proof-card border-indigo-200">
+            <div class="font-bold text-indigo-700 mb-3">Opposite vertices \(A\) and \(C\)</div>
+            <div id="formulaAC" class="text-center text-slate-800 overflow-x-auto">
+                \[PA^2+PC^2\]
+            </div>
+        </div>
+        <div class="proof-card border-amber-200">
+            <div class="font-bold text-amber-700 mb-3">Opposite vertices \(B\) and \(D\)</div>
+            <div id="formulaBD" class="text-center text-slate-800 overflow-x-auto">
+                \[PB^2+PD^2\]
+            </div>
+        </div>
+    </div>
+
+    <div class="border-t border-slate-200 pt-8 mt-4 w-full">
+        <h3 class="text-2xl font-bold text-slate-800 mb-2">The visual heart of the proof</h3>
+        <p class="text-slate-600 text-sm mb-6 max-w-4xl">
+            The dashed guides split the rectangle into four horizontal/vertical component lengths. By Pythagoras, the square on each coloured segment is built from two of the four component-square areas below.
+        </p>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h4 class="font-bold text-slate-800 mb-4">The same four square-areas</h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="area-tile bg-indigo-50 border-indigo-300 text-indigo-800"><div class="text-xl">\(x^2\)</div></div>
+                    <div class="area-tile bg-teal-50 border-teal-300 text-teal-800"><div class="text-xl">\((a-x)^2\)</div></div>
+                    <div class="area-tile bg-amber-50 border-amber-300 text-amber-800"><div class="text-xl">\(y^2\)</div></div>
+                    <div class="area-tile bg-pink-50 border-pink-300 text-pink-800"><div class="text-xl">\((b-y)^2\)</div></div>
+                </div>
+            </div>
+
+            <div class="bg-indigo-50/60 p-5 rounded-xl border border-indigo-200 shadow-sm flex flex-col justify-center">
+                <div class="text-indigo-800 font-bold mb-3">Build the pair \(A,C\)</div>
+                <div class="text-sm text-slate-700 leading-relaxed overflow-x-auto">
+                    \[PA^2=x^2+y^2\]
+                    \[PC^2=(a-x)^2+(b-y)^2\]
+                </div>
+                <div class="mt-3 pt-3 border-t border-indigo-200 font-semibold text-indigo-950 text-center overflow-x-auto">
+                    \[PA^2+PC^2=x^2+(a-x)^2+y^2+(b-y)^2\]
+                </div>
+            </div>
+
+            <div class="bg-amber-50/60 p-5 rounded-xl border border-amber-200 shadow-sm flex flex-col justify-center">
+                <div class="text-amber-800 font-bold mb-3">Build the pair \(B,D\)</div>
+                <div class="text-sm text-slate-700 leading-relaxed overflow-x-auto">
+                    \[PB^2=(a-x)^2+y^2\]
+                    \[PD^2=x^2+(b-y)^2\]
+                </div>
+                <div class="mt-3 pt-3 border-t border-amber-200 font-semibold text-amber-950 text-center overflow-x-auto">
+                    \[PB^2+PD^2=x^2+(a-x)^2+y^2+(b-y)^2\]
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-slate-900 text-white rounded-xl p-5 text-center shadow-sm">
+            <div class="text-sm text-slate-300 mb-2">Both sums are made from exactly the same four square-areas.</div>
+            <div class="text-2xl font-bold overflow-x-auto">\[\boxed{PA^2+PC^2=PB^2+PD^2}\]</div>
+        </div>
+        <p class="text-center text-xs text-slate-400 mt-3">The same algebraic identity also extends to points outside the rectangle; the interior position is used here only to make the component lengths visually immediate.</p>
+    </div>
+</div>
+
+<script>
+    const state = {
+        a: 8,
+        b: 5,
+        u: 0.35,   // x/a
+        v: 0.42,   // y/b
+        step: 0,
+        maxSteps: 3,
+        isPlaying: false,
+        timer: null
+    };
+
+    const stageNames = ['Explore','Resolve','Pythagoras','Regroup'];
+
+    const dom = {
+        sliderW: document.getElementById('sliderW'), sliderH: document.getElementById('sliderH'),
+        liveEq: document.getElementById('live-equation'), status: document.getElementById('statusText'),
+        stepInd: document.getElementById('stepIndicator'), play: document.getElementById('playPauseBtn'),
+        next: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn'),
+        canvas: document.getElementById('canvas'), rect: document.getElementById('rectABCD'), pointP: document.getElementById('pointP'),
+        labelA: document.getElementById('labelA'), labelB: document.getElementById('labelB'), labelC: document.getElementById('labelC'), labelD: document.getElementById('labelD'),
+        segPA: document.getElementById('segPA'), segPB: document.getElementById('segPB'), segPC: document.getElementById('segPC'), segPD: document.getElementById('segPD'),
+        lblPA: document.getElementById('lblPA'), lblPB: document.getElementById('lblPB'), lblPC: document.getElementById('lblPC'), lblPD: document.getElementById('lblPD'),
+        projections: document.getElementById('projections'), projV: document.getElementById('projV'), projH: document.getElementById('projH'), ra1: document.getElementById('ra1'), ra2: document.getElementById('ra2'),
+        componentLabels: document.getElementById('component-labels'), lblX: document.getElementById('lbl-x'), lblAX: document.getElementById('lbl-ax'), lblY: document.getElementById('lbl-y'), lblBY: document.getElementById('lbl-by'), lblA: document.getElementById('lbl-a'), lblB: document.getElementById('lbl-b'),
+        dragHint: document.getElementById('dragHint'), formulaAC: document.getElementById('formulaAC'), formulaBD: document.getElementById('formulaBD')
+    };
+
+    const descriptions = [
+        'Drag \\(P\\) and look at the two opposite pairs of coloured segments.',
+        'The guides through \\(P=(x,y)\\) split the side lengths into \\(x,\\ a-x,\\ y,\\ b-y\\).',
+        'Each coloured distance is a hypotenuse, so Pythagoras expresses its square using two component-square areas.',
+        'Both opposite-vertex sums contain the same four areas. Since only the grouping changes, the totals must be equal.'
+    ];
+
+    let box = {left:120,right:580,top:130,bottom:410};
+
+    function recalcBox() {
+        const maxW = 480, maxH = 330;
+        const w = 300 + (state.a - 5) / 6 * 180;
+        const h = 190 + (state.b - 3.5) / 4.5 * 140;
+        const cx = 350, cy = 285;
+        box.left = cx - Math.min(maxW,w)/2;
+        box.right = cx + Math.min(maxW,w)/2;
+        box.top = cy - Math.min(maxH,h)/2;
+        box.bottom = cy + Math.min(maxH,h)/2;
+    }
+
+    function coords() {
+        const x = state.u * state.a, y = state.v * state.b;
+        const px = box.left + state.u * (box.right-box.left);
+        const py = box.bottom - state.v * (box.bottom-box.top);
+        return {x,y,px,py};
+    }
+
+    function setLine(el,x1,y1,x2,y2){ el.setAttribute('x1',x1); el.setAttribute('y1',y1); el.setAttribute('x2',x2); el.setAttribute('y2',y2); }
+    function setMidLabel(el,x1,y1,x2,y2,dx=0,dy=0){ el.setAttribute('x',(x1+x2)/2+dx); el.setAttribute('y',(y1+y2)/2+dy); }
+
+    function updateGeometry() {
+        recalcBox();
+        const {px,py} = coords();
+        const A={x:box.left,y:box.bottom}, B={x:box.right,y:box.bottom}, C={x:box.right,y:box.top}, D={x:box.left,y:box.top};
+
+        dom.rect.setAttribute('x',box.left); dom.rect.setAttribute('y',box.top);
+        dom.rect.setAttribute('width',box.right-box.left); dom.rect.setAttribute('height',box.bottom-box.top);
+
+        dom.labelA.setAttribute('x',box.left-18); dom.labelA.setAttribute('y',box.bottom+28);
+        dom.labelB.setAttribute('x',box.right+8); dom.labelB.setAttribute('y',box.bottom+28);
+        dom.labelC.setAttribute('x',box.right+8); dom.labelC.setAttribute('y',box.top-10);
+        dom.labelD.setAttribute('x',box.left-18); dom.labelD.setAttribute('y',box.top-10);
+
+        dom.pointP.setAttribute('transform',`translate(${px},${py})`);
+        setLine(dom.segPA,px,py,A.x,A.y); setLine(dom.segPB,px,py,B.x,B.y);
+        setLine(dom.segPC,px,py,C.x,C.y); setLine(dom.segPD,px,py,D.x,D.y);
+
+        setMidLabel(dom.lblPA,px,py,A.x,A.y,-11,10);
+        setMidLabel(dom.lblPB,px,py,B.x,B.y,10,10);
+        setMidLabel(dom.lblPC,px,py,C.x,C.y,10,-8);
+        setMidLabel(dom.lblPD,px,py,D.x,D.y,-16,-8);
+
+        setLine(dom.projV,px,box.top,px,box.bottom);
+        setLine(dom.projH,box.left,py,box.right,py);
+
+        const s=11;
+        dom.ra1.setAttribute('d',`M ${px} ${box.bottom-s} L ${px+s} ${box.bottom-s} L ${px+s} ${box.bottom}`);
+        dom.ra2.setAttribute('d',`M ${box.left} ${py-s} L ${box.left+s} ${py-s} L ${box.left+s} ${py}`);
+
+        dom.lblX.setAttribute('x',(box.left+px)/2); dom.lblX.setAttribute('y',box.bottom+24);
+        dom.lblAX.setAttribute('x',(px+box.right)/2); dom.lblAX.setAttribute('y',box.bottom+24);
+        dom.lblY.setAttribute('x',box.left-12); dom.lblY.setAttribute('y',(py+box.bottom)/2+6);
+        dom.lblBY.setAttribute('x',box.left-12); dom.lblBY.setAttribute('y',(box.top+py)/2+6);
+        dom.lblA.setAttribute('x',(box.left+box.right)/2); dom.lblA.setAttribute('y',box.top-18);
+        dom.lblB.setAttribute('transform',`translate(${box.right+28},${(box.top+box.bottom)/2}) rotate(-90)`);
+
+        updateProofText();
+    }
+
+    function updateProofText() {
+        let live='', ac='', bd='';
+        if (state.step===0) {
+            live='\\boxed{PA^2+PC^2=PB^2+PD^2}';
+            ac='PA^2+PC^2';
+            bd='PB^2+PD^2';
+        } else if (state.step===1) {
+            live='P=(x,y),\\qquad AB=a,\\quad AD=b';
+            ac='PA^2+PC^2';
+            bd='PB^2+PD^2';
+        } else if (state.step===2) {
+            live='PA^2=x^2+y^2,\\qquad PC^2=(a-x)^2+(b-y)^2';
+            ac='(x^2+y^2)+\\big((a-x)^2+(b-y)^2\\big)';
+            bd='\\big((a-x)^2+y^2\\big)+\\big(x^2+(b-y)^2\\big)';
+        } else {
+            live='\\boxed{PA^2+PC^2=PB^2+PD^2}';
+            ac='x^2+(a-x)^2+y^2+(b-y)^2';
+            bd='x^2+(a-x)^2+y^2+(b-y)^2';
+        }
+
+        dom.liveEq.innerHTML=`\\[${live}\\]`;
+        dom.formulaAC.innerHTML=`\\[${ac}\\]`;
+        dom.formulaBD.innerHTML=`\\[${bd}\\]`;
+        typeset([dom.liveEq,dom.formulaAC,dom.formulaBD]);
+    }
+
+    function setStep(step) {
+        state.step=step;
+        dom.stepInd.textContent=stageNames[step];
+        for(let i=0;i<=state.maxSteps;i++){
+            const row=document.getElementById(`ledger-${i}`);
+            if(row) row.classList.toggle('active',i===step);
+        }
+        const showGuides=step>=1;
+        dom.projections.classList.toggle('hidden-stage',!showGuides);
+        dom.componentLabels.classList.toggle('hidden-stage',!showGuides);
+        dom.dragHint.classList.toggle('hidden-stage',step>=1);
+
+        [dom.segPA,dom.segPB,dom.segPC,dom.segPD].forEach(seg=>{
+            seg.setAttribute('opacity', step===2 ? '.72' : '.94');
+            seg.setAttribute('stroke-width', step===3 ? '5' : '4');
+        });
+
+        dom.status.innerHTML=descriptions[step];
+        dom.next.disabled=(step>=state.maxSteps);
+        updateGeometry();
+        typeset([dom.status]);
+    }
+
+    function stepForward(){ if(state.step<state.maxSteps) setStep(state.step+1); else cancelAuto(); }
+    function togglePlay(){
+        if(state.isPlaying){ cancelAuto(); return; }
+        if(state.step>=state.maxSteps) setStep(0);
+        state.isPlaying=true;
+        dom.play.innerHTML='<i class="fa-solid fa-pause"></i> Pause';
+        dom.play.classList.replace('btn-play','btn-secondary');
+        setTimeout(()=>{ if(state.isPlaying) stepForward(); },450);
+        state.timer=setInterval(()=>{ if(state.step>=state.maxSteps) cancelAuto(); else stepForward(); },3000);
+    }
+    function cancelAuto(){
+        state.isPlaying=false; clearInterval(state.timer);
+        dom.play.innerHTML='<i class="fa-solid fa-play"></i> Auto';
+        dom.play.classList.remove('btn-secondary'); dom.play.classList.add('btn-play');
+    }
+
+    let mjQueue=Promise.resolve();
+    function typeset(elements){
+        if(!window.MathJax || !window.MathJax.typesetPromise) return;
+        mjQueue=mjQueue.then(()=>MathJax.typesetPromise(elements)).catch(()=>{});
+    }
+
+    function clientToSvg(evt){
+        const pt=dom.canvas.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY;
+        return pt.matrixTransform(dom.canvas.getScreenCTM().inverse());
+    }
+
+    let dragging=false;
+    dom.pointP.addEventListener('pointerdown',e=>{
+        dragging=true; cancelAuto(); dom.pointP.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    dom.pointP.addEventListener('pointermove',e=>{
+        if(!dragging) return;
+        const p=clientToSvg(e);
+        state.u=Math.max(.04,Math.min(.96,(p.x-box.left)/(box.right-box.left)));
+        state.v=Math.max(.04,Math.min(.96,(box.bottom-p.y)/(box.bottom-box.top)));
+        updateGeometry();
+    });
+    dom.pointP.addEventListener('pointerup',()=>dragging=false);
+    dom.pointP.addEventListener('pointercancel',()=>dragging=false);
+
+    dom.sliderW.addEventListener('input',e=>{ cancelAuto(); state.a=parseFloat(e.target.value); updateGeometry(); });
+    dom.sliderH.addEventListener('input',e=>{ cancelAuto(); state.b=parseFloat(e.target.value); updateGeometry(); });
+    dom.next.addEventListener('click',stepForward);
+    dom.play.addEventListener('click',togglePlay);
+    dom.reset.addEventListener('click',()=>{
+        cancelAuto(); state.a=8; state.b=5; state.u=.35; state.v=.42;
+        dom.sliderW.value=8; dom.sliderH.value=5; setStep(0);
+    });
+
+    window.addEventListener('load',()=>setStep(0));
+</script>
+</body>
+</html>

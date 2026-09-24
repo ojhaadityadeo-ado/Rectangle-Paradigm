@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Continued Fractions · A Rectangle, Some Squares</title>
+<meta name="description" content="Discover continued fractions by removing the largest possible squares from a rectangle, one at a time. An interactive visual introduction to Euclid’s algorithm.">
+<style>
+:root{--bg:#f5f7fa;--paper:#fff;--ink:#233244;--muted:#607083;--line:#dae2eb;--accent:#176a66;--soft:#e7f3ef;--amber:#a56908;--amberfill:#fff0ce}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1210px;padding:36px 22px 48px;margin:auto}header{max-width:900px;margin:0 auto 26px;text-align:center}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.13em;text-transform:uppercase;color:var(--accent)}h1{font-size:clamp(32px,4.4vw,48px);line-height:1.13;letter-spacing:-.04em;margin:12px 0 16px}header p{max-width:730px;margin:auto;font-size:18px;color:var(--muted)}h2{font-size:24px;line-height:1.3;letter-spacing:-.025em;margin:6px 0 12px}h3{font-size:17px;line-height:1.4;margin:0 0 9px}p{margin:0 0 13px}button,input{font:inherit}button{min-height:43px;padding:8px 13px;border:1px solid #c7d2df;border-radius:9px;background:white;color:var(--ink);cursor:pointer}button:hover{background:#eff4f7}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.primary{background:var(--accent);border-color:var(--accent);color:white;font-weight:650}.primary:hover{background:#115752}.card{background:var(--paper);border:1px solid var(--line);border-radius:16px}.setup{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:25px;padding:18px 22px;margin-bottom:18px}.control-head{display:flex;justify-content:space-between;gap:12px;font-weight:650}.control-head output{color:var(--accent);font-variant-numeric:tabular-nums}input[type=range]{width:100%;height:25px;accent-color:var(--accent);cursor:pointer}.hint{font-size:13px;color:var(--muted)}.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.presets button{padding:5px 10px;min-height:36px;font-size:14px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}.visual{padding:16px;min-width:0}.toolbar{display:flex;gap:9px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:14px}.buttons{display:flex;gap:7px;flex-wrap:wrap}.stage{background:#fbfcfe;border:1px solid var(--line);border-radius:12px;overflow:hidden}.stage-head{display:flex;gap:15px;justify-content:space-between;padding:12px 15px 0;font-size:13px;color:var(--muted)}.stage-head strong{color:var(--ink);font-weight:650}.scroll{overflow-x:auto}#scene{display:block;width:100%;min-width:600px;height:auto}.legend{display:flex;gap:17px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:12px 0 0}.legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:13px;height:13px;border-radius:3px}.side{padding:21px}.side p{color:var(--muted)}.counter{display:flex;align-items:center;gap:15px;padding:14px 16px;background:var(--soft);border-radius:12px;margin:18px 0}.counter strong{font-size:38px;line-height:1;font-variant-numeric:tabular-nums;color:var(--accent)}.counter span{font-size:14px;line-height:1.4}.live-terms{margin:12px 0;font-size:13px;color:var(--muted)}.live-terms strong{display:block;font-size:24px;line-height:1.4;letter-spacing:.04em;color:var(--accent)}.notice{font-size:14px;padding:12px 14px;border-left:3px solid var(--amber);background:#fff8e9;margin:15px 0}.map-box{border-top:1px solid var(--line);padding-top:17px;margin-top:21px}#map{display:block;width:100%;height:auto}.map-note{font-size:12px;color:var(--muted);line-height:1.5}.record{padding:23px;margin-top:20px}.record-head{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.record-head p{margin:0;color:var(--muted);font-size:14px}.terms{display:flex;gap:10px;flex-wrap:wrap;margin:17px 0 20px}.term{min-width:112px;min-height:95px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;text-align:center}.term small{display:block;font-size:12px;color:var(--muted)}.term strong{display:block;font-size:32px;line-height:1.3;font-variant-numeric:tabular-nums}.term.pending{border-style:dashed;background:#f8fafb}.term.pending strong{color:#8a96a3}.notation{display:grid;grid-template-columns:1fr 1fr;gap:20px;border-top:1px solid var(--line);padding-top:17px}.notation .label{font-size:12px;color:var(--muted);margin-bottom:8px}.bracket{font-size:clamp(23px,3vw,30px);font-weight:650;letter-spacing:.025em;line-height:1.5;overflow-wrap:anywhere}.fraction{overflow-x:auto;padding:5px 0;min-height:62px}.fraction math{font-size:1.3rem}.fraction-note{font-size:12px;color:var(--muted);margin-top:6px}.below{padding:25px;margin-top:20px}.ideas{display:grid;grid-template-columns:repeat(3,1fr);gap:25px;margin-top:20px}.idea{border-top:2px solid var(--line);padding-top:15px}.idea .step{font-size:12px;font-weight:750;color:var(--accent);margin-bottom:8px}.idea p{font-size:15px;color:var(--muted)}details{border-top:1px solid var(--line);margin-top:20px;padding-top:12px}summary{cursor:pointer;font-weight:650;padding:8px 0}details p{margin-top:12px;color:var(--muted)}footer{font-size:13px;color:var(--muted);text-align:center;margin-top:22px}svg text{font-family:system-ui,sans-serif}svg .square-action{cursor:pointer}svg .square-action:focus{outline:none}svg .square-action:focus rect{stroke:#152b3f;stroke-width:3}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr;gap:24px}.map-box{border:0;padding:0;margin:0}#map{max-width:300px}.setup{grid-template-columns:1fr 1fr}.examples{grid-column:1/-1}}@media(max-width:600px){main{padding:24px 12px 36px}header p{font-size:16px}.setup{padding:17px;gap:14px;grid-template-columns:1fr}.examples{grid-column:auto}.side{display:block;padding:19px}.map-box{border-top:1px solid var(--line);padding-top:17px;margin-top:18px}.visual{padding:10px}.toolbar{align-items:stretch}.toolbar>.primary{flex:1}.buttons button{font-size:14px;padding:7px 10px}.stage-head span{display:none}.record,.below{padding:19px}.notation{grid-template-columns:1fr;gap:12px}.ideas{grid-template-columns:1fr;gap:9px}.term{min-width:86px;padding:8px 10px}.term strong{font-size:28px}}
+@media print{.setup,.toolbar{display:none}.layout{display:block}.side{display:block}.card{break-inside:avoid}.scroll{overflow:visible}#scene{min-width:0}.below{break-before:page}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="eyebrow">Visual mathematics · Euclid’s algorithm</div><h1>A rectangle. Some squares.<br>A continued fraction.</h1><p>Remove the largest squares that fit. Count them. Turn the leftover rectangle and do it again. The counts tell the story of the rectangle’s proportions.</p></header>
+<section class="card setup" aria-label="Choose a rectangle">
+<div><label class="control-head" for="long"><span>Long side</span><output id="longOut">23</output></label><input id="long" type="range" min="2" max="40" step="1" value="23"><div class="hint">Changing a side starts a new rectangle.</div></div>
+<div><label class="control-head" for="short"><span>Short side</span><output id="shortOut">10</output></label><input id="short" type="range" min="1" max="23" step="1" value="10"><div class="hint">This side sets the first square’s size.</div></div>
+<div class="examples"><div class="control-head">Try a rectangle</div><div class="presets"><button data-preset="23,10">23 × 10</button><button data-preset="13,8">13 × 8</button><button data-preset="24,6">24 × 6</button></div></div>
+</section>
+<div class="layout">
+<section class="card visual" aria-label="Remove squares from the current rectangle">
+<div class="toolbar"><div class="buttons"><button id="undo">← Undo</button><button id="reset">↺ Restart</button><button id="play" aria-pressed="false">▶ Play</button></div><button id="next" class="primary">Remove one square</button></div>
+<div class="stage"><div class="stage-head"><strong id="stageLabel" role="status" aria-live="polite">Round 1 · start with this rectangle</strong><span id="zoomLabel">First rectangle</span></div><div class="scroll"><svg id="scene" viewBox="0 0 860 460" role="img" aria-labelledby="sceneTitle sceneDesc"></svg></div></div>
+<div class="legend"><span><i class="swatch" id="squareSwatch" style="background:#b7dbd4"></i>largest square to remove</span><span><i class="swatch" style="background:#e9edf2"></i>space already cleared</span><span><i class="swatch" style="background:#fff0ce"></i>leftover for the next round</span></div>
+</section>
+<aside class="card side"><div><div class="eyebrow" id="roundLabel">Round 1</div><h2 id="instructionTitle">Start with the biggest square.</h2><p id="instruction"></p><div class="counter"><strong id="removedCount">0</strong><span id="counterLabel">squares removed<br>this round</span></div><div class="live-terms">Continued fraction so far<strong id="liveTerms" aria-live="polite">[ ? ]</strong></div><div class="notice" id="notice"></div></div><div class="map-box"><h3>The original rectangle</h3><svg id="map" viewBox="0 0 280 190" role="img" aria-labelledby="mapTitle mapDesc"></svg><p class="map-note">The small map keeps the squares you removed. The outlined region is what remains. The large view zooms in at each new round.</p></div></aside>
+</div>
+<section class="card record"><div class="record-head"><div><div class="eyebrow">The counts become the terms</div><h2>Your continued fraction</h2></div><p id="recordHint">Finish a round to record its count.</p></div><div class="terms" id="terms"></div><div class="notation"><div><div class="label">The counts, in order</div><div class="bracket" id="bracket">Count the first round…</div><div class="fraction-note" id="bracketNote"></div></div><div><div class="label">How those counts fit together</div><div class="fraction" id="fraction"></div><div class="fraction-note" id="fractionNote">Each new round goes one level deeper.</div></div></div></section>
+<section class="card below"><div class="eyebrow">The idea to notice</div><h2>Count. Turn. Repeat.</h2><div class="ideas"><article class="idea"><div class="step">01 · COUNT WHOLE SQUARES</div><h3>The short side sets the square.</h3><p>A larger square would be too tall to fit. Keep removing squares of this size until the leftover is narrower than one square. That round’s count is one continued-fraction term.</p></article><article class="idea"><div class="step">02 · TURN THE LEFTOVER</div><h3>Ask the same question again.</h3><p>The leftover is tall and narrow. Turn it so its long side is horizontal. Now its new short side sets a smaller square. Start a fresh count.</p></article><article class="idea"><div class="step">03 · READ THE COUNTS</div><h3>A recipe for the original ratio.</h3><p>The first count is the whole-number part. Each turn swaps which side is on top of the ratio, creating a “one over” step. The following counts nest inside those steps.</p></article></div>
+<details><summary>Why does turning give “one over”?</summary><p>After the whole squares are removed, the leftover contributes a fraction: its narrow width divided by its height. Turning it makes the next long-to-short ratio the reverse—height divided by narrow width. The old fraction is therefore one divided by the new ratio.</p><p>That is why the pattern is “first count + 1 / (next count + 1 / …).” The shapes explain the nesting; no long division is needed.</p></details>
+<details><summary>Does this process always end?</summary><p>These sliders use integer side lengths, so Euclid’s algorithm eventually leaves no rectangle. This gives a finite continued fraction for the original long-side-to-short-side ratio. With an irrational ratio of side lengths, there is always another smaller leftover, and the continued fraction continues indefinitely.</p></details>
+</section>
+<footer>Each term counts one round of largest-square removals. Zoom changes the view, not the rectangle’s proportions.</footer>
+</main>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const PALETTE = [
+    {fill:'#b7dbd4', ink:'#1e6962'}, {fill:'#c9caf0', ink:'#5c51a1'},
+    {fill:'#f3d2a4', ink:'#96601b'}, {fill:'#b9d7ed', ink:'#316d95'},
+    {fill:'#e7bfce', ink:'#9c4d6c'}, {fill:'#ccdcae', ink:'#587437'},
+    {fill:'#d3c8e5', ink:'#70608e'}, {fill:'#bddcda', ink:'#316d72'}
+  ];
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let rounds = [], states = [], cursor = 0, timer = null, frame = null, busy = false;
+
+  function makeRounds(longSide, shortSide) {
+    const result = [];
+    let x=0, y=0, w=longSide, h=shortSide;
+    while (w>0 && h>0) {
+      const horizontal = w>=h;
+      const L=Math.max(w,h), S=Math.min(w,h), q=Math.floor(L/S), rem=L%S;
+      const squares = Array.from({length:q}, (_,i) => ({
+        x:x+(horizontal?i*S:0), y:y+(horizontal?0:i*S), size:S
+      }));
+      result.push({L,S,q,rem,x,y,w,h,horizontal,squares});
+      if (horizontal) {x+=q*S;w=rem;} else {y+=q*S;h=rem;}
+    }
+    return result;
+  }
+  function current() {const st=states[cursor];return {...st, r:rounds[st.round]};}
+  function view(r) {
+    const scale=Math.min(680/r.L,214/r.S);
+    return {scale,w:r.L*scale,h:r.S*scale,cx:430,cy:225};
+  }
+  function elem(tag,attrs={},parent=$('scene')) {
+    const e=document.createElementNS(NS,tag);
+    Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,String(v)));
+    parent.appendChild(e); return e;
+  }
+  function label(x,y,value,size=14,color='#607083',parent=$('scene'),anchor='middle') {
+    const e=elem('text',{x,y,'font-size':size,fill:color,'text-anchor':anchor,'font-family':'system-ui,sans-serif'},parent);
+    e.textContent=value;return e;
+  }
+  function box(x,y,width,height,fill,stroke='none',parent=$('scene'),extra={}) {
+    return elem('rect',{x,y,width,height,fill,stroke,...extra},parent);
+  }
+  function cancelMotion() {if(frame!==null)cancelAnimationFrame(frame);frame=null;busy=false;}
+  function updateButtons() {
+    $('undo').disabled=cursor===0;
+    $('next').disabled=busy||cursor===states.length-1;
+    $('next').textContent=cursor===states.length-1?'Finished ✓':current().removed===current().r.q?'Turn the leftover →':'Remove one square';
+  }
+
+  function drawMain(st, motion) {
+    cancelMotion();
+    const svg=$('scene');svg.innerHTML='';
+    elem('title',{id:'sceneTitle'}).textContent=`Round ${st.round+1}: ${st.removed} squares removed`;
+    elem('desc',{id:'sceneDesc'}).textContent=`The current rectangle has sides ${st.r.L} and ${st.r.S}. The largest square has side ${st.r.S}. ${st.removed} squares have been removed this round. ${st.removed===st.r.q?(st.r.rem?'A smaller rectangle remains.':'No rectangle remains.'):'Remove the highlighted square to continue.'}`;
+    const {r,removed}=st, v=view(r), color=PALETTE[st.round%PALETTE.length];
+    const roundDone=removed===r.q, finished=roundDone&&r.rem===0;
+    label(430,43,finished?'No leftover. The rectangle is all squares.':roundDone?'The leftover is too narrow for another square.':'How many squares of this size can you remove?',19,'#233244');
+    const group=elem('g',{id:'focus',transform:`translate(${v.cx} ${v.cy})`});
+    const left=-v.w/2,top=-v.h/2,square=r.S*v.scale;
+    box(left,top,v.w,v.h,'none','#cbd5df',group,{'stroke-dasharray':'5 5','stroke-width':1.2});
+    for(let i=0;i<removed;i++) {
+      box(left+i*square,top,square,square,'#eef1f5','#dce3eb',group,{'stroke-width':1});
+      if(square>=28)label(left+(i+.5)*square,top+square/2+5,String(i+1),Math.min(20,square/3),'#96a2af',group);
+    }
+    const remaining=r.L-removed*r.S;
+    if(remaining>0)box(left+removed*square,top,remaining*v.scale,v.h,roundDone?'#fff0ce':'#f0f5f6',roundDone?'#b78224':'#426a78',group,{'stroke-width':2});
+    if(!roundDone) {
+      const action=elem('g',{class:'square-action',role:'button',tabindex:0,'aria-label':`Remove one square of side ${r.S}`},group);
+      box(left+removed*square,top,square,square,color.fill,color.ink,action,{'stroke-width':2,'stroke-dasharray':'7 4'});
+      if(square>=90) {
+        label(left+(removed+.5)*square,top+square/2-6,'largest',16,color.ink,action);
+        label(left+(removed+.5)*square,top+square/2+17,'square',16,color.ink,action);
+      } else if(square>=32)label(left+(removed+.5)*square,top+square/2+5,'□',22,color.ink,action);
+      action.addEventListener('click',()=>{stop();advance();});
+      action.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();stop();advance();}});
+    }
+    label(0,top+v.h+27,String(r.L),14,'#607083',group);
+    label(left-22,5,String(r.S),14,'#607083',group);
+    if(roundDone&&r.rem>0) {
+      const rx=left+removed*square+r.rem*v.scale/2;
+      label(rx,top-20,'leftover',14,'#a56908',group);
+    }
+    label(430,388,finished?`Record ${r.q}. That is the last term.`:roundDone?`Record ${r.q}. Then turn the leftover and begin a new count.`:`Each square has side ${r.S}. Keep the same square size for this whole round.`,16,'#233244');
+    label(430,421,finished?'Read the completed counts below, or restart with another rectangle.':roundDone?'The next view rotates and enlarges only the leftover.':'Click the highlighted square or use the green button.',13);
+    let overlay=null;
+    if(motion?.type==='remove') {
+      overlay=elem('g',{},group);
+      box(left+(removed-1)*square,top,square,square,color.fill,color.ink,overlay,{'stroke-width':2});
+    }
+    if(motion&&!reduced) {
+      busy=true;
+      const start=performance.now(),duration=motion.type==='turn'?900:460;
+      const old=motion.type==='turn'?view(motion.previous):null;
+      function tick(now) {
+        const p=Math.min(1,(now-start)/duration),e=1-(1-p)**3;
+        if(motion.type==='turn') {
+          const pr=motion.previous;
+          const fromX=old.cx-old.w/2+pr.q*pr.S*old.scale+pr.rem*old.scale/2;
+          const x=fromX+(v.cx-fromX)*e;
+          const z=old.scale/v.scale+(1-old.scale/v.scale)*e;
+          group.setAttribute('transform',`translate(${x} ${v.cy}) rotate(${(st.round%2===1?90:-90)*(1-e)}) scale(${z})`);
+        } else {
+          overlay.setAttribute('transform',`translate(0 ${-35*e})`);
+          overlay.setAttribute('opacity',String(1-e));
+        }
+        if(p<1)frame=requestAnimationFrame(tick);
+        else {frame=null;busy=false;updateButtons();}
+      }
+      tick(start);
+    } else if(overlay) overlay.setAttribute('opacity','0');
+  }
+
+  function drawMap(st) {
+    const svg=$('map');svg.innerHTML='';
+    elem('title',{id:'mapTitle'},svg).textContent='Squares removed from the original rectangle';
+    elem('desc',{id:'mapDesc'},svg).textContent='Colored squares record all removals so far. The amber outline shows the remaining part in its original position.';
+    const L=+$('long').value,S=+$('short').value;
+    const scale=Math.min(244/L,145/S),x=(280-L*scale)/2,y=15+(145-S*scale)/2;
+    box(x,y,L*scale,S*scale,'#f3f6f9','#cad5df',svg);
+    rounds.forEach((r,index)=>{
+      if(index>st.round)return;
+      const count=index<st.round?r.q:st.removed, color=PALETTE[index%PALETTE.length];
+      for(let i=0;i<count;i++) {
+        const sq=r.squares[i];
+        box(x+sq.x*scale,y+sq.y*scale,sq.size*scale,sq.size*scale,color.fill,'#ffffff',svg,{'stroke-width':.7,'data-round':index,'data-square':i});
+      }
+    });
+    const r=st.r,remaining=r.L-st.removed*r.S;
+    if(remaining>0) {
+      const rx=r.x+(r.horizontal?st.removed*r.S:0),ry=r.y+(r.horizontal?0:st.removed*r.S);
+      box(x+rx*scale,y+ry*scale,(r.horizontal?remaining:r.S)*scale,(r.horizontal?r.S:remaining)*scale,'none','#a56908',svg,{'stroke-width':2});
+    }
+    label(140,183,`${L} × ${S}`,13,'#607083',svg);
+  }
+
+  function renderTerms(st) {
+    const completed=rounds.slice(0,st.round).map(r=>r.q);
+    if(st.removed===st.r.q)completed.push(st.r.q);
+    const finished=cursor===states.length-1;
+    $('terms').innerHTML='';
+    completed.forEach((q,i)=>{
+      const chip=document.createElement('div'),c=PALETTE[i%PALETTE.length];
+      chip.className='term';chip.style.background=c.fill;chip.style.borderColor=c.fill;
+      chip.innerHTML=`<small>Round ${i+1}</small><strong style="color:${c.ink}">${q}</strong><small>${q===1?'square':'squares'}</small>`;
+      $('terms').appendChild(chip);
+    });
+    if(!finished) {
+      const pending=document.createElement('div');pending.className='term pending';
+      pending.innerHTML=`<small>Round ${completed.length+1}</small><strong>?</strong><small>${st.removed===st.r.q?'next count':'still counting'}</small>`;
+      $('terms').appendChild(pending);
+    }
+    const L=+$('long').value,S=+$('short').value;
+    $('recordHint').textContent=finished?'Every square is accounted for. Read the counts from left to right.':'Record a count only when no more squares of that size fit.';
+    if(!completed.length) {
+      $('liveTerms').textContent='[ ? ]';
+      $('bracket').textContent='Count the first round…';
+      $('bracketNote').textContent='The first completed count goes here.';
+      $('fraction').innerHTML='<span class="hint">First remove all the largest squares that fit.</span>';
+      return;
+    }
+    const body=completed[0]+(completed.length>1?'; '+completed.slice(1).join(', '):'')+(!finished?(completed.length===1?'; …':', …'):'');
+    $('liveTerms').textContent=`[${body}]`;
+    $('bracket').textContent=`${L}/${S} = [${body}]`;
+    $('bracketNote').textContent=finished?'These are the continued-fraction terms of the original ratio.':'The dots stand for the rounds still to come.';
+    const digit=(v,i)=>`<mn mathcolor="${PALETTE[i%PALETTE.length].ink}">${v}</mn>`;
+    const oneOver=tail=>`<mfrac><mn>1</mn><mrow>${tail}</mrow></mfrac>`;
+    let nested=finished?digit(completed.at(-1),completed.length-1):'<mtext>next ratio</mtext>';
+    for(let i=completed.length-(finished?2:1);i>=0;i--)nested=`${digit(completed[i],i)}<mo>+</mo>${oneOver(nested)}`;
+    $('fraction').innerHTML=`<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="The original ratio as a nested continued fraction"><mrow><mfrac><mn>${L}</mn><mn>${S}</mn></mfrac><mo>=</mo>${nested}</mrow></math>`;
+  }
+
+  function render(motion=null) {
+    const st=current(),{r,removed}=st,roundDone=removed===r.q,finished=cursor===states.length-1;
+    $('longOut').textContent=$('long').value;$('shortOut').textContent=$('short').value;
+    $('stageLabel').textContent=`Round ${st.round+1} · ${finished?'nothing left':roundDone?'count complete':'remove the largest squares'}`;
+    $('zoomLabel').textContent=st.round===0?'First rectangle':'Leftover turned and zoomed in';
+    $('roundLabel').textContent=`Round ${st.round+1}`;
+    $('removedCount').textContent=String(removed);
+    $('counterLabel').innerHTML=`${removed===1?'square':'squares'} removed<br>this round`;
+    $('squareSwatch').style.background=PALETTE[st.round%PALETTE.length].fill;
+    if(finished) {
+      $('instructionTitle').textContent='No leftover. You’re done.';
+      $('instruction').textContent=`The final ${r.q===1?'square fills':'squares fill'} the remaining rectangle exactly. This round contributes the last count: ${r.q}.`;
+      $('notice').textContent='Look below: the counts now describe the original rectangle as a continued fraction.';
+    } else if(roundDone) {
+      $('instructionTitle').textContent=`That makes ${r.q} ${r.q===1?'square':'squares'}.`;
+      $('instruction').textContent='The narrow leftover cannot hold another square of this size. Save the count, then turn the leftover to start the next round.';
+      $('notice').textContent='A new rectangle means a new, smaller square—and a fresh count.';
+    } else {
+      $('instructionTitle').textContent=removed===0?'Find the biggest square.':'Can another one fit?';
+      $('instruction').textContent=removed===0?'The short side tells you how big the square can be. Remove the highlighted square, then try another of the same size.':'Keep using the same square size in this round. Remove the next highlighted square and keep counting.';
+      $('notice').textContent='Do not switch to smaller squares yet. First remove every square of the current size that fits.';
+    }
+    drawMain(st,motion);drawMap(st);renderTerms(st);updateButtons();
+  }
+  function stop() {if(timer!==null){clearInterval(timer);timer=null;}$('play').textContent='▶ Play';$('play').setAttribute('aria-pressed','false');}
+  function advance() {
+    if(busy||cursor===states.length-1)return;
+    const before=current();cursor++;
+    const after=current();
+    render(after.round!==before.round?{type:'turn',previous:before.r}:{type:'remove'});
+    if(cursor===states.length-1)stop();
+  }
+  function rebuild() {
+    stop();cancelMotion();
+    $('short').max=$('long').value;
+    rounds=makeRounds(+$('long').value,+$('short').value);
+    states=[];rounds.forEach((r,round)=>{for(let removed=0;removed<=r.q;removed++)states.push({round,removed});});
+    cursor=0;render();
+  }
+  $('next').addEventListener('click',()=>{stop();advance();});
+  $('undo').addEventListener('click',()=>{stop();cancelMotion();if(cursor>0)cursor--;render();});
+  $('reset').addEventListener('click',rebuild);
+  ['long','short'].forEach(id=>$(id).addEventListener('input',rebuild));
+  document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{
+    const [L,S]=b.dataset.preset.split(',');$('long').value=L;$('short').max=L;$('short').value=S;rebuild();
+  }));
+  $('play').addEventListener('click',()=>{
+    if(timer!==null){stop();return;}
+    if(cursor===states.length-1){cursor=0;render();}
+    $('play').textContent='Ⅱ Pause';$('play').setAttribute('aria-pressed','true');
+    advance();
+    if(cursor<states.length-1)timer=setInterval(advance,1450);
+  });
+  rebuild();
+})();
+</script>
+</body>
+</html>

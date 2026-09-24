@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Harmonic Sequence Bound</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; opacity: 0.5; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); opacity: 1; }
+
+        /* SVG Transitions */
+        .geom-rect { transition: height 0.2s ease-out, y 0.2s ease-out; }
+        .geom-line { transition: all 0.3s ease-out; }
+        .geom-text { user-select: none; transition: opacity 0.3s ease; }
+        .fade { transition: opacity 0.4s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-stairs text-indigo-600 text-2xl"></i> Harmonic Sequence Bound
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            Sliding a staircase of unit-width rectangles along the hyperbola $y=1/x$ to geometrically sandwich harmonic numbers.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0" style="min-height: 80px;">
+            <div class="w-full overflow-x-auto py-2" id="live-equation">
+                <!-- Dynamically updated via JS -->
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow max-w-4xl">
+                <!-- N Terms Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[180px] bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Terms (<span class="math-font text-xs normal-case text-indigo-600">n</span>)</span>
+                        <span id="val-n" class="text-indigo-600 text-base font-mono font-bold">6</span>
+                    </div>
+                    <input type="range" id="slider-n" value="6" min="2" max="14" step="1" class="w-full mt-1">
+                </div>
+
+                <!-- Staircase Horizontal Shift Slider -->
+                <div class="flex flex-col gap-1 w-full max-w-[220px] bg-white p-2.5 rounded-lg border border-amber-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-amber-700 uppercase tracking-wider">
+                        <span>Staircase Slide (<span class="math-font text-xs normal-case text-amber-600">shift</span>)</span>
+                        <span id="val-shift" class="text-amber-600 text-base font-mono font-bold">0.00</span>
+                    </div>
+                    <input type="range" id="slider-shift" value="0.0" min="0.0" max="1.0" step="0.02" class="w-full mt-1">
+                </div>
+
+                <!-- Live Bounds Panel -->
+                <div class="bg-white px-4 py-2.5 rounded-lg border border-slate-200 shadow-sm flex gap-4 items-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Lower: $\ln(n+1)$</span>
+                        <span class="font-mono text-sm font-bold text-amber-600" id="val-lower">1.946</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Sum: $H_n$</span>
+                        <span class="font-mono text-base font-bold text-indigo-700" id="val-hn">2.450</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Upper: $1+\ln n$</span>
+                        <span class="font-mono text-sm font-bold text-emerald-600" id="val-upper">2.792</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 850 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <clipPath id="chart-clip">
+                            <rect x="70" y="30" width="760" height="420" />
+                        </clipPath>
+                        <pattern id="hatch-lower" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#d97706" stroke-width="1.5" opacity="0.4"/>
+                        </pattern>
+                        <pattern id="hatch-upper" width="8" height="8" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#059669" stroke-width="1.5" opacity="0.4"/>
+                        </pattern>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes & Grid -->
+                    <g id="axes">
+                        <!-- X-axis -->
+                        <line x1="70" y1="440" x2="820" y2="440" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        <!-- Y-axis -->
+                        <line x1="80" y1="450" x2="80" y2="30" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- Axis Labels -->
+                        <text x="815" y="465" class="math-font text-sm" fill="#64748b" text-anchor="middle">x</text>
+                        <text x="50" y="45" class="math-font text-sm" fill="#64748b" text-anchor="end">y</text>
+                        
+                        <!-- Fixed Ticks -->
+                        <text x="70" y="460" class="math-font text-sm" fill="#64748b" text-anchor="end">0</text>
+                        <line x1="75" y1="120" x2="85" y2="120" stroke="#94a3b8" stroke-width="2"/>
+                        <text x="65" y="125" class="math-font text-sm" fill="#64748b" text-anchor="end">1.0</text>
+                    </g>
+
+                    <!-- Dynamic X Ticks Group -->
+                    <g id="dynamic-ticks"></g>
+
+                    <!-- Clipped Region for Graphics -->
+                    <g clip-path="url(#chart-clip)">
+                        <!-- Shaded Area Under Curve from 1 to n+1 (Lower Bound Integral) -->
+                        <path id="integral-shade-lower" class="fade" fill="url(#hatch-lower)" opacity="0"/>
+                        <!-- Shaded Area Under Curve from 1 to n (Upper Bound Integral) -->
+                        <path id="integral-shade-upper" class="fade" fill="url(#hatch-upper)" opacity="0"/>
+
+                        <!-- The Sliding Staircase Rectangles Group -->
+                        <g id="staircase-rects"></g>
+
+                        <!-- Hyperbolic Curve y = 1/x -->
+                        <path id="hyperbola-curve" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+                    </g>
+
+                    <!-- Text Overlay on Hyperbola -->
+                    <text id="lbl-curve" x="250" y="180" class="math-font font-bold text-slate-800" font-size="18">y = 1/x</text>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm min-w-0">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Harmonic Blocks</span>
+                            <span class="text-xs text-slate-600">We construct $n$ rectangular blocks with width $1$ and decreasing heights $1, \frac{1}{2}, \frac{1}{3}, \dots, \frac{1}{n}$. Their total combined area is the harmonic number $H_n$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-amber-600 block mb-1">2. Left Alignment: The Overestimate</span>
+                            <span class="text-xs text-slate-600">Place block $k$ on the interval $[k, k+1]$. Because $1/x$ is decreasing, the left edge touches the curve and the entire block sits <strong>above</strong> $1/x$. Thus, $H_n > \int_1^{n+1} \frac{1}{x}dx = \ln(n+1)$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-indigo-700 block mb-1">3. The Staircase Slide</span>
+                            <span class="text-xs text-slate-600">Drag the <em>slide slider</em> to shift the staircase left by 1 unit. The blocks now meet the curve at their right endpoints.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-emerald-600 block mb-1">4. Right Alignment: The Underestimate</span>
+                            <span class="text-xs text-slate-600">Isolate the first block of area $1$. The remaining blocks on $[1, n]$ sit strictly <strong>below</strong> $1/x$. Their area is $H_n - 1 < \int_1^n \frac{1}{x}dx = \ln n \implies H_n < 1 + \ln n$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-indigo-900 block mb-1">5. The Harmonic Sandwich</span>
+                            <span class="text-xs text-slate-600">Combining both orientations yields the famous double inequality: $\ln(n+1) < H_n < 1 + \ln n$. The harmonic series grows logarithmically!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[90px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust $n$ and slide the staircase. Press <strong>Play</strong> to step through the proof.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Harmonic Bounds</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Lower Bound -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-amber-700">1. Lower Bound via Left Riemann Sum</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        On each unit interval $[k, k+1]$, the function $f(x) = 1/x$ is strictly decreasing. The rectangle with height equal to the left endpoint $f(k) = 1/k$ completely covers the region under the curve:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \frac{1}{k} > \int_{k}^{k+1} \frac{1}{x} dx $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Summing from $k=1$ to $n$:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mt-3">
+                        $$ H_n = \sum_{k=1}^n \frac{1}{k} > \int_1^{n+1} \frac{1}{x} dx = \ln(n+1) $$
+                    </div>
+                </div>
+
+                <!-- Right: Upper Bound -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-emerald-700">2. Upper Bound via Right Riemann Sum</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Shift the staircase left by 1. Now on $[k-1, k]$, the rectangle of height $1/k$ uses the right endpoint, sitting strictly underneath $1/x$:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$ \frac{1}{k} < \int_{k-1}^k \frac{1}{x} dx \quad (\text{for } k \ge 2) $$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Summing from $k=2$ to $n$ and adding the first block of area $1$:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mt-3">
+                        $$ H_n - 1 = \sum_{k=2}^n \frac{1}{k} < \int_1^n \frac{1}{x} dx = \ln n $$
+                        $$ \implies H_n < 1 + \ln n $$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: Asymptotic Growth & The Euler Constant</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    Combining our geometric sandwich bounds proves that the harmonic sum is trapped tightly around $\ln n$:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ \ln(n+1) < H_n < 1 + \ln n $$
+                </div>
+                <p class="text-slate-700 leading-relaxed text-sm">
+                    Because the difference $(1 + \ln n) - \ln(n+1) = 1 - \ln(1 + 1/n) \to 1$ as $n \to \infty$, the sequence $H_n - \ln n$ is monotonically decreasing and bounded below, converging to the famous <strong>Euler-Mascheroni constant</strong>:
+                    $$ \gamma = \lim_{n \to \infty} (H_n - \ln n) \approx 0.5772156649\dots $$
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            n: 6,
+            shift: 0.0, // 0 = left sum (overestimate), 1 = right sum (underestimate)
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // SVG Mapping Constants
+        const OX = 80;
+        const OY = 440;
+        const VIEW_W = 720;
+        const VIEW_H = 380;
+
+        // Color Palette for Harmonic Blocks
+        const blockColors = [
+            { fill: 'rgba(99, 102, 241, 0.45)', stroke: '#4338ca' }, // Indigo (1)
+            { fill: 'rgba(16, 185, 129, 0.45)', stroke: '#059669' }, // Emerald (1/2)
+            { fill: 'rgba(245, 158, 11, 0.45)', stroke: '#d97706' }, // Amber (1/3)
+            { fill: 'rgba(225, 29, 72, 0.45)', stroke: '#e11d48' },  // Rose (1/4)
+            { fill: 'rgba(14, 165, 233, 0.45)', stroke: '#0284c7' }, // Sky (1/5)
+            { fill: 'rgba(147, 51, 234, 0.45)', stroke: '#9333ea' }, // Purple (1/6)
+            { fill: 'rgba(234, 88, 12, 0.45)', stroke: '#ea580c' },  // Orange
+            { fill: 'rgba(20, 184, 166, 0.45)', stroke: '#0d9488' }   // Teal
+        ];
+
+        // DOM Elements
+        const DOM = {
+            sliderN: document.getElementById('slider-n'),
+            valN: document.getElementById('val-n'),
+            sliderShift: document.getElementById('slider-shift'),
+            valShift: document.getElementById('val-shift'),
+            valLower: document.getElementById('val-lower'),
+            valHn: document.getElementById('val-hn'),
+            valUpper: document.getElementById('val-upper'),
+            btns: {
+                play: document.getElementById('playPauseBtn'),
+                step: document.getElementById('stepBtn'),
+                reset: document.getElementById('resetBtn')
+            },
+            ui: {
+                stepInd: document.getElementById('stepIndicator'),
+                status: document.getElementById('statusText'),
+                eq: document.getElementById('live-equation')
+            },
+            svg: {
+                ticks: document.getElementById('dynamic-ticks'),
+                rects: document.getElementById('staircase-rects'),
+                curve: document.getElementById('hyperbola-curve'),
+                shadeLower: document.getElementById('integral-shade-lower'),
+                shadeUpper: document.getElementById('integral-shade-upper'),
+                lblCurve: document.getElementById('lbl-curve')
+            }
+        };
+
+        const descriptions = [
+            "We construct $n$ rectangular blocks with width $1$ and heights $1, \\frac{1}{2}, \\dots, \\frac{1}{n}$. Their total area is $H_n$.",
+            "Left Alignment: Rectangles sit strictly <strong>above</strong> $y = 1/x$ on $[1, n+1]$. Thus, $H_n > \\int_1^{n+1} \\frac{1}{x}dx = \\ln(n+1)$.",
+            "Slide the staircase to the left. The blocks smoothly transition from overestimating to underestimating the curve.",
+            "Right Alignment: Blocks on $[1, n]$ sit strictly <strong>below</strong> $1/x$. Their area is $H_n - 1 < \\int_1^n \\frac{1}{x}dx = \\ln n \\implies H_n < 1 + \\ln n$.",
+            "Combining both bounds yields the universal sandwich: $\\ln(n+1) < H_n < 1 + \\ln n$."
+        ];
+
+        // Coordinate Mapping Functions
+        function getScaleX() {
+            return VIEW_W / (state.n + 1.8);
+        }
+        function getScaleY() {
+            return VIEW_H / 1.15; // 1.15 max height to give breathing room for y=1
+        }
+        function mapX(x) {
+            return OX + x * getScaleX();
+        }
+        function mapY(y) {
+            return OY - y * getScaleY();
+        }
+
+        function init() {
+            DOM.sliderN.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.n = parseInt(e.target.value);
+                DOM.valN.textContent = state.n;
+                updateGeometry();
+            });
+
+            DOM.sliderShift.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.shift = parseFloat(e.target.value);
+                DOM.valShift.textContent = state.shift.toFixed(2);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.n = 6;
+                state.shift = 0.0;
+                DOM.sliderN.value = 6;
+                DOM.sliderShift.value = 0.0;
+                DOM.valN.textContent = 6;
+                DOM.valShift.textContent = '0.00';
+                setStep(0);
+            });
+
+            setStep(0);
+        }
+
+        function setStepOnly(step) {
+            state.step = step;
+            DOM.ui.stepInd.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+        }
+
+        function setStep(step) {
+            setStepOnly(step);
+
+            if (step === 0 || step === 1) {
+                state.shift = 0.0;
+                DOM.sliderShift.value = 0.0;
+                DOM.valShift.textContent = '0.00';
+            } else if (step === 2) {
+                state.shift = 0.5;
+                DOM.sliderShift.value = 0.5;
+                DOM.valShift.textContent = '0.50';
+            } else if (step === 3 || step === 4) {
+                state.shift = 1.0;
+                DOM.sliderShift.value = 1.0;
+                DOM.valShift.textContent = '1.00';
+            }
+
+            updateGeometry();
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function updateGeometry() {
+            const { n, shift, step } = state;
+
+            // Mathematical values
+            let hn = 0;
+            for (let k = 1; k <= n; k++) hn += 1 / k;
+            const lowerBound = Math.log(n + 1);
+            const upperBound = 1 + Math.log(n);
+
+            // Update stats
+            DOM.valHn.textContent = hn.toFixed(3);
+            DOM.valLower.textContent = lowerBound.toFixed(3);
+            DOM.valUpper.textContent = upperBound.toFixed(3);
+
+            // Update Math Banner Equation
+            let eqLatex = '';
+            if (step === 0) {
+                eqLatex = `H_{${n}} = 1 + \\frac{1}{2} + \\dots + \\frac{1}{${n}} = ${hn.toFixed(3)}`;
+            } else if (step === 1) {
+                eqLatex = `H_{${n}} = ${hn.toFixed(3)} > \\int_{1}^{${n+1}} \\frac{1}{x}\\,dx = \\ln(${n+1}) = ${lowerBound.toFixed(3)}`;
+            } else if (step === 2) {
+                eqLatex = `\\text{Sliding Staircase: } \\text{shift} = ${shift.toFixed(2)}`;
+            } else if (step === 3) {
+                eqLatex = `H_{${n}} - 1 = ${(hn - 1).toFixed(3)} < \\int_{1}^{${n}} \\frac{1}{x}\\,dx = \\ln(${n}) = ${(upperBound - 1).toFixed(3)}`;
+            } else if (step === 4) {
+                eqLatex = `\\ln(${n+1}) < H_{${n}} < 1 + \\ln(${n})`;
+            }
+            DOM.ui.eq.innerHTML = `$$${eqLatex}$$`;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                clearTimeout(window.mjTimeout);
+                window.mjTimeout = setTimeout(() => {
+                    MathJax.typesetPromise([DOM.ui.eq]).catch(console.error);
+                }, 80);
+            }
+
+            // Draw Dynamic X Ticks
+            let ticksHtml = '';
+            for (let i = 1; i <= n + 1; i++) {
+                const tx = mapX(i);
+                ticksHtml += `<line x1="${tx}" y1="435" x2="${tx}" y2="445" stroke="#94a3b8" stroke-width="1.5" />`;
+                ticksHtml += `<text x="${tx}" y="462" class="math-font text-xs" fill="#64748b" text-anchor="middle">${i}</text>`;
+            }
+            DOM.svg.ticks.innerHTML = ticksHtml;
+
+            // Draw Hyperbola y = 1/x
+            const numPoints = 120;
+            const maxX = n + 1.2;
+            const minX = 0.5;
+            let curveD = `M ${mapX(minX)} ${mapY(1 / minX)} `;
+            for (let p = 1; p <= numPoints; p++) {
+                const cx = minX + (p / numPoints) * (maxX - minX);
+                curveD += `L ${mapX(cx)} ${mapY(1 / cx)} `;
+            }
+            DOM.svg.curve.setAttribute('d', curveD);
+
+            // Shaded Lower Integral [1, n+1]
+            let shadeLowerD = `M ${mapX(1)} ${mapY(0)} L ${mapX(1)} ${mapY(1)} `;
+            for (let p = 1; p <= 80; p++) {
+                const cx = 1 + (p / 80) * n;
+                shadeLowerD += `L ${mapX(cx)} ${mapY(1 / cx)} `;
+            }
+            shadeLowerD += `L ${mapX(n + 1)} ${mapY(0)} Z`;
+            DOM.svg.shadeLower.setAttribute('d', shadeLowerD);
+
+            // Shaded Upper Integral [1, n]
+            let shadeUpperD = `M ${mapX(1)} ${mapY(0)} L ${mapX(1)} ${mapY(1)} `;
+            for (let p = 1; p <= 80; p++) {
+                const cx = 1 + (p / 80) * (n - 1);
+                shadeUpperD += `L ${mapX(cx)} ${mapY(1 / cx)} `;
+            }
+            shadeUpperD += `L ${mapX(n)} ${mapY(0)} Z`;
+            DOM.svg.shadeUpper.setAttribute('d', shadeUpperD);
+
+            // Opacities for integral shades
+            DOM.svg.shadeLower.style.opacity = (step === 1 || (step === 4 && shift === 0)) ? '1' : '0';
+            DOM.svg.shadeUpper.style.opacity = (step === 3 || (step === 4 && shift === 1)) ? '1' : '0';
+
+            // Draw Staircase Rectangles
+            let rectsHtml = '';
+            const scaleX = getScaleX();
+
+            for (let k = 1; k <= n; k++) {
+                // When shift = 0: x spans [k, k+1]
+                // When shift = 1: x spans [k-1, k]
+                const leftX = (k - shift);
+                const rectW = 1.0;
+                const rectH = 1 / k;
+
+                const sx = mapX(leftX);
+                const sy = mapY(rectH);
+                const sw = scaleX;
+                const sh = mapY(0) - sy;
+
+                const color = blockColors[(k - 1) % blockColors.length];
+
+                // Special highlight for first block (k=1) in step 3/4 when shifted
+                let blockFill = color.fill;
+                let blockStroke = color.stroke;
+                if ((step === 3 || step === 4) && k === 1 && shift === 1.0) {
+                    blockFill = 'rgba(79, 70, 229, 0.2)'; // special tint
+                    blockStroke = '#4338ca';
+                }
+
+                rectsHtml += `<rect class="geom-rect" x="${sx}" y="${sy}" width="${sw}" height="${sh}" fill="${blockFill}" stroke="${blockStroke}" stroke-width="2" />`;
+
+                // Text labels inside blocks
+                if (sw > 25 && sh > 18) {
+                    const labelStr = k === 1 ? '1' : `1/${k}`;
+                    rectsHtml += `<text class="geom-text math-font font-bold" x="${sx + sw/2}" y="${sy + sh/2}" font-size="${Math.min(15, sw * 0.35)}" fill="#1e293b" text-anchor="middle" dominant-baseline="middle">${labelStr}</text>`;
+                }
+            }
+            DOM.svg.rects.innerHTML = rectsHtml;
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) setStep(0);
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 600);
+
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3500); // 3.5s per step for comfortable reading
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Geometric Series Partition</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .container-custom {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        canvas {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            border-radius: 8px;
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .controls-container {
+            backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        input[type=range] {
+            accent-color: #4f46e5;
+        }
+
+        .math-font {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+        }
+
+        /* Scrollbar for ledger */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">
+            Visual Proof: Geometric Series Partition
+        </h1>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 min-h-[70px] flex items-center justify-center transition-all" id="liveEq">
+            $$(1-p)(1 + p + p^2 + \cdots + p^n) = 1 - p^{n+1}$$
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-lg mb-6 shadow-inner flex flex-wrap items-center justify-between gap-6">
+            
+            <div class="flex items-center gap-6">
+                <!-- Ratio (p) Slider -->
+                <div class="flex flex-col gap-1.5 w-32 md:w-40">
+                    <div class="flex justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Ratio (<span class="math-font text-sm">p</span>)</span>
+                        <span id="p-val" class="text-indigo-600 font-bold text-sm">0.65</span>
+                    </div>
+                    <input type="range" id="inputP" value="0.65" min="0.45" max="0.75" step="0.01" class="w-full cursor-pointer">
+                </div>
+
+                <div class="w-px h-8 bg-slate-300"></div>
+
+                <!-- Max Power (n) Slider -->
+                <div class="flex flex-col gap-1.5 w-32 md:w-40">
+                    <div class="flex justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Max Power (<span class="math-font text-sm">n</span>)</span>
+                        <span id="n-val" class="text-indigo-600 font-bold text-sm">4</span>
+                    </div>
+                    <input type="range" id="inputN" value="4" min="1" max="6" step="1" class="w-full cursor-pointer">
+                </div>
+            </div>
+
+            <div class="text-sm font-medium text-slate-600">
+                Adjust <span class="math-font">p</span> to change the slice ratio.
+            </div>
+
+        </div>
+
+        <!-- Visualization Stage -->
+        <div class="flex flex-col xl:flex-row w-full gap-6 mb-8 relative">
+            
+            <!-- Canvas Area -->
+            <div class="flex-grow flex flex-col relative w-full h-[60vh] xl:h-[65vh] min-h-[480px]">
+                <canvas id="proofCanvas" class="w-full h-full border border-slate-200"></canvas>
+                
+                <!-- Floating Animation Controls -->
+                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 controls-container px-6 py-3 rounded-full shadow-lg border border-slate-200 flex items-center gap-4 w-[90%] max-w-md z-10">
+                    <button id="playPauseBtn" class="text-indigo-600 hover:text-indigo-800 transition-transform active:scale-90 p-2" title="Play/Pause">
+                        <i class="fa-solid fa-play text-2xl" id="playIcon"></i>
+                    </button>
+                    <div class="flex-grow flex flex-col">
+                        <input type="range" id="progressSlider" value="0" min="0" max="100" class="w-full cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none">
+                    </div>
+                    <button id="resetBtn" class="text-slate-500 hover:text-slate-800 transition-colors p-2" title="Reset">
+                        <i class="fa-solid fa-rotate-left text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Geometric Breakdown Sidebar -->
+            <div class="w-full xl:w-[380px] flex flex-col gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex-grow flex flex-col">
+                    <h2 class="font-bold text-lg text-slate-800 border-b border-slate-100 pb-3 mb-4">Area Summation</h2>
+                    <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+                        A unit square of area 1 is systematically subdivided. Factoring out $(1 - p)$ links each segment's area directly to a power of $p$.
+                    </p>
+                    
+                    <!-- Dynamic Ledger List -->
+                    <div class="space-y-2 flex-grow overflow-y-auto custom-scrollbar pr-2 font-mono text-xs" id="equationList">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Total Check -->
+                    <div class="mt-4 pt-4 border-t border-slate-200">
+                        <div class="flex justify-between items-center text-xs font-semibold text-slate-600 mb-2">
+                            <span>Total Shaded Area</span>
+                            <span>Remaining Corner</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-bold text-indigo-700" id="totalShaded">0.0000</span>
+                            <span class="text-sm font-bold text-slate-400" id="remainingCorner">0.0000</span>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-indigo-50 text-indigo-900 rounded-lg border border-indigo-100 text-center text-sm font-bold">
+                            <span id="numericCheck">0.00 = 0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanation Section -->
+        <article class="border-t border-slate-200 pt-8 mt-4">
+            <h2 class="text-2xl font-bold pb-3 mb-4 text-slate-900">The Geometric Insight</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700 text-lg">
+                <div>
+                    <p class="mb-4">
+                        Start with a unit square of area $1$. Shade a fraction $(1-p)$ of it, then shade a fraction $(1-p)$ of what's left, and repeat this process recursively.
+                    </p>
+                    <p class="mb-4">
+                        After $n+1$ cuts, the shaded region is built from alternating strips of area $(1-p),\ (1-p)p,\ (1-p)p^2,\ \ldots,\ (1-p)p^n$. This leaves a single unshaded corner with an area of exactly $p^{n+1}$.
+                    </p>
+                </div>
+                
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-inner">
+                    <h3 class="text-lg font-bold mb-3 text-slate-900">Telescoping Sum</h3>
+                    <p class="text-sm mb-3">Since the shaded area and the unshaded corner must perfectly add up to the total area of the unit square ($1$), we establish the identity:</p>
+                    <p class="text-sm text-center font-semibold mb-3">$$ (1-p)(1+p+p^2+\cdots+p^n) + p^{n+1} = 1 $$</p>
+                    <p class="text-sm">Rearranging this gives us the sum of the finite geometric series:</p>
+                    <p class="text-sm text-center font-semibold mt-2">$$ 1+p+p^2+\cdots+p^n = \frac{1-p^{n+1}}{1-p} $$</p>
+                </div>
+            </div>
+            <div class="text-center p-6 border border-indigo-200 bg-indigo-50 rounded-xl mt-6">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">The Infinite Limit</h3>
+                <p class="text-sm text-slate-700 max-w-2xl mx-auto mb-4">
+                    As more cuts are made ($n \to \infty$), the unshaded corner $p^{n+1}$ shrinks toward zero because $0 < p < 1$. The shaded area then fills the entire square, proving the infinite series convergence:
+                </p>
+                <p class="text-xl font-bold text-indigo-800">
+                    $$ \sum_{i=0}^{\infty} p^i = \frac{1}{1-p} $$
+                </p>
+            </div>
+        </article>
+
+    </div>
+
+    <script>
+        let state = { p: 0.65, n: 4, progress: 0, isPlaying: false, lastTime: 0, animationDuration: 4000 };
+        
+        const canvas = document.getElementById('proofCanvas');
+        const ctx = canvas.getContext('2d');
+        const progressSlider = document.getElementById('progressSlider');
+        const playIcon = document.getElementById('playIcon');
+        
+        const colors = [
+            'rgba(79, 70, 229, 0.25)',   // Indigo
+            'rgba(219, 39, 119, 0.25)',  // Pink
+            'rgba(5, 150, 105, 0.25)',   // Emerald
+            'rgba(217, 119, 6, 0.25)',   // Amber
+            'rgba(2, 132, 199, 0.25)',   // Sky
+            'rgba(147, 51, 234, 0.25)',  // Purple
+            'rgba(225, 29, 72, 0.25)'    // Rose
+        ];
+        const strokes = ['#4f46e5', '#db2777', '#059669', '#d97706', '#0284c7', '#9333ea', '#e11d48'];
+
+        function init() {
+            document.getElementById('inputP').addEventListener('input', (e) => {
+                state.p = parseFloat(e.target.value);
+                document.getElementById('p-val').textContent = state.p.toFixed(2);
+                pauseAnimation(); updateUI(); draw();
+            });
+            document.getElementById('inputN').addEventListener('input', (e) => {
+                state.n = parseInt(e.target.value);
+                document.getElementById('n-val').textContent = state.n;
+                pauseAnimation(); updateUI(); draw();
+            });
+            
+            progressSlider.addEventListener('input', (e) => {
+                state.progress = parseInt(e.target.value) / 100;
+                pauseAnimation(); updateUI(); draw();
+            });
+            
+            document.getElementById('playPauseBtn').addEventListener('click', togglePlay);
+            document.getElementById('resetBtn').addEventListener('click', resetAnimation);
+            window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+            
+            resizeCanvas(); updateUI(); draw();
+            requestAnimationFrame(renderLoop);
+        }
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`; canvas.style.height = `${rect.height}px`;
+        }
+
+        function togglePlay() {
+            if (state.progress >= 1) state.progress = 0;
+            state.isPlaying = !state.isPlaying;
+            state.lastTime = performance.now();
+            updatePlayIcon();
+        }
+        function pauseAnimation() { state.isPlaying = false; updatePlayIcon(); }
+        function resetAnimation() { state.progress = 0; progressSlider.value = 0; pauseAnimation(); updateUI(); draw(); }
+        function updatePlayIcon() { playIcon.className = state.isPlaying ? 'fa-solid fa-pause text-2xl' : 'fa-solid fa-play text-2xl'; }
+
+        function renderLoop(currentTime) {
+            if (state.isPlaying) {
+                const deltaTime = currentTime - state.lastTime; state.lastTime = currentTime;
+                state.progress += deltaTime / state.animationDuration;
+                if (state.progress >= 1) { state.progress = 1; state.isPlaying = false; updatePlayIcon(); }
+                progressSlider.value = state.progress * 100; updateUI(); draw();
+            }
+            requestAnimationFrame(renderLoop);
+        }
+
+        function updateUI() {
+            const { p, n, progress } = state;
+            
+            // Calculate dynamic values for equation text variables
+            let sumTerm = 0;
+            let currentShaded = 0;
+            
+            let totalSteps = n + 1;
+            
+            for(let i=0; i<=n; i++) {
+                sumTerm += Math.pow(p, i);
+                let stepEnd = (i + 1) / totalSteps;
+                if (progress >= stepEnd) {
+                    currentShaded += Math.pow(p, i) * (1 - p);
+                } else if (progress > i / totalSteps) {
+                    let stepProg = (progress - (i / totalSteps)) / (1 / totalSteps);
+                    currentShaded += Math.pow(p, i) * (1 - p) * stepProg;
+                }
+            }
+            
+            const lhs = (1 - p) * sumTerm;
+            const rhs = 1 - Math.pow(p, n + 1);
+            document.getElementById('numericCheck').innerHTML = `Sum of Terms: ${lhs.toFixed(4)} <br> <span class="text-slate-500 font-normal mt-1 block">Formula Check: 1 - ${p.toFixed(2)}<sup>${n+1}</sup> = ${rhs.toFixed(4)}</span>`;
+
+            document.getElementById('totalShaded').textContent = currentShaded.toFixed(4);
+            // Remaining corner area
+            let remCorner = 1 - currentShaded;
+            document.getElementById('remainingCorner').textContent = remCorner.toFixed(4);
+
+            // Generate list items on sidebar panel layout
+            const list = document.getElementById('equationList');
+            list.innerHTML = '';
+            
+            for (let i = 0; i <= n; i++) {
+                let stepStart = i / totalSteps;
+                let isActive = progress >= stepStart;
+                
+                const item = document.createElement('div');
+                item.className = `p-2.5 rounded-md border transition-all flex justify-between items-center ${isActive ? 'bg-slate-50 border-slate-200 opacity-100' : 'opacity-30 border-transparent bg-transparent'}`;
+                
+                let label = i === 0 ? '1' : i === 1 ? 'p' : `p²`;
+                if(i > 1) label = `p<sup>${i}</sup>`;
+                
+                let val = Math.pow(p, i) * (1 - p);
+                
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-3 h-3 rounded-sm shadow-sm" style="background-color: ${colors[i % colors.length]}; border: 1px solid ${strokes[i % strokes.length]}"></div>
+                        <span class="font-medium text-slate-700">Term ${i}: (1-p)${label}</span>
+                    </div>
+                    <span class="font-bold text-slate-600">${val.toFixed(4)}</span>
+                `;
+                list.appendChild(item);
+            }
+        }
+
+        function draw() {
+            const canvasW = canvas.width / (window.devicePixelRatio || 1);
+            const canvasH = canvas.height / (window.devicePixelRatio || 1);
+            ctx.clearRect(0, 0, canvasW, canvasH);
+
+            const { p, n, progress } = state;
+
+            // Positioning layout rules
+            const paddingLeft = 60;
+            const paddingTop = 40;
+            const paddingBottom = 60; // Adjusted for new layout
+            const size = Math.min(canvasW - paddingLeft * 2, canvasH - paddingTop - paddingBottom);
+            
+            const originX = (canvasW - size) / 2;
+            const originY = paddingTop;
+
+            // Draw primary unit box bounding frame
+            ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2;
+            ctx.strokeRect(originX, originY, size, size);
+
+            // Bounding box unit labels
+            ctx.fillStyle = '#475569'; ctx.font = 'bold 14px Inter'; ctx.textAlign = 'center';
+            ctx.fillText('1', originX + size / 2, originY - 10); // Width 1
+            ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+            ctx.fillText('1', originX - 10, originY + size / 2); // Height 1
+
+            // Iterative coordinate parsing structures
+            let currentX = 0;
+            let currentY = 0;
+            let currentW = 1;
+            let currentH = 1;
+
+            let totalSteps = n + 1;
+
+            for (let i = 0; i <= n; i++) {
+                let targetProgress = (i + 1) / totalSteps;
+                let currentStepProgress = 0;
+                
+                if (progress >= targetProgress) currentStepProgress = 1;
+                else if (progress > i / totalSteps) currentStepProgress = (progress - (i / totalSteps)) / (1 / totalSteps);
+                
+                if (currentStepProgress <= 0) continue;
+
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.strokeStyle = strokes[i % strokes.length];
+                ctx.lineWidth = 1.5;
+
+                let drawX, drawY, drawW, drawH;
+
+                if (i % 2 === 0) {
+                    // Alternate step partition down vertically
+                    let splitWidth = currentW * (1 - p);
+                    drawX = currentX;
+                    drawY = currentY;
+                    drawW = splitWidth * currentStepProgress;
+                    drawH = currentH;
+
+                    if (currentStepProgress === 1) {
+                        currentX += splitWidth;
+                        currentW *= p;
+                    }
+                } else {
+                    // Alternate step partition across horizontally 
+                    let splitHeight = currentH * (1 - p);
+                    drawX = currentX;
+                    drawY = currentY;
+                    drawW = currentW;
+                    drawH = splitHeight * currentStepProgress;
+
+                    if (currentStepProgress === 1) {
+                        currentY += splitHeight;
+                        currentH *= p;
+                    }
+                }
+
+                // Render shaded node step slice
+                ctx.fillRect(originX + drawX * size, originY + drawY * size, drawW * size, drawH * size);
+                ctx.strokeRect(originX + drawX * size, originY + drawY * size, drawW * size, drawH * size);
+
+                // Mathematical area term labels inside pieces if space holds out
+                if (currentStepProgress === 1 && (drawW * size) > 55 && (drawH * size) > 30) {
+                    ctx.fillStyle = strokes[i % strokes.length];
+                    ctx.font = 'italic 13px Times New Roman';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    let pLabel = i === 0 ? '' : i === 1 ? 'p' : `p³`;
+                    if(i > 1) pLabel = `p${getSuperscript(i)}`;
+                    ctx.fillText(`(1-p)${pLabel}`, originX + (drawX + drawW/2)*size, originY + (drawY + drawH/2)*size);
+                }
+            }
+
+            // Draw Leftover remaining Corner node visualization
+            if (progress >= 0.95) {
+                let trW = currentW * size;
+                let trH = currentH * size;
+                
+                ctx.fillStyle = 'rgba(241, 245, 249, 0.5)';
+                ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 4]);
+                ctx.fillRect(originX + currentX * size, originY + currentY * size, trW, trH);
+                ctx.strokeRect(originX + currentX * size, originY + currentY * size, trW, trH);
+                ctx.setLineDash([]);
+
+                if (trW > 35) {
+                    ctx.fillStyle = '#475569';
+                    ctx.font = 'bold 13px Inter';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(`pⁿ⁺¹`, originX + (currentX + currentW/2)*size, originY + (currentY + currentH/2)*size);
+                }
+            }
+        }
+
+        function getSuperscript(num) {
+            const sups = {'2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶'};
+            return sups[num] || num;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

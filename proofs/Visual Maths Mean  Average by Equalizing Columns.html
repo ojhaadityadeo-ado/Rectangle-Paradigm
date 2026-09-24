@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual for mean and average as redistributing equal total area into equal-height columns." />
+  <title>Visual Maths: Mean / Average by Equalizing Columns</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fbff;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --purple: #7c3aed;
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --shadow: 0 16px 38px rgba(15, 23, 42, 0.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      line-height: 1.55;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 10%, rgba(37,99,235,.06), transparent 26rem),
+        var(--bg);
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1140px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 30px 0 54px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(124,58,237,.22);
+      background: rgba(124,58,237,.07);
+      color: #6d28d9;
+      text-transform: uppercase;
+      font-size: .8rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      max-width: 940px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.8vw, 1.1rem);
+    }
+
+    .top-box {
+      margin: 20px auto 0;
+      max-width: 900px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(16,185,129,.20);
+      background: linear-gradient(180deg, rgba(16,185,129,.07), rgba(16,185,129,.03));
+      color: #065f46;
+      font-weight: 800;
+      font-size: clamp(1.08rem, 2vw, 1.34rem);
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.14fr .86fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card, .side-card, .explain-card {
+      padding: 18px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .slider-box, .preset-box {
+      padding: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.02);
+      border-radius: 14px;
+      min-width: 0;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: .92rem;
+    }
+
+    .slider-head strong {
+      color: #6d28d9;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--purple);
+      cursor: pointer;
+    }
+
+    .preset-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      min-height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 8px 12px;
+      background: white;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 750;
+      transition: .18s ease;
+    }
+
+    .btn.primary {
+      border-color: rgba(124,58,237,.34);
+      background: rgba(124,58,237,.08);
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(124,58,237,.40);
+    }
+
+    .stage-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .stage-wrap {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.08) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 32px 32px;
+      padding: 52px 16px 18px;
+      min-height: 500px;
+      overflow-x: auto;
+    }
+
+    .stage-badge {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      padding: 7px 10px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,.94);
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .chart {
+      min-width: 590px;
+      height: 375px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px 28px 48px;
+      border-bottom: 2px solid rgba(15,23,42,.25);
+      position: relative;
+    }
+
+    .avg-line {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      border-top: 2px dashed rgba(124,58,237,.55);
+      z-index: 3;
+    }
+
+    .avg-line-label {
+      position: absolute;
+      right: 27px;
+      transform: translateY(-26px);
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(124,58,237,.18);
+      color: #6d28d9;
+      font-size: .8rem;
+      font-weight: 800;
+      z-index: 4;
+    }
+
+    .column-wrap {
+      width: 70px;
+      height: 290px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      position: relative;
+    }
+
+    .column {
+      width: 54px;
+      border-radius: 10px 10px 4px 4px;
+      background: linear-gradient(180deg, rgba(37,99,235,.64), rgba(37,99,235,.35));
+      border: 1px solid rgba(37,99,235,.30);
+      position: relative;
+      transition: height .35s ease;
+      overflow: hidden;
+    }
+
+    .column.redistributed {
+      background: linear-gradient(180deg, rgba(16,185,129,.58), rgba(16,185,129,.30));
+      border-color: rgba(5,150,105,.30);
+    }
+
+    .cut-piece {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      background: rgba(245,158,11,.38);
+      border-bottom: 2px dashed rgba(180,83,9,.55);
+      pointer-events: none;
+    }
+
+    .fill-piece {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(8,145,178,.28);
+      border-top: 2px dashed rgba(8,145,178,.48);
+      pointer-events: none;
+    }
+
+    .column-value {
+      margin-top: 7px;
+      font-size: .9rem;
+      font-weight: 850;
+      color: #334155;
+    }
+
+    .column-name {
+      position: absolute;
+      bottom: -44px;
+      color: #64748b;
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .stage-note {
+      margin-top: 16px;
+      text-align: center;
+      color: #475569;
+      font-size: .93rem;
+      font-weight: 700;
+      min-width: 590px;
+    }
+
+    .step-kicker {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .step-title {
+      margin: 4px 0 8px;
+      font-size: 1.34rem;
+      line-height: 1.24;
+    }
+
+    .step-copy {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .math-strip, .kid-note, .facts-card {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .math-strip {
+      border: 1px solid rgba(124,58,237,.18);
+      background: rgba(124,58,237,.05);
+    }
+
+    .math-strip small {
+      display: block;
+      color: #6d28d9;
+      font-size: .77rem;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .math-line {
+      font-size: clamp(1.05rem, 2vw, 1.3rem);
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .kid-note {
+      border: 1px solid rgba(16,185,129,.18);
+      background: rgba(16,185,129,.055);
+      color: #334155;
+      font-size: .92rem;
+    }
+
+    .kid-note strong, .facts-card strong.title {
+      display: block;
+      color: #047857;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-size: .8rem;
+      margin-bottom: 4px;
+    }
+
+    .facts-card {
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+    }
+
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .fact {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      padding: 10px 11px;
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      color: #0f172a;
+      font-size: 1rem;
+    }
+
+    .big-box {
+      margin-top: 14px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid rgba(5,150,105,.24);
+      border-radius: 14px;
+      background: rgba(16,185,129,.055);
+      font-size: clamp(1.06rem, 2vw, 1.32rem);
+      font-weight: 800;
+      color: #065f46;
+      overflow-x: auto;
+    }
+
+    .explain-card {
+      margin-top: 18px;
+    }
+
+    .explain-card h2 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+      color: #475569;
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    mjx-container {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    @media (max-width: 920px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .controls { grid-template-columns: 1fr; }
+      .facts-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        width: min(100% - 18px, 1140px);
+        padding-top: 22px;
+      }
+      .visual-card, .side-card, .explain-card { padding: 13px; }
+      .stage-wrap { padding-left: 8px; padding-right: 8px; }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Maths • Mean / Average</div>
+    <h1>Average Means “Same Total Amount, Equal Height”</h1>
+    <p class="subtitle">
+      Unequal columns can be cut and their extra parts moved to shorter columns.
+      Nothing is added and nothing is removed. When all columns become the same height,
+      that common height is the mean.
+    </p>
+    <div class="top-box" id="topBox">
+      \(\text{average}=\frac{2+7+4+5+2}{5}=4\)
+    </div>
+  </header>
+
+  <section class="main-grid">
+    <div class="card visual-card">
+      <div class="controls">
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Choose number of columns</span>
+            <strong id="countReadout">5</strong>
+          </div>
+          <input id="countSlider" type="range" min="3" max="7" value="5" step="1" aria-label="Choose number of columns">
+        </div>
+
+        <div class="preset-box">
+          <div style="font-weight:800;color:#334155;">Try an example</div>
+          <div class="preset-buttons">
+            <button class="btn" data-preset="2,7,4,5,2" type="button">2, 7, 4, 5, 2</button>
+            <button class="btn" data-preset="1,3,8,4" type="button">1, 3, 8, 4</button>
+            <button class="btn" data-preset="6,2,5,3,4" type="button">6, 2, 5, 3, 4</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="valueSliders"></div>
+
+      <div class="stage-controls">
+        <button class="btn" id="resetBtn" type="button">↺ Reset</button>
+        <button class="btn" id="prevBtn" type="button">← Previous</button>
+        <button class="btn primary" id="nextBtn" type="button">Next →</button>
+      </div>
+
+      <div class="stage-wrap">
+        <div class="stage-badge" id="stageBadge">Step 1 of 4</div>
+        <div class="chart" id="chart"></div>
+        <div class="stage-note" id="stageNote">
+          Start with columns of different heights.
+        </div>
+      </div>
+    </div>
+
+    <aside class="card side-card">
+      <div class="step-kicker" id="stepKicker">Step 1</div>
+      <h2 class="step-title" id="stepTitle">Look at the unequal columns</h2>
+      <p class="step-copy" id="stepCopy">
+        Each column has the same width, so its height tells us how much amount it contains.
+      </p>
+
+      <div class="math-strip">
+        <small>Average calculation</small>
+        <div class="math-line" id="averageEquation">
+          \(\frac{2+7+4+5+2}{5}=4\)
+        </div>
+      </div>
+
+      <div class="kid-note">
+        <strong>What is happening?</strong>
+        <div id="kidExplanation">
+          Some columns are too tall and some are too short. We will move only the extra area from tall columns to short ones.
+        </div>
+      </div>
+
+      <div class="facts-card">
+        <strong class="title">Quick facts</strong>
+        <div class="facts-grid">
+          <div class="fact">
+            <small>Total amount</small>
+            <strong id="factTotal">20</strong>
+          </div>
+          <div class="fact">
+            <small>Number of columns</small>
+            <strong id="factCount">5</strong>
+          </div>
+          <div class="fact">
+            <small>Equal height</small>
+            <strong id="factAverage">4</strong>
+          </div>
+          <div class="fact">
+            <small>Total after sharing</small>
+            <strong id="factAfter">20</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="big-box" id="bigBox">
+        Same total area \(20\), spread equally across \(5\) columns, gives height \(4\).
+      </div>
+    </aside>
+  </section>
+
+  <section class="card explain-card">
+    <h2>How to explain average to small kids</h2>
+
+    <div class="proof-steps">
+      <div class="proof-step">
+        <b>Start with unequal amounts.</b>
+        Imagine each column is a stack of blocks. Some children have more blocks and some have fewer.
+      </div>
+
+      <div class="proof-step">
+        <b>Do not change the total.</b>
+        We are only moving blocks from one column to another. No block disappears, and no new block appears.
+      </div>
+
+      <div class="proof-step">
+        <b>Share the extra fairly.</b>
+        Cut the extra part from columns above the average line and give it to columns below the line.
+      </div>
+
+      <div class="proof-step">
+        <b>Stop when every height is equal.</b>
+        Once every column has the same height, that height is the average.
+      </div>
+
+      <div class="proof-step">
+        <b>Why the formula works.</b>
+        If the total amount is \(T\) and there are \(n\) equal columns, then each column must have height
+        \[
+          \frac{T}{n}.
+        \]
+      </div>
+    </div>
+
+    <div class="big-box">
+      Average = same total amount, shared equally.
+    </div>
+  </section>
+
+  <p class="footer-note">
+    Kid-friendly interactive visual for mean / average as area redistribution.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const countSlider = document.getElementById("countSlider");
+  const countReadout = document.getElementById("countReadout");
+  const valueSliders = document.getElementById("valueSliders");
+  const chart = document.getElementById("chart");
+  const stageNote = document.getElementById("stageNote");
+
+  const resetBtn = document.getElementById("resetBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const stageBadge = document.getElementById("stageBadge");
+  const stepKicker = document.getElementById("stepKicker");
+  const stepTitle = document.getElementById("stepTitle");
+  const stepCopy = document.getElementById("stepCopy");
+  const averageEquation = document.getElementById("averageEquation");
+  const kidExplanation = document.getElementById("kidExplanation");
+
+  const factTotal = document.getElementById("factTotal");
+  const factCount = document.getElementById("factCount");
+  const factAverage = document.getElementById("factAverage");
+  const factAfter = document.getElementById("factAfter");
+  const bigBox = document.getElementById("bigBox");
+  const topBox = document.getElementById("topBox");
+
+  let values = [2,7,4,5,2];
+  let step = 1;
+
+  function typesetMath(targets) {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise(targets).catch(() => {});
+    }
+  }
+
+  function total() {
+    return values.reduce((s,v) => s+v, 0);
+  }
+
+  function average() {
+    return total() / values.length;
+  }
+
+  function fmt(n) {
+    return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
+  }
+
+  function renderValueSliders() {
+    valueSliders.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.style.display = "grid";
+    wrap.style.gridTemplateColumns = "repeat(auto-fit,minmax(150px,1fr))";
+    wrap.style.gap = "10px";
+    wrap.style.marginBottom = "14px";
+
+    values.forEach((v,i) => {
+      const box = document.createElement("div");
+      box.className = "slider-box";
+
+      const head = document.createElement("div");
+      head.className = "slider-head";
+
+      const label = document.createElement("span");
+      label.textContent = `Column ${i+1}`;
+
+      const readout = document.createElement("strong");
+      readout.textContent = String(v);
+
+      head.append(label, readout);
+
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = "1";
+      slider.max = "10";
+      slider.step = "1";
+      slider.value = String(v);
+      slider.setAttribute("aria-label", `Height of column ${i+1}`);
+
+      slider.addEventListener("input", () => {
+        values[i] = Number(slider.value);
+        readout.textContent = slider.value;
+        step = 1;
+        render();
+      });
+
+      box.append(head, slider);
+      wrap.appendChild(box);
+    });
+
+    valueSliders.appendChild(wrap);
+  }
+
+  function renderChart() {
+    chart.innerHTML = "";
+
+    const avg = average();
+    const maxVal = Math.max(10, ...values, avg);
+    const usableHeight = 250;
+    const pxPerUnit = usableHeight / maxVal;
+
+    if (step >= 2) {
+      const line = document.createElement("div");
+      line.className = "avg-line";
+      line.style.bottom = `${48 + avg * pxPerUnit}px`;
+
+      const label = document.createElement("div");
+      label.className = "avg-line-label";
+      label.style.bottom = `${48 + avg * pxPerUnit}px`;
+      label.textContent = `average height = ${fmt(avg)}`;
+
+      chart.append(line, label);
+    }
+
+    values.forEach((v,i) => {
+      const wrap = document.createElement("div");
+      wrap.className = "column-wrap";
+
+      const column = document.createElement("div");
+      column.className = "column";
+
+      let displayHeight = v;
+
+      if (step === 4) {
+        displayHeight = avg;
+        column.classList.add("redistributed");
+      }
+
+      column.style.height = `${displayHeight * pxPerUnit}px`;
+
+      if (step === 3) {
+        if (v > avg) {
+          const extra = document.createElement("div");
+          extra.className = "cut-piece";
+          extra.style.height = `${(v-avg)*pxPerUnit}px`;
+          column.appendChild(extra);
+        } else if (v < avg) {
+          const need = document.createElement("div");
+          need.className = "fill-piece";
+          need.style.height = `${(avg-v)*pxPerUnit}px`;
+          column.appendChild(need);
+        }
+      }
+
+      const valueLabel = document.createElement("div");
+      valueLabel.className = "column-value";
+      valueLabel.textContent = step === 4 ? fmt(avg) : fmt(v);
+
+      const name = document.createElement("div");
+      name.className = "column-name";
+      name.textContent = `Column ${i+1}`;
+
+      wrap.append(column, valueLabel, name);
+      chart.appendChild(wrap);
+    });
+  }
+
+  function renderText() {
+    const t = total();
+    const n = values.length;
+    const avg = average();
+
+    countReadout.textContent = String(n);
+    stageBadge.textContent = `Step ${step} of 4`;
+    stepKicker.textContent = `Step ${step}`;
+
+    averageEquation.innerHTML =
+      `\\(\\frac{${values.join("+")}}{${n}}=\\frac{${t}}{${n}}=${fmt(avg)}\\)`;
+
+    factTotal.textContent = fmt(t);
+    factCount.textContent = String(n);
+    factAverage.textContent = fmt(avg);
+    factAfter.textContent = fmt(t);
+
+    topBox.innerHTML =
+      `\\(\\text{average}=\\frac{${values.join("+")}}{${n}}=${fmt(avg)}\\)`;
+
+    if (step === 1) {
+      stepTitle.textContent = "Look at the unequal columns";
+      stepCopy.textContent =
+        "Each column has the same width, so taller columns contain more area and shorter columns contain less.";
+      kidExplanation.textContent =
+        "The columns are not equal yet. Some have extra amount and some need more.";
+      stageNote.textContent =
+        "Start with columns of different heights.";
+    }
+
+    if (step === 2) {
+      stepTitle.textContent = "Find the fair-share height";
+      stepCopy.innerHTML =
+        `The total amount is \\(${fmt(t)}\\). If it is shared equally among \\(${n}\\) columns, each one should have height \\(${fmt(avg)}\\).`;
+      kidExplanation.textContent =
+        "The dashed line shows the height every column would have after a perfectly fair share.";
+      stageNote.textContent =
+        `The dashed line is the average height: ${fmt(avg)}.`;
+    }
+
+    if (step === 3) {
+      stepTitle.textContent = "Cut extra area and fill the gaps";
+      stepCopy.textContent =
+        "The orange parts are extra pieces above the average line. The cyan gaps are places that need to be filled.";
+      kidExplanation.textContent =
+        "We only move area around. The total amount stays exactly the same.";
+      stageNote.textContent =
+        "Move the extra area from taller columns into shorter columns.";
+    }
+
+    if (step === 4) {
+      stepTitle.textContent = "All columns now have equal height";
+      stepCopy.innerHTML =
+        `After redistribution, every column has height \\(${fmt(avg)}\\). The total area is still \\(${fmt(t)}\\).`;
+      kidExplanation.textContent =
+        "That equal height is the average: same total amount, shared equally.";
+      stageNote.textContent =
+        `Equal heights achieved. Average = ${fmt(avg)}.`;
+    }
+
+    bigBox.innerHTML =
+      `Same total area \\(${fmt(t)}\\), spread equally across \\(${n}\\) columns, gives height \\(${fmt(avg)}\\).`;
+
+    prevBtn.disabled = step === 1;
+    nextBtn.disabled = step === 4;
+
+    typesetMath([averageEquation, topBox, stepCopy, bigBox]);
+  }
+
+  function render() {
+    renderValueSliders();
+    renderChart();
+    renderText();
+  }
+
+  countSlider.addEventListener("input", () => {
+    const n = Number(countSlider.value);
+
+    if (n > values.length) {
+      while (values.length < n) values.push(4);
+    } else if (n < values.length) {
+      values = values.slice(0,n);
+    }
+
+    step = 1;
+    render();
+  });
+
+  document.querySelectorAll("[data-preset]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      values = btn.dataset.preset.split(",").map(Number);
+      countSlider.value = String(values.length);
+      step = 1;
+      render();
+    });
+  });
+
+  resetBtn.addEventListener("click", () => {
+    values = [2,7,4,5,2];
+    countSlider.value = "5";
+    step = 1;
+    render();
+  });
+
+  prevBtn.addEventListener("click", () => {
+    if (step > 1) {
+      step--;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    if (step < 4) {
+      step++;
+      render();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

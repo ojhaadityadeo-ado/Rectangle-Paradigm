@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Monotonicity of Multiplication</title>
+
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MathJax for rendering LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+
+        .container-custom {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .svg-container {
+            background-color: #ffffff;
+            background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 24px 24px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .math-font { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        
+        input[type=range] { accent-color: #4f46e5; cursor: pointer; }
+
+        /* Interactive Buttons */
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-play { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-play:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background-color: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Step highlight transitions */
+        .ledger-step { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .ledger-step.active { background-color: #eff6ff; border-left-color: #3b82f6; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.05); }
+
+        /* SVG Element Transitions */
+        .geom-rect { transition: all 0.5s ease-out; }
+        .geom-line { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .geom-text { user-select: none; transition: opacity 0.3s ease; }
+        .fade { transition: opacity 0.4s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    
+    <div class="container-custom">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <i class="fa-solid fa-expand-arrows-alt text-indigo-600 text-2xl"></i> Visual Proof: Monotonicity of Multiplication
+        </h1>
+        <p class="text-center text-slate-500 text-sm mb-6 max-w-2xl mx-auto">
+            A geometric demonstration that multiplying an inequality by a positive number preserves its order, shown through nested areas.
+        </p>
+
+        <!-- Live Math Equation Banner -->
+        <div class="text-center text-xl font-bold p-4 bg-indigo-50 text-indigo-950 rounded-lg mb-6 shadow-sm border border-indigo-200 flex flex-col items-center justify-center transition-all overflow-x-auto min-w-0">
+            <div class="whitespace-nowrap flex items-center gap-4" id="live-equation">
+                <span class="text-slate-800">If</span>
+                <span class="text-blue-700">$a < b$</span>
+                <span class="text-slate-800">and</span>
+                <span class="text-amber-600">$c > 0$</span>
+                <span class="text-slate-800">$\implies$</span>
+                <span class="text-emerald-700">$ac < bc$</span>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 shadow-inner flex flex-col xl:flex-row items-center justify-between gap-6 relative">
+            
+            <div class="flex flex-wrap gap-4 items-center justify-center flex-grow">
+                <!-- A Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[160px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Side <span class="math-font text-sm normal-case text-indigo-600">a</span></span>
+                        <span id="val-a" class="text-indigo-600 text-lg font-mono">4.0</span>
+                    </div>
+                    <input type="range" id="slider-a" value="4" min="1" max="9.5" step="0.5" class="w-full">
+                </div>
+
+                <!-- B Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[160px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Side <span class="math-font text-sm normal-case text-emerald-600">b</span></span>
+                        <span id="val-b" class="text-emerald-600 text-lg font-mono">8.0</span>
+                    </div>
+                    <input type="range" id="slider-b" value="8" min="1.5" max="10" step="0.5" class="w-full">
+                </div>
+                
+                <!-- C Slider -->
+                <div class="flex flex-col gap-2 w-full max-w-[160px] bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Height <span class="math-font text-sm normal-case text-amber-500">c</span></span>
+                        <span id="val-c" class="text-amber-500 text-lg font-mono">5.0</span>
+                    </div>
+                    <input type="range" id="slider-c" value="5" min="1" max="10" step="0.5" class="w-full">
+                </div>
+
+                <!-- Live Area Value -->
+                <div class="bg-white px-5 py-3 rounded-lg border border-slate-200 shadow-sm text-sm font-medium flex flex-col items-center justify-center min-w-[120px]">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Areas</span>
+                    <div class="flex items-center gap-2 font-mono font-bold text-base">
+                        <span class="text-indigo-600" id="val-ac">20.0</span>
+                        <span class="text-slate-500">&lt;</span>
+                        <span class="text-emerald-600" id="val-bc">40.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2 whitespace-nowrap">
+                    <span class="font-semibold text-slate-700 text-sm">Step:</span>
+                    <span id="stepIndicator" class="text-indigo-700 font-bold text-base bg-indigo-100 px-3 py-1 rounded-md border border-indigo-200">0 / 4</span>
+                </div>
+                <button id="playPauseBtn" class="btn-action btn-play"><i class="fa-solid fa-play"></i> Play</button>
+                <button id="stepBtn" class="btn-action btn-secondary">Next &rarr;</button>
+                <button id="resetBtn" class="btn-action btn-secondary ml-1" title="Reset All"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            
+            <!-- SVG Viewport -->
+            <div class="lg:col-span-3 svg-container flex items-center justify-center min-h-[500px]">
+                <svg id="canvas" class="w-full h-full max-h-[600px]" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Hatch pattern for extra area -->
+                        <pattern id="hatch-green" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="8" stroke="#10b981" stroke-width="2" opacity="0.4"/>
+                        </pattern>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowstart" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                            <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                        </marker>
+                    </defs>
+
+                    <!-- Coordinate Axes -->
+                    <line x1="80" y1="420" x2="450" y2="420" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <line x1="100" y1="440" x2="100" y2="70" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <g id="geometry-group">
+                        <!-- Rect A: a x c -->
+                        <rect id="rect-a" class="geom-rect fade" fill="rgba(79, 70, 229, 0.2)" stroke="#4338ca" stroke-width="3" opacity="0" />
+                        
+                        <!-- Rect B Extra: (b-a) x c -->
+                        <rect id="rect-extra" class="geom-rect fade" fill="url(#hatch-green)" stroke="#059669" stroke-width="3" stroke-dasharray="6,4" opacity="0" />
+                        
+                        <!-- Full Rect B Outline -->
+                        <rect id="rect-b-outline" class="geom-rect fade" fill="none" stroke="#059669" stroke-width="3" opacity="0" />
+                    </g>
+
+                    <g id="dim-group" class="fade">
+                        <!-- Left Height Dimension (c) -->
+                        <line id="dim-c-line" class="geom-line fade" stroke="#475569" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-c-text" class="geom-text math-font font-bold fade" text-anchor="end" dominant-baseline="middle" font-size="20" fill="#f59e0b" opacity="0">c</text>
+                        
+                        <!-- Bottom Width Dimension (a) -->
+                        <line id="dim-a-line" class="geom-line fade" stroke="#475569" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-a-text" class="geom-text math-font font-bold fade" text-anchor="middle" font-size="20" fill="#4338ca" opacity="0">a</text>
+                        
+                        <!-- Bottom Width Dimension (b) -->
+                        <line id="dim-b-line" class="geom-line fade" stroke="#475569" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-b-text" class="geom-text math-font font-bold fade" text-anchor="middle" font-size="20" fill="#059669" opacity="0">b</text>
+
+                        <!-- Extra Width Dimension (b-a) -->
+                        <line id="dim-extra-line" class="geom-line fade" stroke="#475569" stroke-width="1.5" marker-start="url(#arrowstart)" marker-end="url(#arrowhead)" opacity="0"/>
+                        <text id="lbl-extra-text" class="geom-text math-font font-bold fade" text-anchor="middle" font-size="16" fill="#059669" opacity="0">b - a</text>
+                    </g>
+
+                    <!-- Center Area Labels -->
+                    <text id="lbl-area-a" class="geom-text math-font font-bold fade" text-anchor="middle" dominant-baseline="middle" font-size="24" fill="#4338ca" opacity="0">ac</text>
+                    <text id="lbl-area-extra" class="geom-text math-font font-bold fade" text-anchor="middle" dominant-baseline="middle" font-size="20" fill="#059669" opacity="0">(b-a)c</text>
+                </svg>
+            </div>
+
+            <!-- Ledger Sidebar -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm flex-grow">
+                    <h2 class="font-semibold text-lg border-b pb-2 mb-3 text-slate-800 flex justify-between items-center">
+                        <span>Proof Progression</span>
+                    </h2>
+                    
+                    <div id="ledger-steps" class="space-y-2.5 text-sm">
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200 active" id="ledger-0">
+                            <span class="font-bold text-slate-800 block mb-1">1. The Premise</span>
+                            <span class="text-xs text-slate-600">We establish three positive numbers where length $a$ is strictly less than length $b$, and they share a common positive multiplier $c$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-1">
+                            <span class="font-bold text-indigo-700 block mb-1">2. First Product ($ac$)</span>
+                            <span class="text-xs text-slate-600">Multiplying $a$ by $c$ creates a rectangle of area $ac$.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-2">
+                            <span class="font-bold text-emerald-600 block mb-1">3. Second Product ($bc$)</span>
+                            <span class="text-xs text-slate-600">Multiplying $b$ by $c$ creates a wider rectangle of area $bc$. Notice how it encompasses the first.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-3">
+                            <span class="font-bold text-amber-600 block mb-1">4. Geometric Nesting</span>
+                            <span class="text-xs text-slate-600">Because $a < b$, the $ac$ rectangle fits strictly <em>inside</em> the $bc$ rectangle. The physical gap visually proves the difference.</span>
+                        </div>
+                        <div class="ledger-step p-3 rounded-lg border border-slate-200" id="ledger-4">
+                            <span class="font-bold text-slate-800 block mb-1">5. The Conclusion</span>
+                            <span class="text-xs text-slate-600">The leftover area is $(b-a)c > 0$. Therefore, $ac$ is strictly less than $bc$.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm min-h-[100px] flex items-center justify-center">
+                    <p class="text-sm text-indigo-950 leading-relaxed font-medium text-center" id="statusText">
+                        Adjust parameters $a, b, c$. Press <strong>Play</strong> to visualize the monotonic property.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-8 mt-4">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">Deriving the Monotonicity Property</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <!-- Left: Geometric Breakdown -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-700">1. Geometric Nesting of Areas</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        When we say $a < b$, geometrically we mean that a line segment of length $a$ is strictly shorter than a segment of length $b$. 
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Multiplying these lengths by a positive value $c$ extrudes both segments into two-dimensional rectangles that share the exact same height.
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$\text{Area}_1 = ac \quad \text{and} \quad \text{Area}_2 = bc$$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Because they share the same height $c$ and start at the same origin, the rectangle $ac$ is a <strong>strict subset</strong> of the rectangle $bc$.
+                    </p>
+                </div>
+
+                <!-- Right: Algebraic Translation -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 text-slate-800">2. Algebraic Factorization</h3>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Algebraically, if $a < b$, then their difference is positive: $b - a > 0$.
+                    </p>
+                    <p class="text-slate-700 leading-relaxed text-sm mb-3">
+                        Because the multiplier $c$ is also strictly positive ($c > 0$), the product of two positive numbers must be positive:
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center text-sm font-bold text-slate-800 overflow-x-auto min-w-0 mb-4">
+                        $$(b - a) \cdot c > 0$$
+                    </div>
+                    <p class="text-slate-700 leading-relaxed text-sm">
+                        Distributing $c$ through the parentheses yields $bc - ac > 0$, which is the exact mathematical equivalent of our physical "extra area" gap.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-xl font-bold mb-3 text-slate-900">Conclusion: Preservation of Inequality</h3>
+                <p class="text-slate-700 leading-relaxed mb-3">
+                    By showing that $bc - ac > 0$, we simply add $ac$ to both sides of the inequality to arrive at our final theorem. Because the extra area geometrically exists, the larger rectangle must contain more surface area than the smaller one:
+                </p>
+                <div class="text-center text-xl font-bold text-blue-900 my-4 overflow-x-auto min-w-0">
+                    $$ac < bc$$
+                </div>
+                <p class="text-slate-700 leading-relaxed text-sm">
+                    <em>Note: If $c$ were negative, the geometric extrusion would go in the opposite direction, flipping the logical orientation and reversing the inequality sign.</em>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            a: 4.0,
+            b: 8.0,
+            c: 5.0,
+            step: 0,
+            maxSteps: 4,
+            isPlaying: false,
+            animInterval: null
+        };
+
+        // Constants for SVG
+        const OX = 100;     // Origin X
+        const OY = 420;     // Origin Y
+        const SCALE = 30;   // Pixels per unit. Max b=10 -> 300px width. Max c=10 -> 300px height. Fits perfectly in 500x500
+
+        // DOM Elements
+        const DOM = {
+            sliders: { a: document.getElementById('slider-a'), b: document.getElementById('slider-b'), c: document.getElementById('slider-c') },
+            vals: { a: document.getElementById('val-a'), b: document.getElementById('val-b'), c: document.getElementById('val-c'), ac: document.getElementById('val-ac'), bc: document.getElementById('val-bc') },
+            btns: { play: document.getElementById('playPauseBtn'), step: document.getElementById('stepBtn'), reset: document.getElementById('resetBtn') },
+            ui: { step: document.getElementById('stepIndicator'), status: document.getElementById('statusText') },
+            svg: {
+                rectA: document.getElementById('rect-a'),
+                rectExtra: document.getElementById('rect-extra'),
+                rectBOut: document.getElementById('rect-b-outline'),
+                dimC: document.getElementById('dim-c-line'), lblC: document.getElementById('lbl-c-text'),
+                dimA: document.getElementById('dim-a-line'), lblA: document.getElementById('lbl-a-text'),
+                dimB: document.getElementById('dim-b-line'), lblB: document.getElementById('lbl-b-text'),
+                dimExtra: document.getElementById('dim-extra-line'), lblExtra: document.getElementById('lbl-extra-text'),
+                lblAreaA: document.getElementById('lbl-area-a'), lblAreaExtra: document.getElementById('lbl-area-extra')
+            }
+        };
+
+        const descriptions = [
+            "We define three positive numbers $a, b, c$ such that $a < b$.",
+            "Construct a rectangle with width $a$ and height $c$. Its area is exactly $ac$.",
+            "Construct a second rectangle with width $b$ and the same height $c$. Its area is $bc$.",
+            "Because $a < b$, the first rectangle fits strictly <em>inside</em> the second rectangle.",
+            "The extra space has an area of $(b - a)c > 0$. Thus, $ac < bc$."
+        ];
+
+        function init() {
+            // Slider events - Enforce constraints
+            DOM.sliders.a.addEventListener('input', (e) => {
+                pauseAnimation();
+                let val = parseFloat(e.target.value);
+                if (val >= state.b) {
+                    val = state.b - 0.5;
+                    DOM.sliders.a.value = val;
+                }
+                state.a = val;
+                updateGeometry();
+            });
+
+            DOM.sliders.b.addEventListener('input', (e) => {
+                pauseAnimation();
+                let val = parseFloat(e.target.value);
+                if (val <= state.a) {
+                    val = state.a + 0.5;
+                    DOM.sliders.b.value = val;
+                }
+                state.b = val;
+                updateGeometry();
+            });
+
+            DOM.sliders.c.addEventListener('input', (e) => {
+                pauseAnimation();
+                state.c = parseFloat(e.target.value);
+                updateGeometry();
+            });
+
+            DOM.btns.play.addEventListener('click', togglePlay);
+            DOM.btns.step.addEventListener('click', stepForward);
+            DOM.btns.reset.addEventListener('click', () => {
+                pauseAnimation();
+                state.a = 4.0; state.b = 8.0; state.c = 5.0;
+                DOM.sliders.a.value = 4.0; DOM.sliders.b.value = 8.0; DOM.sliders.c.value = 5.0;
+                updateGeometry();
+                setStep(0);
+            });
+
+            updateGeometry();
+            setStep(0);
+        }
+
+        function updateGeometry() {
+            const { a, b, c, step } = state;
+            
+            // UI texts
+            DOM.vals.a.textContent = a.toFixed(1);
+            DOM.vals.b.textContent = b.toFixed(1);
+            DOM.vals.c.textContent = c.toFixed(1);
+            DOM.vals.ac.textContent = (a * c).toFixed(1);
+            DOM.vals.bc.textContent = (b * c).toFixed(1);
+
+            // Compute SVG Dimensions
+            const pxA = a * SCALE;
+            const pxB = b * SCALE;
+            const pyC = c * SCALE;
+            const pyY = OY - pyC; // Top Y coordinate
+
+            // Helper to set rect easily
+            const setRect = (el, w, xOffset = 0) => {
+                el.setAttribute('x', OX + xOffset);
+                el.setAttribute('y', pyY);
+                el.setAttribute('width', w);
+                el.setAttribute('height', pyC);
+            };
+
+            // Set Rectangles
+            setRect(DOM.svg.rectA, pxA);
+            setRect(DOM.svg.rectExtra, pxB - pxA, pxA);
+            setRect(DOM.svg.rectBOut, pxB);
+
+            // Left Height Line (c)
+            DOM.svg.dimC.setAttribute('x1', OX - 20); DOM.svg.dimC.setAttribute('x2', OX - 20);
+            DOM.svg.dimC.setAttribute('y1', OY); DOM.svg.dimC.setAttribute('y2', pyY);
+            DOM.svg.lblC.setAttribute('x', OX - 30); DOM.svg.lblC.setAttribute('y', pyY + pyC/2);
+
+            // Bottom Width Line (a)
+            DOM.svg.dimA.setAttribute('x1', OX); DOM.svg.dimA.setAttribute('x2', OX + pxA);
+            DOM.svg.dimA.setAttribute('y1', OY + 25); DOM.svg.dimA.setAttribute('y2', OY + 25);
+            DOM.svg.lblA.setAttribute('x', OX + pxA/2); DOM.svg.lblA.setAttribute('y', OY + 45);
+
+            // Bottom Width Line (b)
+            DOM.svg.dimB.setAttribute('x1', OX); DOM.svg.dimB.setAttribute('x2', OX + pxB);
+            DOM.svg.dimB.setAttribute('y1', OY + 60); DOM.svg.dimB.setAttribute('y2', OY + 60);
+            DOM.svg.lblB.setAttribute('x', OX + pxB/2); DOM.svg.lblB.setAttribute('y', OY + 80);
+
+            // Extra Width Line (b-a)
+            DOM.svg.dimExtra.setAttribute('x1', OX + pxA); DOM.svg.dimExtra.setAttribute('x2', OX + pxB);
+            DOM.svg.dimExtra.setAttribute('y1', OY + 25); DOM.svg.dimExtra.setAttribute('y2', OY + 25);
+            DOM.svg.lblExtra.setAttribute('x', OX + pxA + (pxB - pxA)/2); DOM.svg.lblExtra.setAttribute('y', OY + 45);
+
+            // Area Labels
+            DOM.svg.lblAreaA.setAttribute('x', OX + pxA/2); DOM.svg.lblAreaA.setAttribute('y', pyY + pyC/2);
+            DOM.svg.lblAreaExtra.setAttribute('x', OX + pxA + (pxB - pxA)/2); DOM.svg.lblAreaExtra.setAttribute('y', pyY + pyC/2);
+
+            applyStepLogic(step);
+        }
+
+        function applyStepLogic(step) {
+            const op = (el, val) => el.style.opacity = val;
+
+            // Opacity rules based on step
+            op(DOM.svg.rectA, step >= 1 ? '1' : '0');
+            op(DOM.svg.dimC, step >= 1 ? '1' : '0'); op(DOM.svg.lblC, step >= 1 ? '1' : '0');
+            op(DOM.svg.dimA, step >= 1 ? '1' : '0'); op(DOM.svg.lblA, step >= 1 ? '1' : '0');
+            op(DOM.svg.lblAreaA, step >= 1 ? '1' : '0');
+
+            op(DOM.svg.rectBOut, step >= 2 ? '1' : '0');
+            op(DOM.svg.dimB, step >= 2 ? '1' : '0'); op(DOM.svg.lblB, step >= 2 ? '1' : '0');
+
+            op(DOM.svg.rectExtra, step >= 3 ? '1' : '0');
+            op(DOM.svg.dimExtra, step >= 3 ? '1' : '0'); op(DOM.svg.lblExtra, step >= 3 ? '1' : '0');
+            op(DOM.svg.lblAreaExtra, step >= 4 ? '1' : '0');
+        }
+
+        function setStep(step) {
+            state.step = step;
+            DOM.ui.step.textContent = `${step} / ${state.maxSteps}`;
+
+            for (let i = 0; i <= state.maxSteps; i++) {
+                const row = document.getElementById(`ledger-${i}`);
+                if (row) {
+                    if (i === step) row.classList.add('active');
+                    else row.classList.remove('active');
+                }
+            }
+            
+            applyStepLogic(step);
+
+            DOM.ui.status.innerHTML = descriptions[step];
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([DOM.ui.status]).catch(console.error);
+            }
+
+            DOM.btns.step.disabled = (step >= state.maxSteps);
+        }
+
+        function stepForward() {
+            if (state.step < state.maxSteps) {
+                setStep(state.step + 1);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) {
+                pauseAnimation();
+            } else {
+                if (state.step >= state.maxSteps) {
+                    setStep(0);
+                }
+                state.isPlaying = true;
+                DOM.btns.play.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                DOM.btns.play.classList.replace('btn-play', 'btn-secondary');
+                
+                setTimeout(() => { if (state.isPlaying) stepForward(); }, 400);
+                
+                state.animInterval = setInterval(() => {
+                    stepForward();
+                }, 3000); 
+            }
+        }
+
+        function pauseAnimation() {
+            state.isPlaying = false;
+            clearInterval(state.animInterval);
+            DOM.btns.play.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            DOM.btns.play.classList.replace('btn-secondary', 'btn-play');
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

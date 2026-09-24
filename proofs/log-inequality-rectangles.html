@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Logarithm Between Two Rectangles</title>
+<meta name="description" content="A simple interactive area proof of x/(1+x) ≤ log(1+x) ≤ x, using two rectangles around the area under 1/(1+t).">
+<style>
+:root{--ink:#233247;--muted:#5f6d80;--line:#dbe3eb;--bg:#f5f7fa;--green:#187164;--purple:#7351a1;--orange:#a65d0c;--shade:#f2d39f}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1000px;padding:34px 22px 45px;margin:auto}header{text-align:center;margin-bottom:24px}h1{font-size:clamp(29px,4.2vw,42px);line-height:1.16;letter-spacing:-.035em;margin:10px 0 14px}.eyebrow{font-size:12px;text-transform:uppercase;font-weight:750;letter-spacing:.12em;color:var(--green)}header p{max-width:680px;margin:0 auto;color:var(--muted);font-size:17px}.law{display:flex;align-items:center;justify-content:center;gap:18px;font-family:Georgia,"Times New Roman",serif;font-size:clamp(23px,3.7vw,32px);margin:19px 0 12px}.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.25;font-size:.9em}.frac>span:first-child{border-bottom:1px solid currentColor;width:100%;text-align:center;padding:0 6px 3px}.frac>span:last-child{padding-top:3px}.green{color:var(--green)}.purple{color:var(--purple)}.orange{color:var(--orange)}.hint{font-size:13px;color:var(--muted)}.card{background:white;border:1px solid var(--line);border-radius:15px}.demo{padding:21px}.controls{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;margin-bottom:13px}.slider-head{display:flex;justify-content:space-between;gap:12px;font-weight:650}.slider-head output{color:var(--green);font-variant-numeric:tabular-nums}input[type=range]{width:100%;height:28px;accent-color:var(--green);cursor:pointer;margin:5px 0 0}input:focus-visible,summary:focus-visible{outline:3px solid var(--green);outline-offset:3px}.toggles{display:flex;gap:18px;flex-wrap:wrap;font-size:14px}.toggles label{display:flex;gap:7px;align-items:center;cursor:pointer}.toggles input{width:16px;height:16px;accent-color:var(--green)}.toggles label:last-child input{accent-color:var(--purple)}.plot-box{background:#fcfdff;border:1px solid var(--line);border-radius:11px;overflow:hidden}.scroll{overflow-x:auto}#plot{display:block;width:100%;min-width:570px;height:auto}.legend{display:flex;flex-wrap:wrap;gap:18px;margin:12px 0 0;font-size:13px;color:var(--muted)}.legend span{display:inline-flex;align-items:center;gap:7px}.swatch{width:15px;height:13px;border-radius:2px;background:var(--shade)}.sample-line{width:20px;border-top:3px solid var(--green)}.sample-line.upper{border-color:var(--purple);border-top-style:dashed}.readout{margin:18px 0 0;padding:14px 18px;background:#f1f6f4;border-radius:11px;text-align:center}.numbers{font-size:clamp(21px,3vw,27px);font-weight:650;display:flex;align-items:center;justify-content:center;gap:16px;font-variant-numeric:tabular-nums}.readout .hint{margin-top:5px}.explain{margin-top:20px;padding:24px}h2{font-size:23px;line-height:1.3;letter-spacing:-.02em;margin:0 0 12px}h3{font-size:16px;line-height:1.4;margin:0 0 9px}p{margin:0 0 15px}.explain>p{color:var(--muted)}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.fact{padding:15px;border-radius:11px;background:#f3f8f6}.fact.middle{background:#fff7e9}.fact.upper{background:#f7f3fc}.fact p{font-size:14px;color:var(--muted);margin:0}.fact .formula{font-family:Georgia,"Times New Roman",serif;font-size:23px;line-height:1.4;margin-top:12px;min-height:58px;display:flex;align-items:center;gap:10px}.conclusion{border-left:3px solid var(--green);padding:10px 14px;margin:20px 0 0;font-size:15px;background:#f2f7f5}details{margin-top:19px;padding-top:12px;border-top:1px solid var(--line)}summary{font-size:14px;font-weight:650;cursor:pointer;padding:7px 0}details p{font-size:14px;color:var(--muted);margin-top:12px}footer{text-align:center;font-size:12px;color:var(--muted);margin-top:20px}svg text{font-family:system-ui,sans-serif}@media(max-width:680px){main{padding:24px 12px 34px}.demo,.explain{padding:16px}.controls{grid-template-columns:1fr;gap:8px}.facts{grid-template-columns:1fr;gap:10px}.fact{display:grid;grid-template-columns:1fr auto;column-gap:12px}.fact .formula{grid-column:2;grid-row:1/3;margin:0;min-height:0}.law{gap:12px}.numbers{gap:10px}.toggles{gap:14px}.legend{gap:10px 16px}.fact p{grid-column:1}}
+@media print{body{background:white}.controls{display:none}.scroll{overflow:visible}#plot{min-width:0}.card{break-inside:avoid}main{padding:0}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="eyebrow">Visual proof · Rectangle areas</div><h1>Trap a logarithm<br>between two rectangles.</h1><p>The curve falls. One rectangle stays below it; the other stays above it.</p><div class="law" aria-label="x over one plus x is less than or equal to log of one plus x, which is less than or equal to x"><span class="frac green"><span>x</span><span>1 + x</span></span><span>≤</span><span class="orange">log(1 + x)</span><span>≤</span><span class="purple">x</span></div><div class="hint">“log” means ln. The inequality holds for x &gt; −1; the picture below uses x ≥ 0.</div></header>
+<section class="card demo" aria-label="Interactive rectangle bounds">
+<div class="controls"><div><label class="slider-head" for="x"><span>Move the right edge · x</span><output id="xOut" for="x">2</output></label><input id="x" type="range" min="0" max="5" step="0.05" value="2"></div><div class="toggles"><label class="green"><input id="lower" type="checkbox" checked>Short rectangle</label><label class="purple"><input id="upper" type="checkbox" checked>Tall rectangle</label></div></div>
+<div class="plot-box"><div class="scroll"><svg id="plot" viewBox="0 0 820 410" role="img" aria-labelledby="plotTitle plotDesc"></svg></div></div>
+<div class="legend"><span><i class="sample-line"></i>short rectangle</span><span><i class="swatch"></i>shaded area = log(1 + x)</span><span><i class="sample-line upper"></i>tall rectangle</span></div>
+<div class="readout"><div class="numbers" id="numbers" aria-live="polite"></div><div class="hint" id="equalityNote">Areas, rounded to 4 decimal places.</div></div>
+</section>
+<section class="card explain"><h2>Why the bounds work</h2><p>From t = 0 to t = x, the height 1/(1 + t) decreases from <strong>1</strong> to <strong>1/(1 + x)</strong>. Both rectangles have the same width, <strong>x</strong>.</p>
+<div class="facts"><article class="fact"><h3 class="green">Short rectangle</h3><p>Width x; height 1/(1 + x).<br>Its entire area fits under the curve.</p><div class="formula green"><span class="frac"><span>x</span><span>1 + x</span></span></div></article><article class="fact middle"><h3 class="orange">Shaded area</h3><p>Under 1/(1 + t), from 0 to x.<br>This is exactly log(1 + x).</p><div class="formula orange">log(1 + x)</div></article><article class="fact upper"><h3 class="purple">Tall rectangle</h3><p>Width x; height 1.<br>It contains the entire shaded area.</p><div class="formula purple">x × 1 = x</div></article></div>
+<div class="conclusion"><strong>Smaller rectangle ≤ shaded area ≤ larger rectangle.</strong> Both inequalities are strict for x &gt; 0. At x = 0, all three areas are zero.</div>
+<details><summary>Why is the shaded area log(1 + x)?</summary><p>The natural logarithm log(1 + x) is the area under 1/u from u = 1 to u = 1 + x. Relabeling the horizontal coordinate as u = 1 + t gives this same area under 1/(1 + t), from t = 0 to t = x.</p></details>
+<details><summary>What happens when −1 &lt; x &lt; 0?</summary><p>Use the interval from x to 0, whose width is −x. The curve has height between 1 and 1/(1 + x), so its positive area A satisfies −x ≤ A ≤ −x/(1 + x).</p><p>But log(1 + x) = −A. Negating the area bounds reverses their order and gives the same inequality: x/(1 + x) ≤ log(1 + x) ≤ x. The restriction x &gt; −1 is necessary for this real logarithm to be defined.</p></details>
+</section>
+<footer>No area estimates are needed: the curve is contained between the two rectangles.</footer>
+</main>
+<script>
+(() => {
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const NS='http://www.w3.org/2000/svg';
+  const fmt=n=>Number(n.toFixed(2)).toString();
+  function el(tag,attrs={},parent=$('plot')) {
+    const node=document.createElementNS(NS,tag);
+    Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,String(value)));
+    parent.appendChild(node);return node;
+  }
+  function text(x,y,value,size=14,color='#5f6d80',anchor='middle') {
+    const node=el('text',{x,y,'font-size':size,fill:color,'text-anchor':anchor,'font-family':'system-ui,sans-serif'});
+    node.textContent=value;return node;
+  }
+  function line(x1,y1,x2,y2,stroke='#dbe3eb',extra={}) {
+    return el('line',{x1,y1,x2,y2,stroke,'stroke-width':1,...extra});
+  }
+  function render() {
+    const x=+$('x').value,h=1/(1+x),lower=x*h,area=Math.log1p(x);
+    $('xOut').textContent=fmt(x);
+    $('numbers').innerHTML=`<span class="green">${lower.toFixed(4)}</span><span>≤</span><span class="orange">${area.toFixed(4)}</span><span>≤</span><span class="purple">${x.toFixed(4)}</span>`;
+    $('equalityNote').textContent=x===0?'At x = 0, all three areas are exactly zero.':'Areas rounded to 4 decimal places. For x > 0, both inequalities are strict.';
+    const svg=$('plot');svg.innerHTML='';
+    el('title',{id:'plotTitle'}).textContent=`Two rectangle bounds for log(1 + ${fmt(x)})`;
+    el('desc',{id:'plotDesc'}).textContent=`For x = ${fmt(x)}, both rectangles have width ${fmt(x)}. The short rectangle has height ${h.toFixed(4)} and area ${lower.toFixed(4)}. The shaded area is ${area.toFixed(4)}. The tall rectangle has height one and area ${x.toFixed(4)}.`;
+    const LEFT=74,RIGHT=727,BASE=304,YSCALE=208;
+    const xp=t=>LEFT+(RIGHT-LEFT)*t/5.5,yp=y=>BASE-y*YSCALE;
+    text(411,36,'y = 1/(1 + t)',19,'#a65d0c');
+    line(LEFT,yp(1),RIGHT,yp(1),'#e6eaf0');
+    text(LEFT-12,yp(1)+4,'1',13,'#5f6d80','end');
+    if(x>0) {
+      const path=[];for(let i=0;i<=180;i++){const t=x*i/180;path.push(`${xp(t)},${yp(1/(1+t))}`);}
+      el('path',{d:`M${xp(0)},${BASE} L${path.join(' L')} L${xp(x)},${BASE} Z`,fill:'#f2d39f','fill-opacity':.8,'data-shaded-area':area});
+      if($('upper').checked)el('rect',{x:LEFT,y:yp(1),width:xp(x)-LEFT,height:YSCALE,fill:'none',stroke:'#7351a1','stroke-width':2.2,'stroke-dasharray':'8 5','data-bound':'upper','data-width':x,'data-height':1});
+      if($('lower').checked) {
+        el('rect',{x:LEFT,y:yp(h),width:xp(x)-LEFT,height:h*YSCALE,fill:'none',stroke:'#187164','stroke-width':2.5,'data-bound':'lower','data-width':x,'data-height':h});
+        line(xp(x)+7,yp(h),xp(x)+19,yp(h)-15,'#187164');
+        text(xp(x)+24,yp(h)-12,'1/(1 + x)',13,'#187164','start');
+      }
+    }
+    const curve=[];for(let i=0;i<=300;i++){const t=5.5*i/300;curve.push(`${xp(t)},${yp(1/(1+t))}`);}
+    el('path',{d:'M'+curve.join(' L'),fill:'none',stroke:'#a65d0c','stroke-width':2.8});
+    line(LEFT,BASE,RIGHT+18,BASE,'#8d9bae',{'stroke-width':1.2});
+    line(LEFT,BASE,LEFT,61,'#8d9bae',{'stroke-width':1.2});
+    text(LEFT-17,63,'y',14,'#233247');text(RIGHT+20,BASE+24,'t',14,'#233247');
+    text(LEFT-7,BASE+22,'0',13,'#233247','end');
+    if(x>0) {
+      el('circle',{cx:xp(x),cy:yp(h),r:4,fill:'#a65d0c'});
+      line(xp(x),BASE,xp(x),BASE+6,'#8d9bae');
+      const tickRow=x<.4?BASE+42:BASE+23;
+      text(xp(x),tickRow,'x',14,'#233247');
+      const by=BASE+55;
+      line(LEFT,by,xp(x),by,'#8d9bae');
+      line(LEFT,by-4,LEFT,by+4,'#8d9bae');line(xp(x),by-4,xp(x),by+4,'#8d9bae');
+      text((LEFT+xp(x))/2,by+25,'width x',13,'#5f6d80');
+    } else {
+      text(411,192,'x = 0: both rectangles have zero width.',18,'#233247');
+      text(411,219,'There is no shaded area.',15,'#5f6d80');
+    }
+  }
+  $('x').addEventListener('input',render);
+  ['lower','upper'].forEach(id=>$(id).addEventListener('change',render));
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual proof that consecutive triangular numbers add to a square: T_n + T_{n-1} = n^2." />
+  <title>Visual Proof: Consecutive Triangular Numbers Make a Square</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #7c3aed;
+      --accent-2: #0891b2;
+      --success: #059669;
+      --warning: #d97706;
+      --shadow: 0 16px 40px rgba(15,23,42,.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 15%, rgba(8,145,178,.06), transparent 26rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 60px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid rgba(124,58,237,.25);
+      border-radius: 999px;
+      color: #6d28d9;
+      background: rgba(124,58,237,.06);
+      font-size: .82rem;
+      font-weight: 750;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(2rem, 4vw, 3.35rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      margin: 0 auto;
+      max-width: 840px;
+      color: var(--muted);
+      font-size: clamp(.98rem, 1.8vw, 1.12rem);
+    }
+
+    .formula-banner {
+      margin: 22px auto 0;
+      max-width: 760px;
+      padding: 15px 18px;
+      border: 1px solid rgba(8,145,178,.20);
+      border-radius: 15px;
+      background: linear-gradient(180deg, rgba(8,145,178,.055), rgba(8,145,178,.018));
+      font-size: clamp(1.08rem, 2.2vw, 1.4rem);
+      overflow-x: auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(310px, .65fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .controls-top {
+      display: grid;
+      grid-template-columns: minmax(220px,1fr) auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .slider-box {
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+      border-radius: 14px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: .9rem;
+    }
+
+    .slider-head strong { color: #6d28d9; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 9px 13px;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+      transition: .18s ease;
+      font-weight: 720;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(124,58,237,.45);
+      background: rgba(124,58,237,.06);
+    }
+
+    .btn.primary {
+      border-color: rgba(124,58,237,.40);
+      background: linear-gradient(180deg, rgba(124,58,237,.12), rgba(124,58,237,.07));
+    }
+
+    .btn:disabled { opacity: .42; cursor: not-allowed; }
+
+    .stage-shell {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.11) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.11) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 28px 28px;
+      min-height: 520px;
+    }
+
+    #proofSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 520px;
+      aspect-ratio: 1.18 / 1;
+    }
+
+    .stage-badge {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 2;
+      padding: 7px 10px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,.93);
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch {
+      width: 15px;
+      height: 15px;
+      border-radius: 4px;
+      border: 1px solid rgba(15,23,42,.18);
+    }
+
+    .swatch.tn { background: rgba(124,58,237,.72); }
+    .swatch.tprev { background: rgba(8,145,178,.58); }
+    .swatch.square { background: transparent; border: 2px solid #0f172a; }
+
+    .side-card {
+      padding: 18px;
+      position: sticky;
+      top: 14px;
+    }
+
+    .step-kicker {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .step-title {
+      margin: 4px 0 8px;
+      font-size: 1.34rem;
+      line-height: 1.25;
+    }
+
+    .step-copy {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .equation-card {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid rgba(124,58,237,.20);
+      background: rgba(124,58,237,.045);
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .equation-label {
+      color: #6d28d9;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+    }
+
+    .dynamic-equation {
+      min-width: max-content;
+    }
+
+    .fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .fact {
+      padding: 11px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.018);
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      font-size: 1.02rem;
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border-left: 3px solid var(--accent-2);
+      border-radius: 8px 12px 12px 8px;
+      background: rgba(8,145,178,.045);
+      color: #334155;
+      font-size: .91rem;
+    }
+
+    .below {
+      margin-top: 20px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .explain-card { padding: 22px; }
+
+    .explain-card h2,
+    .explain-card h3 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .explain-card p,
+    .explain-card li { color: #475569; }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-weight: 800;
+      font-size: .82rem;
+    }
+
+    .proof-step b { color: #0f172a; }
+
+    .final-box {
+      padding: 17px;
+      text-align: center;
+      border: 1px solid rgba(5,150,105,.24);
+      border-radius: 14px;
+      background: rgba(16,185,129,.055);
+      overflow-x: auto;
+    }
+
+    .final-box .big {
+      font-size: clamp(1.06rem, 2vw, 1.35rem);
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    /* SVG */
+    .cell {
+      stroke: rgba(15,23,42,.33);
+      stroke-width: .7;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .cell-a { fill: #7c3aed; fill-opacity: .76; }
+    .cell-b { fill: #0891b2; fill-opacity: .62; }
+
+    .cell-label {
+      fill: #0f172a;
+      font-weight: 780;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+      paint-order: stroke;
+      stroke: rgba(255,255,255,.92);
+      stroke-width: 3px;
+    }
+
+    .row-label {
+      fill: #475569;
+      font-weight: 750;
+      text-anchor: end;
+      dominant-baseline: middle;
+    }
+
+    .outer-square {
+      fill: none;
+      stroke: rgba(15,23,42,.90);
+      stroke-width: 1.4;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .diag {
+      stroke: rgba(245,158,11,.9);
+      stroke-width: 1.1;
+      stroke-dasharray: 6 5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .dimension-line {
+      stroke: #5b21b6;
+      stroke-width: .8;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .dimension-text {
+      fill: #5b21b6;
+      font-weight: 850;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 3px;
+    }
+
+    .move-in {
+      animation: moveIn .55s ease both;
+    }
+
+    @keyframes moveIn {
+      from { opacity: .18; transform: translate(24px,-20px); }
+      to   { opacity: 1; transform: translate(0,0); }
+    }
+
+    @media (max-width: 880px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .side-card { position: static; }
+      .stage-shell, #proofSvg { min-height: 430px; }
+    }
+
+    @media (max-width: 650px) {
+      .controls-top { grid-template-columns: 1fr; }
+      .button-row { justify-content: flex-start; }
+      .btn { flex: 1 1 auto; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 18px, 1180px); padding-top: 22px; }
+      .visual-card, .side-card, .explain-card { padding: 13px; }
+      .stage-shell, #proofSvg { min-height: 360px; }
+      .fact-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Proof • Triangular Numbers</div>
+    <h1>Two Consecutive Triangular Numbers Make a Square</h1>
+    <p class="subtitle">
+      A staircase of \(1+2+\cdots+n\) unit squares and the next smaller staircase
+      fit together perfectly to fill an \(n\times n\) square.
+    </p>
+
+    <div class="formula-banner">
+      \[
+        \boxed{T_n+T_{n-1}=n^2}
+        \qquad\text{where}\qquad
+        T_n=1+2+\cdots+n
+      \]
+    </div>
+  </header>
+
+  <section class="main-grid">
+    <div class="card visual-card">
+      <div class="controls-top">
+        <div class="slider-box">
+          <div class="slider-head">
+            <span>Choose \(n\)</span>
+            <strong id="nReadout">n = 6</strong>
+          </div>
+          <input id="nSlider" type="range" min="2" max="12" value="6" step="1" aria-label="Choose n">
+        </div>
+
+        <div class="button-row">
+          <button class="btn" id="resetBtn" type="button">↺ Reset</button>
+          <button class="btn" id="prevBtn" type="button">← Previous</button>
+          <button class="btn primary" id="playBtn" type="button">▶ Play</button>
+          <button class="btn primary" id="nextBtn" type="button">Next →</button>
+        </div>
+      </div>
+
+      <div class="stage-shell">
+        <div class="stage-badge" id="stageBadge">Step 1 of 4</div>
+        <svg id="proofSvg" viewBox="0 0 900 560" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">Triangular numbers forming a square</title>
+          <desc id="svgDesc">
+            A triangular staircase with n rows and another with n minus one rows fit together to form an n by n square.
+          </desc>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="swatch tn"></span> \(T_n\)</span>
+        <span class="legend-item"><span class="swatch tprev"></span> \(T_{n-1}\)</span>
+        <span class="legend-item"><span class="swatch square"></span> resulting \(n\times n\) square</span>
+      </div>
+    </div>
+
+    <aside class="card side-card" aria-live="polite">
+      <div class="step-kicker" id="stepKicker">Step 1</div>
+      <h2 class="step-title" id="stepTitle">Build the triangular number \(T_n\)</h2>
+      <p class="step-copy" id="stepCopy">
+        Make rows of \(1,2,\ldots,n\) unit squares. Their total area is \(T_n\).
+      </p>
+
+      <div class="equation-card">
+        <div class="equation-label">What the picture says</div>
+        <div class="dynamic-equation" id="stepEquation"></div>
+      </div>
+
+      <div class="fact-grid">
+        <div class="fact">
+          <small>\(n\)</small>
+          <strong id="factN">6</strong>
+        </div>
+        <div class="fact">
+          <small>\(T_n\)</small>
+          <strong id="factTn">21</strong>
+        </div>
+        <div class="fact">
+          <small>\(T_{n-1}\)</small>
+          <strong id="factPrev">15</strong>
+        </div>
+        <div class="fact">
+          <small>Square area</small>
+          <strong id="factSquare">36</strong>
+        </div>
+      </div>
+
+      <div class="notice" id="notice">
+        The complement of the \(T_n\) staircase inside an \(n\times n\) square has exactly
+        \(1+2+\cdots+(n-1)=T_{n-1}\) cells.
+      </div>
+    </aside>
+  </section>
+
+  <section class="below">
+    <article class="card explain-card">
+      <h2>How the visual proof works</h2>
+
+      <div class="proof-steps">
+        <div class="proof-step">
+          <b>Build \(T_n\) as a staircase.</b>
+          Put \(1\) unit square in the first row, \(2\) in the second, and continue up to \(n\) in the last row.
+          Its area is \(T_n\).
+        </div>
+
+        <div class="proof-step">
+          <b>Look at the missing part of an \(n\times n\) square.</b>
+          The empty cells occur in rows of sizes \(n-1,n-2,\ldots,1\).
+        </div>
+
+        <div class="proof-step">
+          <b>That missing region is another triangular number.</b>
+          Its area is
+          \(1+2+\cdots+(n-1)=T_{n-1}\).
+        </div>
+
+        <div class="proof-step">
+          <b>Together, the two regions fill the whole square.</b>
+          Therefore their total area is exactly \(n^2\).
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>The area equation</h3>
+      <p>
+        The purple staircase contributes \(T_n\), while the cyan complement contributes \(T_{n-1}\).
+        Since together they fill an \(n\times n\) square,
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \boxed{T_n+T_{n-1}=n^2}
+          \]
+        </div>
+      </div>
+
+      <p>
+        Using the usual formulas
+        \[
+          T_n=\frac{n(n+1)}2,
+          \qquad
+          T_{n-1}=\frac{n(n-1)}2,
+        \]
+        the same identity becomes
+      </p>
+
+      <div class="final-box">
+        <div class="big">
+          \[
+            \frac{n(n+1)}2+\frac{n(n-1)}2=n^2.
+          \]
+        </div>
+      </div>
+    </article>
+
+    <article class="card explain-card">
+      <h3>Why this is a useful visual pattern</h3>
+      <p>
+        The square is partitioned by a staircase boundary. One side contains the first \(n\) natural numbers,
+        and the complementary side contains the first \(n-1\). This “shape plus complement” idea reappears in
+        many visual proofs involving sums, lattice points, and floor functions.
+      </p>
+    </article>
+  </section>
+
+  <p class="footer-note">
+    Interactive visual proof using unit-square area and complementary staircases.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const svg = document.getElementById("proofSvg");
+  const nSlider = document.getElementById("nSlider");
+  const nReadout = document.getElementById("nReadout");
+  const resetBtn = document.getElementById("resetBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const playBtn = document.getElementById("playBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const stageBadge = document.getElementById("stageBadge");
+  const stepKicker = document.getElementById("stepKicker");
+  const stepTitle = document.getElementById("stepTitle");
+  const stepCopy = document.getElementById("stepCopy");
+  const stepEquation = document.getElementById("stepEquation");
+  const notice = document.getElementById("notice");
+
+  const factN = document.getElementById("factN");
+  const factTn = document.getElementById("factTn");
+  const factPrev = document.getElementById("factPrev");
+  const factSquare = document.getElementById("factSquare");
+
+  let step = 1;
+  let timer = null;
+
+  function tri(k) {
+    return k * (k + 1) / 2;
+  }
+
+  function state() {
+    const n = Number(nSlider.value);
+    return {
+      n,
+      tn: tri(n),
+      tprev: tri(n - 1),
+      square: n * n
+    };
+  }
+
+  function makeSvg(tag, attrs={}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v));
+    return el;
+  }
+
+  function clearSvg() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+  }
+
+  function addText(x,y,text,cls,size,parent=svg,extra={}) {
+    const el = makeSvg("text", {x,y,class:cls,"font-size":size,...extra});
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  function addDimension(x1,y1,x2,y2,label,vertical=false) {
+    const g = makeSvg("g");
+    g.appendChild(makeSvg("line",{x1,y1,x2,y2,class:"dimension-line"}));
+    const tick = 7;
+
+    if (!vertical) {
+      g.appendChild(makeSvg("line",{x1,y1:y1-tick,x2:x1,y2:y1+tick,class:"dimension-line"}));
+      g.appendChild(makeSvg("line",{x1:x2,y1:y2-tick,x2,y2:y2+tick,class:"dimension-line"}));
+      addText((x1+x2)/2, y1+24, label, "dimension-text", 18, g);
+    } else {
+      g.appendChild(makeSvg("line",{x1:x1-tick,y1,x2:x1+tick,y2:y1,class:"dimension-line"}));
+      g.appendChild(makeSvg("line",{x1:x2-tick,y1:y2,x2:x2+tick,y2:y2,class:"dimension-line"}));
+      const t = addText(x1+28,(y1+y2)/2,label,"dimension-text",18,g,{"dominant-baseline":"middle"});
+      t.setAttribute("transform", `rotate(90 ${x1+28} ${(y1+y2)/2})`);
+    }
+
+    svg.appendChild(g);
+  }
+
+  function renderSvg() {
+    clearSvg();
+
+    const {n} = state();
+
+    const W = 900, H = 560;
+    const margin = 80;
+    const maxBoard = Math.min(W - 2*margin, H - 2*margin - 30);
+    const cell = maxBoard / n;
+    const board = cell * n;
+
+    const x0 = (W - board) / 2;
+    const y0 = (H - board) / 2 - 6;
+
+    // Step 1: triangular staircase T_n
+    for (let r = 0; r < n; r++) {
+      const count = r + 1;
+      const y = y0 + (n - 1 - r) * cell;
+
+      for (let c = 0; c < count; c++) {
+        const x = x0 + c * cell;
+
+        svg.appendChild(makeSvg("rect", {
+          x, y, width:cell, height:cell,
+          rx:Math.max(1.5,cell*.035),
+          class:"cell cell-a"
+        }));
+
+        if (cell > 38) {
+          addText(
+            x + cell/2,
+            y + cell/2,
+            "1",
+            "cell-label",
+            Math.max(11,cell*.22)
+          );
+        }
+      }
+
+      if (cell > 24) {
+        addText(
+          x0 - 14,
+          y + cell/2,
+          String(count),
+          "row-label",
+          Math.max(11,cell*.22)
+        );
+      }
+    }
+
+    // Step 2: show complement outline first.
+    if (step >= 2) {
+      for (let r = 0; r < n; r++) {
+        const countPurple = r + 1;
+        const y = y0 + (n - 1 - r) * cell;
+
+        for (let c = countPurple; c < n; c++) {
+          const x = x0 + c * cell;
+
+          svg.appendChild(makeSvg("rect", {
+            x, y, width:cell, height:cell,
+            rx:Math.max(1.5,cell*.035),
+            fill:"#0891b2",
+            "fill-opacity": step >= 3 ? ".62" : ".12",
+            stroke: step >= 3 ? "rgba(15,23,42,.33)" : "rgba(8,145,178,.45)",
+            "stroke-width": ".7",
+            "stroke-dasharray": step >= 3 ? "0" : "5 4",
+            class: step >= 3 ? "cell cell-b move-in" : ""
+          }));
+        }
+      }
+    }
+
+    if (step >= 2) {
+      // Staircase dividing line.
+      let d = `M ${x0} ${y0 + board}`;
+      for (let r = 0; r < n; r++) {
+        const y = y0 + board - (r+1)*cell;
+        const x = x0 + (r+1)*cell;
+        d += ` L ${x} ${y + cell} L ${x} ${y}`;
+      }
+
+      svg.appendChild(makeSvg("path", {
+        d,
+        fill:"none",
+        class:"diag"
+      }));
+    }
+
+    if (step >= 3) {
+      // Label complementary row counts at top/right side where space permits.
+      if (cell > 26) {
+        for (let r = 0; r < n-1; r++) {
+          const count = n - 1 - r;
+          const y = y0 + r*cell + cell/2;
+          addText(
+            x0 + board + 14,
+            y,
+            String(count),
+            "row-label",
+            Math.max(11,cell*.20),
+            svg,
+            {"text-anchor":"start"}
+          );
+        }
+      }
+    }
+
+    if (step >= 4) {
+      svg.appendChild(makeSvg("rect", {
+        x:x0, y:y0, width:board, height:board,
+        rx:"5", class:"outer-square"
+      }));
+
+      addDimension(x0, y0+board+34, x0+board, y0+board+34, `n = ${n}`, false);
+      addDimension(x0+board+34, y0, x0+board+34, y0+board, `n = ${n}`, true);
+
+      const bannerW = Math.min(330,board*.74);
+      const bannerH = 68;
+      const bx = x0 + board/2 - bannerW/2;
+      const by = y0 + board/2 - bannerH/2;
+
+      svg.appendChild(makeSvg("rect", {
+        x:bx,y:by,width:bannerW,height:bannerH,rx:"12",
+        fill:"#ffffff","fill-opacity":".93",
+        stroke:"rgba(15,23,42,.12)"
+      }));
+
+      addText(
+        x0+board/2,
+        by+28,
+        `Tₙ + Tₙ₋₁ = ${tri(n)} + ${tri(n-1)} = ${n*n}`,
+        "dimension-text",
+        20
+      );
+
+      addText(
+        x0+board/2,
+        by+53,
+        `= n² = ${n}²`,
+        "dimension-text",
+        18
+      );
+    }
+  }
+
+  function typesetMath() {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([stepCopy, stepEquation, notice]).catch(() => {});
+    }
+  }
+
+  function renderText() {
+    const {n,tn,tprev,square} = state();
+
+    nReadout.textContent = `n = ${n}`;
+    factN.textContent = String(n);
+    factTn.textContent = String(tn);
+    factPrev.textContent = String(tprev);
+    factSquare.textContent = String(square);
+
+    stageBadge.textContent = `Step ${step} of 4`;
+    stepKicker.textContent = `Step ${step}`;
+
+    if (step === 1) {
+      stepTitle.textContent = `Build T${n} as a staircase`;
+      stepCopy.innerHTML =
+        `Use rows containing \\(1,2,\\ldots,${n}\\) unit squares. ` +
+        `Their total area is the triangular number \\(T_${n}\\).`;
+
+      stepEquation.innerHTML =
+        `\\[` +
+        `T_${n}=1+2+\\cdots+${n}=${tn}.` +
+        `\\]`;
+
+      notice.innerHTML =
+        `The longest row has \\(n=${n}\\) squares. Imagine enclosing this staircase inside an \\(n\\times n\\) square.`;
+    }
+
+    if (step === 2) {
+      stepTitle.textContent = "Look at what is missing";
+      stepCopy.innerHTML =
+        `Inside the \\(${n}\\times${n}\\) square, the purple staircase does not fill everything. ` +
+        `The unfilled region itself has a staircase shape.`;
+
+      stepEquation.innerHTML =
+        `\\[` +
+        `${n}^2-T_${n}=${square}-${tn}=${tprev}.` +
+        `\\]`;
+
+      notice.innerHTML =
+        `The missing rows have lengths \\(${n-1},${n-2},\\ldots,1\\).`;
+    }
+
+    if (step === 3) {
+      stepTitle.textContent = `The complement is T${n-1}`;
+      stepCopy.innerHTML =
+        `The cyan region contains rows of \\(1,2,\\ldots,${n-1}\\) unit squares, just in reverse order. ` +
+        `So its area is \\(T_${n-1}\\).`;
+
+      stepEquation.innerHTML =
+        `\\[` +
+        `T_${n-1}=1+2+\\cdots+${n-1}=${tprev}.` +
+        `\\]`;
+
+      notice.innerHTML =
+        `Now the two triangular regions partition the entire square: no gaps and no overlaps.`;
+    }
+
+    if (step === 4) {
+      stepTitle.textContent = "Together they make a perfect square";
+      stepCopy.innerHTML =
+        `The purple region has area \\(T_${n}=${tn}\\), the cyan region has area ` +
+        `\\(T_${n-1}=${tprev}\\), and together they exactly fill an \\(${n}\\times${n}\\) square.`;
+
+      stepEquation.innerHTML =
+        `\\[` +
+        `T_${n}+T_${n-1}=${tn}+${tprev}=${square}=${n}^2.` +
+        `\\]`;
+
+      notice.innerHTML =
+        `Therefore \\(\\boxed{T_n+T_{n-1}=n^2}\\) for every \\(n\\ge2\\).`;
+    }
+
+    prevBtn.disabled = step === 1;
+    nextBtn.disabled = step === 4;
+
+    typesetMath();
+  }
+
+  function render() {
+    renderSvg();
+    renderText();
+  }
+
+  function stopPlay() {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+    playBtn.textContent = "▶ Play";
+  }
+
+  function togglePlay() {
+    if (timer) {
+      stopPlay();
+      return;
+    }
+
+    if (step === 4) step = 1;
+    playBtn.textContent = "❚❚ Pause";
+    render();
+
+    timer = setInterval(() => {
+      if (step >= 4) {
+        stopPlay();
+        return;
+      }
+      step++;
+      render();
+    }, 1450);
+  }
+
+  nSlider.addEventListener("input", () => {
+    stopPlay();
+    render();
+  });
+
+  resetBtn.addEventListener("click", () => {
+    stopPlay();
+    step = 1;
+    render();
+  });
+
+  prevBtn.addEventListener("click", () => {
+    stopPlay();
+    if (step > 1) {
+      step--;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    stopPlay();
+    if (step < 4) {
+      step++;
+      render();
+    }
+  });
+
+  playBtn.addEventListener("click", togglePlay);
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: Approximating Pi with a Square Lattice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax for rendering equations -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .math-text {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+        }
+
+        /* SVG Canvas Styling */
+        .canvas-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            aspect-ratio: 1 / 1;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Step Card Styling */
+        .step-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            opacity: 0.6;
+        }
+        .step-card.active {
+            background-color: #eff6ff;
+            border-left-color: #3b82f6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            opacity: 1;
+        }
+
+        /* Slider Styling */
+        input[type=range] {
+            accent-color: #3b82f6;
+        }
+        .explain-strip {
+            width: 100%;
+            max-width: 900px;
+            margin-top: 0.75rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        .explain-box, .calc-box {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.9rem 1rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+        .calc-box { background: #f8fafc; }
+        .explain-box h4, .calc-box h4 {
+            margin: 0 0 0.35rem;
+            font-size: 0.78rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #475569;
+        }
+        .explain-box p, .calc-box p {
+            margin: 0;
+            color: #475569;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .calc-math {
+            margin-top: 0.45rem;
+            color: #1e3a8a;
+            font-weight: 700;
+            overflow-x: auto;
+        }
+        .stat-grid {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0,1fr));
+            gap: 0.5rem;
+            margin-top: 0.65rem;
+        }
+        .stat-card {
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 0.7rem;
+            padding: 0.6rem 0.75rem;
+            text-align: center;
+        }
+        .stat-card small {
+            display: block;
+            color: #64748b;
+            font-size: 0.72rem;
+            margin-bottom: 0.15rem;
+        }
+        .stat-card strong {
+            color: #1e3a8a;
+            font-size: 0.98rem;
+        }
+        @media (max-width: 700px) {
+            .explain-strip { grid-template-columns: 1fr; }
+            .stat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        }
+
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto flex flex-col items-center">
+        
+        <!-- Header -->
+        <header class="mb-6 text-center w-full">
+            <h1 class="text-2xl md:text-3xl font-bold mb-1">Approximating $\pi$ using a Square Lattice</h1>
+            <p class="text-sm text-slate-500 mb-3 italic font-serif">This proof was given by Carl Friedrich Gauss.</p>
+            <div class="text-lg md:text-xl math-text bg-white inline-block px-6 py-3 rounded-lg shadow-sm border border-gray-100">
+                \(\lim_{r\to\infty} \frac{f(r)}{r^2} = \pi\)
+            </div>
+            <p class="text-slate-600 mt-3 text-sm md:text-base max-w-2xl mx-auto">
+                Count the lattice points inside the circle, place one unit square around each counted point, and compare that total square area with the true area \(\pi r^2\). The only disagreement occurs near the boundary, and that boundary error becomes small relative to \(r^2\) as the circle grows.
+            </p>
+        </header>
+
+        <!-- Top Panel: Interactive Canvas & Controls -->
+        <div class="w-full flex flex-col items-center sticky top-2 z-30 bg-[#f8fafc] pb-4 border-b border-gray-200">
+            
+            <!-- Controls -->
+            <div class="flex flex-wrap items-center justify-center gap-6 w-full max-w-2xl mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center gap-3 w-full md:w-auto flex-1">
+                    <label for="radius-slider" class="font-bold text-slate-700 whitespace-nowrap">Radius ($r$): <span id="r-display" class="text-blue-600">5</span></label>
+                    <input type="range" id="radius-slider" min="2" max="12" step="1" value="5" class="w-full">
+                </div>
+                
+                <div class="flex gap-3">
+                    <button id="btn-prev" class="px-5 py-2 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 transition font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        &larr; Prev
+                    </button>
+                    <button id="btn-next" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md">
+                        Next Step &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <!-- SVG Canvas -->
+            <div class="canvas-wrapper mb-2">
+                <div class="canvas-container" id="canvas-container">
+                    <!-- SVG gets injected here by JS to handle dynamic scaling -->
+                    <svg id="math-svg" viewBox="-13 -13 26 26" class="w-full h-full" style="transform: scaleY(-1);">
+                        <!-- Contents populated by JS -->
+                    </svg>
+                </div>
+            </div>
+            <!-- Live Math Stats -->
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <small>Lattice-point count</small>
+                    <strong id="stat-count">0</strong>
+                </div>
+                <div class="stat-card">
+                    <small>True circle area</small>
+                    <strong id="stat-area">0</strong>
+                </div>
+                <div class="stat-card">
+                    <small>Estimate of π</small>
+                    <strong id="stat-est">0</strong>
+                </div>
+                <div class="stat-card">
+                    <small>Error in estimate</small>
+                    <strong id="stat-error">0</strong>
+                </div>
+            </div>
+
+            <div class="explain-strip">
+                <div class="explain-box">
+                    <h4>What is happening?</h4>
+                    <p id="live-explanation">
+                        We begin by counting lattice points inside the circle. The next steps turn that count into an area comparison.
+                    </p>
+                </div>
+
+                <div class="calc-box">
+                    <h4>Current calculation</h4>
+                    <p id="live-calculation">
+                        Move through the steps to see the calculation for the current radius.
+                    </p>
+                    <div class="calc-math" id="live-math"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Bottom Panel: Step-by-Step Ledger -->
+        <div class="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6" id="steps-container">
+            
+            <div class="step-card p-5 rounded-xl active" id="step-0">
+                <h3 class="font-bold text-lg mb-2 text-slate-800">1. The Circle and the Lattice</h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Imagine the plane covered by a grid of unit squares. The corners are <strong>lattice points</strong>. We draw a circle of radius $r$ centered at the origin.
+                </p>
+                <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+                    Let $f(r)$ be the exact number of lattice points that lie inside or exactly on the circle.
+                </p>
+            </div>
+
+            <div class="step-card p-5 rounded-xl" id="step-1">
+                <h3 class="font-bold text-lg mb-2 text-slate-800">2. Points into Squares</h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Around every counted lattice point, construct its corresponding $1 \times 1$ square. 
+                </p>
+                <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+                    Since each square has an area of $1$, the total area of this jagged blue region is exactly $f(r)$. Notice how it roughly approximates the area of the circle (\(\pi r^2\)).
+                </p>
+            </div>
+
+            <div class="step-card p-5 rounded-xl" id="step-2">
+                <h3 class="font-bold text-lg mb-2 text-slate-800">3. The Boundary Error</h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    The square region isn't a perfect circle. The area difference \(|f(r) - \pi r^2|\) comes <em>entirely</em> from the squares that intersect the circle's boundary.
+                </p>
+                <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+                    These <span class="text-amber-600 font-bold">boundary squares</span> (highlighted in orange) account for all the overshoots and undershoots in our approximation.
+                </p>
+            </div>
+
+            <div class="step-card p-5 rounded-xl" id="step-3">
+                <h3 class="font-bold text-lg mb-2 text-slate-800">4. Bounding the Error</h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    The maximum distance between any two points in a unit square is its diagonal, $\sqrt{2}$. 
+                </p>
+                <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+                    Therefore, every boundary square must fit entirely inside a thin <span class="text-red-500 font-bold">red annulus</span> with an inner radius of $r - \sqrt{2}$ and an outer radius of $r + \sqrt{2}$.
+                </p>
+            </div>
+
+            <div class="step-card p-5 rounded-xl md:col-span-2 lg:col-span-2 bg-indigo-50 border border-indigo-100" id="step-4">
+                <h3 class="font-bold text-lg mb-2 text-indigo-900">5. The Infinite Limit</h3>
+                <div class="flex flex-col md:flex-row gap-4 items-start">
+                    <p class="text-sm text-indigo-800 leading-relaxed flex-1">
+                        The annulus gives a convenient upper bound for the boundary error. Its area is:<br>
+                        \( B(r) = \pi(r+\sqrt{2})^2 - \pi(r-\sqrt{2})^2 = 4\sqrt{2}\pi r \)
+                    </p>
+                    <p class="text-sm text-indigo-800 leading-relaxed flex-1">
+                        Since our boundary error is trapped inside this annulus, we get:<br>
+                        \( |f(r) - \pi r^2| &lt; 4\sqrt{2}\pi r \)
+                    </p>
+                </div>
+                <div class="mt-3 p-3 bg-white rounded-lg shadow-inner text-center overflow-x-auto">
+                    <p class="text-sm text-slate-700">Dividing by \(r^2\), the relative error shrinks to zero as \(r\) grows:</p>
+                    <div class="text-lg font-bold text-indigo-700 mt-1 math-text py-2">
+                        $$\left| \frac{f(r)}{r^2} - \pi \right| &lt; \frac{4\sqrt{2}\pi}{r} \longrightarrow 0$$
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const sliderR = document.getElementById('radius-slider');
+        const displayR = document.getElementById('r-display');
+        const btnNext = document.getElementById('btn-next');
+        const btnPrev = document.getElementById('btn-prev');
+        const cards = document.querySelectorAll('.step-card');
+        const svgContainer = document.getElementById('math-svg');
+        const canvasContainer = document.getElementById('canvas-container');
+        
+        // Live Stats Elements
+        const statCount = document.getElementById('stat-count');
+        const statArea = document.getElementById('stat-area');
+        const statEst = document.getElementById('stat-est');
+        const statError = document.getElementById('stat-error');
+        const liveExplanation = document.getElementById('live-explanation');
+        const liveCalculation = document.getElementById('live-calculation');
+        const liveMath = document.getElementById('live-math');
+
+        let currentStep = 0;
+        const totalSteps = 5;
+
+        // Constants
+        const VIEW_LIMIT = 13; // Defines the SVG viewBox limits [-13, 13]
+
+        function calculateGrid(r) {
+            let points = [];
+            let squares = [];
+            let boundarySquares = [];
+            let count = 0;
+            const rSq = r * r;
+
+            for (let x = -VIEW_LIMIT; x <= VIEW_LIMIT; x++) {
+                for (let y = -VIEW_LIMIT; y <= VIEW_LIMIT; y++) {
+                    const distSq = x*x + y*y;
+                    const isInside = distSq <= rSq;
+
+                    if (isInside) {
+                        points.push({x, y});
+                        count++;
+                    }
+
+                    // Boundary Check logic
+                    // Distance to closest point of square
+                    const dx_min = Math.max(0, Math.abs(x) - 0.5);
+                    const dy_min = Math.max(0, Math.abs(y) - 0.5);
+                    const d_min = Math.sqrt(dx_min*dx_min + dy_min*dy_min);
+
+                    // Distance to furthest point of square
+                    const dx_max = Math.abs(x) + 0.5;
+                    const dy_max = Math.abs(y) + 0.5;
+                    const d_max = Math.sqrt(dx_max*dx_max + dy_max*dy_max);
+
+                    // A square intersects the boundary if its closest point is inside and furthest is outside
+                    const intersectsBoundary = (d_min <= r) && (d_max >= r);
+
+                    if (isInside && !intersectsBoundary) {
+                        squares.push({x, y});
+                    }
+                    if (intersectsBoundary) {
+                        boundarySquares.push({x, y});
+                    }
+                }
+            }
+
+            return { points, squares, boundarySquares, count };
+        }
+
+        function generateSVG(step, r) {
+            const gridData = calculateGrid(r);
+            let svgContent = '';
+
+            // 1. Draw Background Grid
+            svgContent += `<g stroke="#e2e8f0" stroke-width="0.05">`;
+            for (let i = -VIEW_LIMIT; i <= VIEW_LIMIT; i++) {
+                svgContent += `<line x1="${-VIEW_LIMIT}" y1="${i}" x2="${VIEW_LIMIT}" y2="${i}" />`;
+                svgContent += `<line x1="${i}" y1="${-VIEW_LIMIT}" x2="${i}" y2="${VIEW_LIMIT}" />`;
+            }
+            svgContent += `</g>`;
+
+            // 2. Axes
+            svgContent += `
+                <line x1="${-VIEW_LIMIT}" y1="0" x2="${VIEW_LIMIT}" y2="0" stroke="#94a3b8" stroke-width="0.1" />
+                <line x1="0" y1="${-VIEW_LIMIT}" x2="0" y2="${VIEW_LIMIT}" stroke="#94a3b8" stroke-width="0.1" />
+            `;
+
+            // State specific rendering
+            
+            // Draw standard inner squares (Step 1 onwards)
+            if (step >= 1) {
+                svgContent += `<g fill="#60a5fa" fill-opacity="0.5" stroke="#2563eb" stroke-width="0.05">`;
+                gridData.squares.forEach(sq => {
+                    svgContent += `<rect x="${sq.x - 0.5}" y="${sq.y - 0.5}" width="1" height="1" />`;
+                });
+                svgContent += `</g>`;
+            }
+
+            // Draw boundary squares 
+            if (step >= 1) {
+                // If step >= 2, highlight boundary squares in amber. Otherwise keep them blue (part of region F).
+                const bFill = step >= 2 ? "#f59e0b" : "#60a5fa";
+                const bFillOp = step >= 2 ? "0.7" : "0.5";
+                const bStroke = step >= 2 ? "#d97706" : "#2563eb";
+                const bStrokeW = step >= 2 ? "0.1" : "0.05";
+                
+                svgContent += `<g fill="${bFill}" fill-opacity="${bFillOp}" stroke="${bStroke}" stroke-width="${bStrokeW}">`;
+                gridData.boundarySquares.forEach(sq => {
+                    // Only draw boundary squares that are part of counted points for Step 1
+                    // For step 2+, draw all boundary squares to show the error region
+                    const isCounted = (sq.x*sq.x + sq.y*sq.y) <= r*r;
+                    if (step >= 2 || isCounted) {
+                        svgContent += `<rect x="${sq.x - 0.5}" y="${sq.y - 0.5}" width="1" height="1" />`;
+                    }
+                });
+                svgContent += `</g>`;
+            }
+
+            // Draw the Circle
+            svgContent += `<circle cx="0" cy="0" r="${r}" fill="none" stroke="#1d4ed8" stroke-width="0.15" />`;
+
+            // Draw Lattice Points (Step 0)
+            if (step === 0) {
+                svgContent += `<g fill="#1e293b">`;
+                gridData.points.forEach(pt => {
+                    svgContent += `<circle cx="${pt.x}" cy="${pt.y}" r="0.15" />`;
+                });
+                svgContent += `</g>`;
+            }
+
+            // Draw the Annulus Bound (Step 3 onwards)
+            if (step >= 3) {
+                const rOut = r + Math.SQRT2;
+                const rIn = Math.max(0, r - Math.SQRT2); // Prevent negative radius
+                
+                svgContent += `
+                    <path d="M 0,${-rOut} A ${rOut},${rOut} 0 1,1 0,${rOut} A ${rOut},${rOut} 0 1,1 0,${-rOut} Z
+                             M 0,${-rIn} A ${rIn},${rIn} 0 1,0 0,${rIn} A ${rIn},${rIn} 0 1,0 0,${-rIn} Z"
+                          fill="rgba(239, 68, 68, 0.2)" fill-rule="evenodd" stroke="#ef4444" stroke-width="0.1" stroke-dasharray="0.3, 0.2"/>
+                `;
+            }
+
+            return { html: svgContent, count: gridData.count };
+        }
+
+
+        function updateLiveExplanation(step, r, count) {
+            const exactArea = Math.PI * r * r;
+            const estimate = count / (r * r);
+            const estimateError = Math.abs(estimate - Math.PI);
+            const rawAreaError = Math.abs(count - exactArea);
+            const annulusBound = 4 * Math.SQRT2 * Math.PI * r;
+            const normalizedBound = 4 * Math.SQRT2 * Math.PI / r;
+
+            const explanations = [
+                `We count the lattice points whose distance from the origin is at most r. This gives f(r). At this stage we are counting points, not area.`,
+                `Put a 1×1 square around every counted lattice point. Each square has area 1, so the total blue square-area is exactly f(r).`,
+                `The square region is close to the circle but not identical. Any disagreement must come from unit squares that touch the circular boundary.`,
+                `A unit square has diagonal √2. Therefore every boundary square stays within distance √2 of the circle, so all boundary error lies inside a thin annulus.`,
+                `The boundary annulus has area proportional to r, while the circle has area proportional to r². After dividing by r², the possible error behaves like 1/r and therefore tends to 0.`
+            ];
+
+            const calculations = [
+                `For r = ${r}, the picture contains f(r) = ${count} lattice points inside or on the circle.`,
+                `The unit-square region therefore has area ${count}. The true circle area is πr² ≈ ${exactArea.toFixed(2)}.`,
+                `The present raw area difference is |${count} − ${exactArea.toFixed(2)}| ≈ ${rawAreaError.toFixed(2)}.`,
+                `A safe upper bound for the boundary error is 4√2πr ≈ ${annulusBound.toFixed(2)}.`,
+                `Here f(r)/r² = ${count}/${r*r} = ${estimate.toFixed(4)}, so the current error from π is about ${estimateError.toFixed(4)}.`
+            ];
+
+            const maths = [
+                `\\[f(${r})=${count}\\]`,
+                `\\[\\text{square area}=f(${r})=${count},\\qquad \\pi r^2\\approx ${exactArea.toFixed(2)}\\]`,
+                `\\[|f(r)-\\pi r^2|\\approx ${rawAreaError.toFixed(2)}\\]`,
+                `\\[|f(r)-\\pi r^2|<4\\sqrt2\\pi r\\approx ${annulusBound.toFixed(2)}\\]`,
+                `\\[\\left|\\frac{f(r)}{r^2}-\\pi\\right|<\\frac{4\\sqrt2\\pi}{r}\\approx ${normalizedBound.toFixed(4)}\\to0\\]`
+            ];
+
+            liveExplanation.textContent = explanations[step];
+            liveCalculation.textContent = calculations[step];
+            liveMath.innerHTML = maths[step];
+        }
+
+        function updateUI() {
+            const r = parseInt(sliderR.value);
+            displayR.textContent = r;
+
+            // Fade transition for smooth updates
+            canvasContainer.style.opacity = 0.5;
+            
+            setTimeout(() => {
+                const result = generateSVG(currentStep, r);
+                svgContainer.innerHTML = result.html;
+                // Update Stats
+                const exactAreaNum = Math.PI * r * r;
+                const exactArea = exactAreaNum.toFixed(2);
+                const estimateNum = result.count / (r * r);
+                const estimate = estimateNum.toFixed(4);
+                const absoluteError = Math.abs(estimateNum - Math.PI).toFixed(4);
+
+                statCount.textContent = result.count;
+                statArea.textContent = exactArea;
+                statEst.textContent = estimate;
+                statError.textContent = absoluteError;
+
+                updateLiveExplanation(currentStep, r, result.count);
+
+                canvasContainer.style.opacity = 1;
+
+                if (window.mathJaxLoaded && window.MathJax) {
+                    MathJax.typesetPromise([liveMath]).catch(() => {});
+                }
+            }, 100);
+
+            // Update Cards
+            cards.forEach((card, idx) => {
+                if (idx === currentStep) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+
+            // Re-typeset MathJax if available (for dynamic numbers, though we rely on standard DOM updates here)
+            if (window.mathJaxLoaded && window.MathJax) {
+                MathJax.typesetPromise();
+            }
+
+            // Update Buttons
+            btnPrev.disabled = currentStep === 0;
+            btnNext.disabled = currentStep === totalSteps - 1;
+        }
+
+        // Event Listeners
+        sliderR.addEventListener('input', updateUI);
+
+        btnNext.addEventListener('click', () => {
+            if (currentStep < totalSteps - 1) {
+                currentStep++;
+                updateUI();
+            }
+        });
+
+        btnPrev.addEventListener('click', () => {
+            if (currentStep > 0) {
+                currentStep--;
+                updateUI();
+            }
+        });
+
+        // Initialize
+        window.onload = () => {
+            setTimeout(updateUI, 100);
+        };
+    </script>
+</body>
+</html>

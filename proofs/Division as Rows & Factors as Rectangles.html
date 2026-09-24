@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive visual maths for division as making rows and factors as rectangle arrays." />
+  <title>Division as Rows & Factors as Rectangles</title>
+
+  <style>
+    :root {
+      --bg: #f8fbff;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.12);
+      --text: #0f172a;
+      --muted: #64748b;
+      --purple: #7c3aed;
+      --blue: #2563eb;
+      --orange: #f59e0b;
+      --green: #10b981;
+      --pink: #ec4899;
+      --red: #ef4444;
+      --shadow: 0 16px 38px rgba(15, 23, 42, 0.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      line-height: 1.55;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(124,58,237,.08), transparent 28rem),
+        radial-gradient(circle at 90% 10%, rgba(37,99,235,.06), transparent 26rem),
+        var(--bg);
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1220px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 30px 0 54px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(124,58,237,.22);
+      background: rgba(124,58,237,.07);
+      color: #6d28d9;
+      text-transform: uppercase;
+      font-size: .8rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.25rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      max-width: 980px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.8vw, 1.12rem);
+    }
+
+    .hero-box {
+      margin: 20px auto 0;
+      max-width: 840px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(16,185,129,.20);
+      background: linear-gradient(180deg, rgba(16,185,129,.07), rgba(16,185,129,.03));
+      color: #065f46;
+      font-weight: 800;
+      font-size: clamp(1.04rem, 2vw, 1.33rem);
+    }
+
+    .top-controls {
+      display: grid;
+      grid-template-columns: 1.5fr .9fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .control-card {
+      padding: 14px;
+    }
+
+    .slider-box {
+      padding: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.02);
+      border-radius: 14px;
+      min-width: 0;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: .92rem;
+    }
+
+    .slider-head strong {
+      color: #6d28d9;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--purple);
+      cursor: pointer;
+    }
+
+    .summary-box {
+      padding: 12px 14px;
+      border: 1px solid rgba(37,99,235,.16);
+      background: rgba(37,99,235,.06);
+      border-radius: 14px;
+    }
+
+    .summary-box strong {
+      display: block;
+      color: #1d4ed8;
+      font-size: 1.25rem;
+      line-height: 1.18;
+    }
+
+    .summary-box span {
+      display: block;
+      color: var(--muted);
+      font-size: .84rem;
+      margin-top: 2px;
+    }
+
+    .sections {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .visual-card {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .section-title {
+      margin: 0 0 6px;
+      font-size: 1.35rem;
+      line-height: 1.25;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: .96rem;
+    }
+
+    .mini-controls {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 10px;
+      margin-top: 14px;
+      margin-bottom: 12px;
+    }
+
+    .mini-card {
+      padding: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.02);
+      border-radius: 14px;
+      min-width: 0;
+    }
+
+    .mini-card strong {
+      display: block;
+      color: #0f172a;
+      margin-bottom: 3px;
+      font-size: .9rem;
+    }
+
+    .stage-box {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(100,116,139,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,116,139,.08) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 32px 32px;
+      padding: 18px;
+      min-height: 410px;
+      overflow: hidden;
+    }
+
+    .tile-board {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+      min-height: 250px;
+      margin-top: 8px;
+    }
+
+    .tile-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: nowrap;
+      align-items: center;
+    }
+
+    .tile {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid rgba(15,23,42,.16);
+      display: grid;
+      place-items: center;
+      font-size: .8rem;
+      font-weight: 800;
+      color: #0f172a;
+      background: rgba(236,72,153,.25);
+    }
+
+    .tile.full {
+      background: rgba(245,158,11,.48);
+      border-color: rgba(180,83,9,.32);
+    }
+
+    .tile.leftover {
+      background: rgba(239,68,68,.18);
+      border-color: rgba(220,38,38,.28);
+      color: #991b1b;
+    }
+
+    .tile.factor {
+      background: rgba(37,99,235,.23);
+      border-color: rgba(37,99,235,.25);
+    }
+
+    .row-label {
+      min-width: 62px;
+      color: #475569;
+      font-size: .88rem;
+      font-weight: 700;
+    }
+
+    .equation-strip {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(124,58,237,.18);
+      background: rgba(124,58,237,.05);
+    }
+
+    .equation-strip small {
+      display: block;
+      color: #6d28d9;
+      font-size: .77rem;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .equation-text {
+      font-size: clamp(1.08rem, 2vw, 1.35rem);
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .kid-note {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(16,185,129,.18);
+      background: rgba(16,185,129,.055);
+      color: #334155;
+      font-size: .92rem;
+    }
+
+    .kid-note strong {
+      display: block;
+      color: #047857;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-size: .8rem;
+      margin-bottom: 3px;
+    }
+
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .fact {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(15,23,42,.018);
+      padding: 10px 11px;
+    }
+
+    .fact small {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+
+    .fact strong {
+      display: block;
+      color: #0f172a;
+      font-size: 1rem;
+    }
+
+    .factor-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .factor-pair {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(15,23,42,.018);
+      padding: 12px;
+    }
+
+    .factor-pair-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .factor-pair-head strong {
+      color: #1d4ed8;
+      font-size: 1rem;
+    }
+
+    .factor-pair-head span {
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    .factor-grid {
+      display: grid;
+      gap: 4px;
+      justify-content: start;
+    }
+
+    .factor-grid .tile {
+      width: 18px;
+      height: 18px;
+      font-size: 0;
+      border-radius: 4px;
+    }
+
+    .factor-summary {
+      margin-top: 14px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(37,99,235,.16);
+      background: rgba(37,99,235,.06);
+      color: #334155;
+      font-size: .93rem;
+    }
+
+    .factor-summary strong {
+      color: #1d4ed8;
+      display: block;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-size: .8rem;
+    }
+
+    .explain-card {
+      margin-top: 18px;
+      padding: 22px;
+    }
+
+    .explain-card h2 {
+      margin-top: 0;
+      line-height: 1.22;
+    }
+
+    .proof-steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: proofStep;
+    }
+
+    .proof-step {
+      position: relative;
+      padding: 14px 14px 14px 54px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(15,23,42,.018);
+      color: #475569;
+    }
+
+    .proof-step::before {
+      counter-increment: proofStep;
+      content: counter(proofStep);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #5b21b6;
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: .82rem;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 980px) {
+      .sections { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .top-controls,
+      .mini-controls { grid-template-columns: 1fr; }
+      .facts-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        width: min(100% - 18px, 1220px);
+        padding-top: 22px;
+      }
+      .visual-card, .control-card, .explain-card { padding: 13px; }
+      .stage-box { padding: 12px; }
+      .tile { width: 25px; height: 25px; font-size: .72rem; }
+      .factor-grid .tile { width: 15px; height: 15px; }
+    }
+  </style>
+</head>
+
+<body>
+<main class="page">
+  <header class="hero">
+    <div class="eyebrow">Visual Maths • Division and Factors</div>
+    <h1>Division Makes Equal Rows. Factors Make Perfect Rectangles.</h1>
+    <p class="subtitle">
+      If we have some tiles, we can arrange them into equal rows. That helps us understand division.
+      We can also ask, “Which rectangles can be made with no tiles left over?” That helps us understand factors.
+      Try many numbers, not just 24.
+    </p>
+    <div class="hero-box" id="heroBox">
+      24 ÷ 6 = 4, and 24 can make these rectangles: 1×24, 2×12, 3×8, 4×6
+    </div>
+  </header>
+
+  <section class="top-controls">
+    <div class="card control-card">
+      <div class="slider-box">
+        <div class="slider-head">
+          <span>Choose a total number of tiles</span>
+          <strong id="numberReadout">24</strong>
+        </div>
+        <input id="numberSlider" type="range" min="1" max="60" value="24" step="1" aria-label="Choose number of tiles">
+      </div>
+    </div>
+
+    <div class="card control-card">
+      <div class="summary-box">
+        <strong id="summaryTitle">24 tiles</strong>
+        <span id="summaryCopy">Can be divided into rows and checked for all rectangle factor pairs.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sections">
+    <div class="card visual-card">
+      <h2 class="section-title">Division as Making Equal Rows</h2>
+      <p class="section-copy">
+        Choose how many rows you want. The tiles will try to sit in equal rows.
+        If every row gets the same number, division is exact. If not, some tiles are left over.
+      </p>
+
+      <div class="mini-controls">
+        <div class="mini-card">
+          <div class="slider-head">
+            <span>Choose number of rows</span>
+            <strong id="rowsReadout">6 rows</strong>
+          </div>
+          <input id="rowsSlider" type="range" min="1" max="12" value="6" step="1" aria-label="Choose rows">
+        </div>
+
+        <div class="mini-card">
+          <strong id="divisionHeadline">24 tiles into 6 rows</strong>
+          <span id="divisionSubline">Each row gets 4 tiles.</span>
+        </div>
+      </div>
+
+      <div class="stage-box">
+        <div class="tile-board" id="divisionBoard"></div>
+
+        <div class="equation-strip">
+          <small>Division sentence</small>
+          <div class="equation-text" id="divisionEquation">24 ÷ 6 = 4</div>
+        </div>
+
+        <div class="kid-note">
+          <strong>What is happening?</strong>
+          <div id="divisionExplanation">
+            We are sharing 24 tiles into 6 equal rows. Each row gets 4, so 24 ÷ 6 = 4.
+          </div>
+        </div>
+
+        <div class="facts-grid">
+          <div class="fact">
+            <small>Total tiles</small>
+            <strong id="factTotal">24</strong>
+          </div>
+          <div class="fact">
+            <small>Rows</small>
+            <strong id="factRows">6</strong>
+          </div>
+          <div class="fact">
+            <small>Tiles in each row</small>
+            <strong id="factEachRow">4</strong>
+          </div>
+          <div class="fact">
+            <small>Left over</small>
+            <strong id="factLeftover">0</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card visual-card">
+      <h2 class="section-title">Factors as Rectangle Arrays</h2>
+      <p class="section-copy">
+        Every factor pair makes a perfect rectangle with no tiles left over.
+        So factors are really just all the different exact rectangles the number can build.
+      </p>
+
+      <div class="factor-summary">
+        <strong>Factor idea</strong>
+        <div id="factorIntro">
+          We are checking all rectangle shapes that can be made with 24 tiles exactly.
+        </div>
+      </div>
+
+      <div class="factor-list" id="factorList"></div>
+
+      <div class="equation-strip">
+        <small>Factor sentence</small>
+        <div class="equation-text" id="factorEquation">24 = 1×24 = 2×12 = 3×8 = 4×6</div>
+      </div>
+
+      <div class="kid-note">
+        <strong>What is happening?</strong>
+        <div id="factorExplanation">
+          A factor pair is a pair of whole numbers that multiplies to make the total number of tiles.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card explain-card">
+    <h2>Big ideas for kids</h2>
+    <div class="proof-steps">
+      <div class="proof-step">
+        <b>Division means making equal groups or equal rows.</b>
+        If 24 tiles are arranged into 6 equal rows, then each row has 4 tiles.
+      </div>
+      <div class="proof-step">
+        <b>Sometimes there is a remainder.</b>
+        If the tiles cannot fit equally, the extra tiles are called “left over” or “remainder”.
+      </div>
+      <div class="proof-step">
+        <b>Factors are the exact row arrangements.</b>
+        A factor pair makes a rectangle with no leftovers at all.
+      </div>
+      <div class="proof-step">
+        <b>Division and factors are connected.</b>
+        If 24 ÷ 6 = 4, then 6 and 4 are factors of 24.
+      </div>
+      <div class="proof-step">
+        <b>Rectangles help us see the maths.</b>
+        Instead of only reading a number sentence, we can see what the numbers are doing.
+      </div>
+    </div>
+  </section>
+
+  <p class="footer-note">
+    Interactive visual for division as rows and factors as rectangle arrays.
+  </p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const numberSlider = document.getElementById("numberSlider");
+  const rowsSlider = document.getElementById("rowsSlider");
+
+  const numberReadout = document.getElementById("numberReadout");
+  const rowsReadout = document.getElementById("rowsReadout");
+
+  const heroBox = document.getElementById("heroBox");
+  const summaryTitle = document.getElementById("summaryTitle");
+  const summaryCopy = document.getElementById("summaryCopy");
+
+  const divisionHeadline = document.getElementById("divisionHeadline");
+  const divisionSubline = document.getElementById("divisionSubline");
+  const divisionBoard = document.getElementById("divisionBoard");
+  const divisionEquation = document.getElementById("divisionEquation");
+  const divisionExplanation = document.getElementById("divisionExplanation");
+
+  const factTotal = document.getElementById("factTotal");
+  const factRows = document.getElementById("factRows");
+  const factEachRow = document.getElementById("factEachRow");
+  const factLeftover = document.getElementById("factLeftover");
+
+  const factorIntro = document.getElementById("factorIntro");
+  const factorList = document.getElementById("factorList");
+  const factorEquation = document.getElementById("factorEquation");
+  const factorExplanation = document.getElementById("factorExplanation");
+
+  function getState() {
+    const n = Number(numberSlider.value);
+    rowsSlider.max = String(Math.min(12, Math.max(1, n)));
+    if (Number(rowsSlider.value) > Number(rowsSlider.max)) rowsSlider.value = rowsSlider.max;
+    const rows = Number(rowsSlider.value);
+    const each = Math.floor(n / rows);
+    const leftover = n % rows;
+    return { n, rows, each, leftover };
+  }
+
+  function factorPairs(n) {
+    const pairs = [];
+    for (let a = 1; a * a <= n; a++) {
+      if (n % a === 0) pairs.push([a, n / a]);
+    }
+    return pairs;
+  }
+
+  function createTile(text, className = "") {
+    const div = document.createElement("div");
+    div.className = `tile ${className}`.trim();
+    div.textContent = text;
+    return div;
+  }
+
+  function renderDivision() {
+    const { n, rows, each, leftover } = getState();
+
+    divisionBoard.innerHTML = "";
+
+    let used = 0;
+    for (let r = 0; r < rows; r++) {
+      const row = document.createElement("div");
+      row.className = "tile-row";
+
+      const label = document.createElement("div");
+      label.className = "row-label";
+      label.textContent = `Row ${r + 1}`;
+      row.appendChild(label);
+
+      for (let c = 0; c < each; c++) {
+        used++;
+        row.appendChild(createTile(String(used), "full"));
+      }
+
+      if (leftover > 0 && r === rows - 1) {
+        for (let x = 0; x < leftover; x++) {
+          used++;
+          row.appendChild(createTile(String(used), "leftover"));
+        }
+      }
+
+      divisionBoard.appendChild(row);
+    }
+
+    // if rows = 1 and number large, still works. if n=0 not possible since slider min is 1
+
+    numberReadout.textContent = String(n);
+    rowsReadout.textContent = `${rows} row${rows === 1 ? "" : "s"}`;
+    divisionHeadline.textContent = `${n} tiles into ${rows} row${rows === 1 ? "" : "s"}`;
+
+    if (leftover === 0) {
+      divisionSubline.textContent = `Each row gets ${each} tile${each === 1 ? "" : "s"}.`;
+      divisionEquation.textContent = `${n} ÷ ${rows} = ${each}`;
+      divisionExplanation.textContent = `We are sharing ${n} tiles into ${rows} equal rows. Each row gets ${each}, so ${n} ÷ ${rows} = ${each}.`;
+    } else {
+      divisionSubline.textContent = `Each row gets ${each} tile${each === 1 ? "" : "s"}, with ${leftover} left over.`;
+      divisionEquation.textContent = `${n} ÷ ${rows} = ${each} remainder ${leftover}`;
+      divisionExplanation.textContent = `We can give ${each} tile${each === 1 ? "" : "s"} to each of the ${rows} rows, but ${leftover} tile${leftover === 1 ? "" : "s"} do not fit equally. That is the remainder.`;
+    }
+
+    factTotal.textContent = String(n);
+    factRows.textContent = String(rows);
+    factEachRow.textContent = String(each);
+    factLeftover.textContent = String(leftover);
+  }
+
+  function renderFactors() {
+    const { n } = getState();
+    const pairs = factorPairs(n);
+
+    factorList.innerHTML = "";
+
+    const parts = [];
+    pairs.forEach(([a, b], idx) => {
+      parts.push(`${a}×${b}`);
+
+      const card = document.createElement("div");
+      card.className = "factor-pair";
+
+      const head = document.createElement("div");
+      head.className = "factor-pair-head";
+      const title = document.createElement("strong");
+      title.textContent = `${n} = ${a} × ${b}`;
+      const note = document.createElement("span");
+      note.textContent = `${a} row${a === 1 ? "" : "s"} of ${b}`;
+      head.appendChild(title);
+      head.appendChild(note);
+      card.appendChild(head);
+
+      const grid = document.createElement("div");
+      grid.className = "factor-grid";
+      grid.style.gridTemplateColumns = `repeat(${b}, 18px)`;
+
+      for (let i = 0; i < n; i++) {
+        grid.appendChild(createTile("", "factor"));
+      }
+
+      card.appendChild(grid);
+      factorList.appendChild(card);
+    });
+
+    factorIntro.textContent = `We are checking all perfect rectangle shapes that can be made with ${n} tiles.`;
+    factorEquation.textContent = `${n} = ` + parts.join(" = ");
+    factorExplanation.textContent = `These are all the factor pairs of ${n}. Each pair makes an exact rectangle with no tiles left over.`;
+
+    summaryTitle.textContent = `${n} tile${n === 1 ? "" : "s"}`;
+    summaryCopy.textContent = `${pairs.length} rectangle ${pairs.length === 1 ? "shape" : "shapes"} without leftovers.`;
+
+    heroBox.textContent =
+      pairs.length > 1
+        ? `${n} can be divided into rows, and it can make these exact rectangles: ${parts.join(", ")}`
+        : `${n} can only make 1×${n}. That means ${n} is prime.`;
+  }
+
+  function renderAll() {
+    renderDivision();
+    renderFactors();
+  }
+
+  numberSlider.addEventListener("input", renderAll);
+  rowsSlider.addEventListener("input", renderAll);
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

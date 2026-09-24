@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Proof: (a+b)²</title>
+
+    <!-- MathJax for rendering beautiful mathematical equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --bg-light: #f8f9fa;
+            --text-dark: #2d3748;
+            --a2-color: #3498db; /* Blue */
+            --ab-color: #2ecc71; /* Green */
+            --b2-color: #e67e22; /* Orange */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Controls Section */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+            background: #f1f3f5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        input[type="range"] { margin-top: 10px; cursor: pointer; }
+
+        /* Visualization Section */
+        .visualization-area {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            min-height: 400px;
+            align-items: center;
+        }
+
+        .square-container {
+            position: relative;
+            background: #ccc;
+            border: 2px solid #333;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .region {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border: 1px solid rgba(255,255,255,0.5);
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+
+        .region-a2 { background-color: var(--a2-color); top: 0; left: 0; }
+        .region-ab1 { background-color: var(--ab-color); top: 0; } /* top right */
+        .region-ab2 { background-color: var(--ab-color); left: 0; } /* bottom left */
+        .region-b2 { background-color: var(--b2-color); } /* bottom right */
+
+        .region span { font-size: 0.9rem; opacity: 0.9; font-weight: normal; }
+
+        /* Equation Section */
+        .live-equation {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 8px;
+        }
+
+        /* Explanation Section */
+        .explanation {
+            background: #fff;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .explanation h3 { margin-bottom: 10px; color: var(--primary); }
+        .explanation p { margin-bottom: 15px; font-size: 1.05rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Visual Proof of $(a+b)^2$</h1>
+
+        <!-- Sliders for interactivity -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="sliderA" style="color: var(--a2-color);">Value of $a$: <span id="valA">6</span></label>
+                <input type="range" id="sliderA" min="2" max="10" value="6">
+            </div>
+            <div class="control-group">
+                <label for="sliderB" style="color: var(--b2-color);">Value of $b$: <span id="valB">4</span></label>
+                <input type="range" id="sliderB" min="2" max="10" value="4">
+            </div>
+        </div>
+
+        <!-- Live updating math text (using simple HTML for real-time speed) -->
+        <div class="live-equation" id="liveEq">
+            (6 + 4)&sup2; = 6&sup2; + 2(6)(4) + 4&sup2; &nbsp;&nbsp;&rarr;&nbsp;&nbsp; 100 = 36 + 48 + 16
+        </div>
+
+        <!-- The visual grid -->
+        <div class="visualization-area">
+            <div class="square-container" id="mainSquare">
+                <div class="region region-a2" id="boxA2">
+                    a² <span id="textA2">= 36</span>
+                </div>
+                <div class="region region-ab1" id="boxAB1">
+                    ab <span id="textAB1">= 24</span>
+                </div>
+                <div class="region region-ab2" id="boxAB2">
+                    ab <span id="textAB2">= 24</span>
+                </div>
+                <div class="region region-b2" id="boxB2">
+                    b² <span id="textB2">= 16</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Written Explanation -->
+        <div class="explanation">
+            <h3>How to understand this proof:</h3>
+            <p>
+                Imagine a large square. We want the length of each side of this square to be $(a + b)$. <br>
+                Because the area of any square is its side length multiplied by itself, the total area of this big square is exactly <strong>$(a + b)^2$</strong>.
+            </p>
+            <p>
+                Now, look at the visualization above. We can split this large square into four smaller distinct pieces:
+            </p>
+            <ul>
+                <li><strong>One blue square:</strong> Its sides are $a$ and $a$, so its area is $a^2$.</li>
+                <li><strong>One orange square:</strong> Its sides are $b$ and $b$, so its area is $b^2$.</li>
+                <li><strong>Two green rectangles:</strong> Each has sides $a$ and $b$, so each has an area of $ab$. (Together, they make $2ab$).</li>
+            </ul>
+            <p style="margin-top: 15px;">
+                Because these four smaller pieces fit perfectly inside the large square without any gaps or overlaps, their total combined area must equal the area of the large square. Therefore:
+            </p>
+            <p style="text-align: center; font-size: 1.2rem; margin-top: 10px;">
+                $$(a+b)^2 = a^2 + 2ab + b^2$$
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const sliderA = document.getElementById('sliderA');
+        const sliderB = document.getElementById('sliderB');
+        const valA = document.getElementById('valA');
+        const valB = document.getElementById('valB');
+        
+        const mainSquare = document.getElementById('mainSquare');
+        const boxA2 = document.getElementById('boxA2');
+        const boxAB1 = document.getElementById('boxAB1');
+        const boxAB2 = document.getElementById('boxAB2');
+        const boxB2 = document.getElementById('boxB2');
+        
+        const textA2 = document.getElementById('textA2');
+        const textAB1 = document.getElementById('textAB1');
+        const textAB2 = document.getElementById('textAB2');
+        const textB2 = document.getElementById('textB2');
+        const liveEq = document.getElementById('liveEq');
+
+        const SCALE = 20; // 1 unit = 20 pixels
+
+        function drawProof() {
+            // Get current values as numbers
+            const a = parseInt(sliderA.value);
+            const b = parseInt(sliderB.value);
+            
+            // Update labels above sliders
+            valA.innerText = a;
+            valB.innerText = b;
+
+            // Calculate pixel dimensions
+            const aPx = a * SCALE;
+            const bPx = b * SCALE;
+            const totalPx = aPx + bPx;
+
+            // Resize main container
+            mainSquare.style.width = totalPx + 'px';
+            mainSquare.style.height = totalPx + 'px';
+
+            // Resize and position a^2 box (Top Left)
+            boxA2.style.width = aPx + 'px';
+            boxA2.style.height = aPx + 'px';
+            textA2.innerText = '= ' + (a * a);
+
+            // Resize and position top-right ab box
+            boxAB1.style.width = bPx + 'px';
+            boxAB1.style.height = aPx + 'px';
+            boxAB1.style.left = aPx + 'px';
+            textAB1.innerText = '= ' + (a * b);
+
+            // Resize and position bottom-left ab box
+            boxAB2.style.width = aPx + 'px';
+            boxAB2.style.height = bPx + 'px';
+            boxAB2.style.top = aPx + 'px';
+            textAB2.innerText = '= ' + (a * b);
+
+            // Resize and position b^2 box (Bottom Right)
+            boxB2.style.width = bPx + 'px';
+            boxB2.style.height = bPx + 'px';
+            boxB2.style.top = aPx + 'px';
+            boxB2.style.left = aPx + 'px';
+            textB2.innerText = '= ' + (b * b);
+
+            // Update the live equation text
+            const totalSquared = (a + b) * (a + b);
+            const aSquared = a * a;
+            const abDouble = 2 * (a * b);
+            const bSquared = b * b;
+            
+            liveEq.innerHTML = `(${a} + ${b})&sup2; = ${a}&sup2; + 2(${a})(${b}) + ${b}&sup2; &nbsp;&nbsp;&rarr;&nbsp;&nbsp; ${totalSquared} = ${aSquared} + ${abDouble} + ${bSquared}`;
+        }
+
+        // Attach event listeners to sliders
+        sliderA.addEventListener('input', drawProof);
+        sliderB.addEventListener('input', drawProof);
+
+        // Draw initially when page loads
+        drawProof();
+    </script>
+</body>
+</html>
